@@ -3,25 +3,57 @@ using MedFlow.Application.Security;
 using MedFlow.Web.Authorization;
 using MedFlow.Web.ViewModels;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MedFlow.Web.Controllers;
 
 [Authorize]
+[Authorize(Roles = "Admin,SuperAdmin")]
 [RequirePermission(PermissionCodes.UsersManage)]
 public class AdminUsersController : Controller
 {
     private readonly IAdminUserService _users;
     private readonly IRoleAdminService _roles;
+    private readonly IPermissionChecker _perm;
+    private readonly UserManager<MedFlow.Infrastructure.Identity.ApplicationUser> _userManager;
 
-    public AdminUsersController(IAdminUserService users, IRoleAdminService roles)
+    public AdminUsersController(
+        IAdminUserService users,
+        IRoleAdminService roles,
+        IPermissionChecker perm,
+        UserManager<MedFlow.Infrastructure.Identity.ApplicationUser> userManager)
     {
         _users = users;
         _roles = roles;
+        _perm = perm;
+        _userManager = userManager;
+    }
+
+    private async Task<IActionResult?> EnsureAllowedAsync(CancellationToken cancellationToken)
+    {
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null)
+            return Forbid();
+
+        var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+        var isSuperAdmin = await _userManager.IsInRoleAsync(user, "SuperAdmin");
+        if (!isAdmin && !isSuperAdmin)
+            return Forbid();
+
+        var userId = user.Id;
+        if (string.IsNullOrWhiteSpace(userId))
+            return Forbid();
+        if (!await _perm.UserHasPermissionAsync(userId, PermissionCodes.UsersManage, cancellationToken))
+            return Forbid();
+        return null;
     }
 
     public async Task<IActionResult> Index(CancellationToken cancellationToken)
     {
+        var gate = await EnsureAllowedAsync(cancellationToken);
+        if (gate != null) return gate;
+
         ViewData["Title"] = "Usuarios";
         ViewData["PageSubtitle"] = "Cuentas y acceso al sistema";
         ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item active\">Usuarios</li>";

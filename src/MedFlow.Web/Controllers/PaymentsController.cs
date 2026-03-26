@@ -24,6 +24,7 @@ public class PaymentsController : Controller
         _patients = patients;
     }
 
+    [RequirePermission(PermissionCodes.BillingView)]
     public async Task<IActionResult> Index(Guid? invoiceId, Guid? patientId, DateTime? from, DateTime? to, ClinicalPaymentMethod? method, CancellationToken cancellationToken = default)
     {
         var list = await _payments.SearchAsync(invoiceId, patientId, from, to, method, cancellationToken);

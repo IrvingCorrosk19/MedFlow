@@ -208,6 +208,30 @@ using (var scope = app.Services.CreateScope())
         }
     }
 
+    // Solo desarrollo: restablecer admin de clínica si Development:ApplyAdminPassword tiene valor.
+    if (app.Environment.IsDevelopment())
+    {
+        var devAdminPwd = app.Configuration["Development:ApplyAdminPassword"];
+        if (!string.IsNullOrWhiteSpace(devAdminPwd))
+        {
+            var tenantCtx2 = scope.ServiceProvider.GetRequiredService<MedFlow.Application.Interfaces.ITenantContext>();
+            tenantCtx2.SetIgnoreTenantFilter(true);
+            var um2 = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var u2 = await um2.FindByEmailAsync("admin@medflow.ai");
+            if (u2 != null)
+            {
+                var token2 = await um2.GeneratePasswordResetTokenAsync(u2);
+                var r2 = await um2.ResetPasswordAsync(u2, token2, devAdminPwd);
+                if (r2.Succeeded)
+                {
+                    await um2.SetLockoutEndDateAsync(u2, null);
+                    await um2.ResetAccessFailedCountAsync(u2);
+                    startupLogger.LogWarning("Development: contraseña de admin@medflow.ai actualizada.");
+                }
+            }
+        }
+    }
+
     // Solo desarrollo: restablecer superadmin si Development:ApplySuperAdminPassword tiene valor (user-secrets o env).
     if (app.Environment.IsDevelopment())
     {
@@ -241,6 +265,46 @@ using (var scope = app.Services.CreateScope())
             {
                 startupLogger.LogWarning("Development: superadmin@medflow.ai no encontrado en DB. Ejecuta migraciones y seed.");
             }
+        }
+    }
+
+    // Solo desarrollo: restablecer TODOS los usuarios si Development:ApplyAllUsersPassword tiene valor.
+    if (app.Environment.IsDevelopment())
+    {
+        var allPwd = app.Configuration["Development:ApplyAllUsersPassword"];
+        if (!string.IsNullOrWhiteSpace(allPwd))
+        {
+            var tenantCtx = scope.ServiceProvider.GetRequiredService<MedFlow.Application.Interfaces.ITenantContext>();
+            tenantCtx.SetIgnoreTenantFilter(true);
+
+            var um = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var users = await um.Users.ToListAsync();
+            var ok = 0;
+            var fail = 0;
+
+            foreach (var u in users)
+            {
+                var token = await um.GeneratePasswordResetTokenAsync(u);
+                var r = await um.ResetPasswordAsync(u, token, allPwd);
+                if (r.Succeeded)
+                {
+                    await um.SetLockoutEndDateAsync(u, null);
+                    await um.ResetAccessFailedCountAsync(u);
+                    ok++;
+                }
+                else
+                {
+                    fail++;
+                    startupLogger.LogError(
+                        "Development: no se pudo aplicar contraseña a {Email}: {Errors}",
+                        u.Email ?? u.UserName ?? u.Id,
+                        string.Join(", ", r.Errors.Select(e => e.Description)));
+                }
+            }
+
+            startupLogger.LogWarning(
+                "Development: contraseña aplicada a TODOS los usuarios. OK={Ok}, FAIL={Fail}",
+                ok, fail);
         }
     }
 }

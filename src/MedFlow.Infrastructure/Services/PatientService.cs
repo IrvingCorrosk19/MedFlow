@@ -61,7 +61,10 @@ public class PatientService : IPatientService
         }
 
         return await query
-            .OrderBy(p => p.PrimerApellido).ThenBy(p => p.SegundoApellido).ThenBy(p => p.PrimerNombre)
+            .OrderByDescending(p => p.CreatedAt)
+            .ThenBy(p => p.PrimerApellido)
+            .ThenBy(p => p.SegundoApellido)
+            .ThenBy(p => p.PrimerNombre)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
@@ -92,7 +95,11 @@ public class PatientService : IPatientService
                 (p.Telefono != null && p.Telefono.Contains(search)));
         }
 
-        var ordered = query.OrderBy(p => p.PrimerApellido).ThenBy(p => p.SegundoApellido).ThenBy(p => p.PrimerNombre);
+        var ordered = query
+            .OrderByDescending(p => p.CreatedAt)
+            .ThenBy(p => p.PrimerApellido)
+            .ThenBy(p => p.SegundoApellido)
+            .ThenBy(p => p.PrimerNombre);
         var total = await query.CountAsync(cancellationToken);
         var items = await ordered.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
         return new PagedResult<Patient>(items, total, page, pageSize);

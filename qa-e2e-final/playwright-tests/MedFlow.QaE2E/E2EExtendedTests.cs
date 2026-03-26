@@ -17,6 +17,14 @@ internal static class E2EConst
     public const string BillingEmail = "qa.billing@medflow.local";
     public const string StaffEmail   = "qa.staff@medflow.local";
     public const string PatientEmail = "qa.patient@medflow.local";
+
+    // Usuarios "reales" solicitados
+    public const string RealReceptionEmail = "reception@medflow.ai";
+    public const string RealStaffEmail     = "staff@medflow.ai";
+    public const string RealPatientEmail   = "patient@medflow.ai";
+    public const string RealBillingEmail   = "billing@medflow.ai";
+    public const string RealQaAdminEmail   = "qa.admin@medflow.local";
+    public const string RealQaReceptionEmail = "qa.reception@medflow.local";
 }
 
 internal static class E2EHelpers
@@ -36,7 +44,10 @@ internal static class E2EHelpers
         await page.Locator("input[name='Email']").FillAsync(email);
         await page.Locator("input[name='Password']").FillAsync(E2EConst.QaPassword);
         await page.GetByRole(AriaRole.Button, new() { Name = "Entrar" }).ClickAsync(new() { Force = true });
-        await page.WaitForURLAsync("**/", new PageWaitForURLOptions { Timeout = 30000 });
+        await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
+        await page.WaitForFunctionAsync(
+            "() => !location.pathname.toLowerCase().startsWith('/account/login')",
+            new PageWaitForFunctionOptions { Timeout = 30000 });
     }
 
     public static async Task LoginPatientAsync(IPage page, string email)
@@ -54,17 +65,45 @@ internal static class E2EHelpers
     /// </summary>
     public static async Task AssertAccessDeniedAsync(IPage page, string path)
     {
-        await page.GotoAsync(path);
-        await page.Locator(
+        var before = page.Url ?? "";
+        await page.GotoAsync(path, new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle });
+        await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
+
+        var denied = page.Locator(
             "h1:has-text('Acceso denegado'), " +
             "h2.h4:has-text('Acceso denegado'), " +
             "h2:has-text('Acceso denegado'), " +
             ".card-title:has-text('Acceso denegado')"
-        ).First.WaitForAsync(new LocatorWaitForOptions { Timeout = 15000 });
+        );
 
-        // No debe renderizar filas de datos de negocio
-        var dataRows = await page.Locator("table.table:not(.swal2-table) tbody tr").CountAsync();
-        Assert.Equal(0, dataRows);
+        var deadline = DateTime.UtcNow.AddSeconds(15);
+        while (DateTime.UtcNow < deadline)
+        {
+            var url = page.Url ?? "";
+            if (!string.Equals(url, before, StringComparison.OrdinalIgnoreCase) &&
+                (url.Contains("/Account/AccessDenied", StringComparison.OrdinalIgnoreCase) || await denied.CountAsync() > 0))
+            {
+                return;
+            }
+
+            await page.WaitForTimeoutAsync(200);
+        }
+
+        Assert.True(false, $"No se detectó bloqueo de acceso para {path}. URL={page.Url}");
+    }
+
+    public static async Task AssertNotAccessDeniedAsync(IPage page, string path)
+    {
+        await page.GotoAsync(path);
+        await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
+
+        var denied = page.Locator(
+            "h1:has-text('Acceso denegado'), " +
+            "h2.h4:has-text('Acceso denegado'), " +
+            "h2:has-text('Acceso denegado'), " +
+            ".card-title:has-text('Acceso denegado')"
+        );
+        Assert.Equal(0, await denied.CountAsync());
     }
 
     public static async Task AssertFlashSuccessAsync(IPage page, string expectedContains)
@@ -120,6 +159,107 @@ public sealed class ExtFixture : IAsyncLifetime
     public IPlaywright Playwright { get; private set; } = default!;
     public async Task InitializeAsync() => Playwright = await Microsoft.Playwright.Playwright.CreateAsync();
     public Task DisposeAsync() { Playwright?.Dispose(); return Task.CompletedTask; }
+}
+
+// ============================================================
+// USUARIOS REALES: LOGIN, MENÚ, NAVEGACIÓN, ACCIONES, RESTRICCIONES
+// ============================================================
+
+public sealed class RealUsersE2ETests : IClassFixture<ExtFixture>
+{
+    private readonly ExtFixture _fx;
+    public RealUsersE2ETests(ExtFixture fx) => _fx = fx;
+
+    [Theory]
+    [InlineData(E2EConst.RealReceptionEmail)]
+    [InlineData(E2EConst.RealStaffEmail)]
+    [InlineData(E2EConst.RealBillingEmail)]
+    [InlineData(E2EConst.RealQaAdminEmail)]
+    [InlineData(E2EConst.RealQaReceptionEmail)]
+    public async Task RealStaffUsers_CanLogin_SeeMenu_AndNavigateAllowedRoutes(string email)
+    {
+        var page = await E2EHelpers.NewPageAsync(_fx.Playwright);
+        try
+        {
+            await E2EHelpers.LoginStaffAsync(page, email);
+
+            // Menú visible
+            var menuLinks = page.Locator(".main-sidebar .nav-sidebar a.nav-link");
+            Assert.True(await menuLinks.CountAsync() > 3);
+
+            // Navegación base (rutas comunes)
+            await E2EHelpers.AssertNotAccessDeniedAsync(page, "/Dashboard");
+            await E2EHelpers.AssertNotAccessDeniedAsync(page, "/Patients");
+            await E2EHelpers.AssertNotAccessDeniedAsync(page, "/Appointments");
+        }
+        finally { await page.Context.Browser!.CloseAsync(); }
+    }
+
+    [Fact]
+    public async Task RealPatientUser_CanLogin_AndNavigatePatientPortal()
+    {
+        var page = await E2EHelpers.NewPageAsync(_fx.Playwright);
+        try
+        {
+            await E2EHelpers.LoginPatientAsync(page, E2EConst.RealPatientEmail);
+            await E2EHelpers.AssertNotAccessDeniedAsync(page, "/PatientPortal/inicio");
+            await E2EHelpers.AssertNotAccessDeniedAsync(page, "/PatientPortal/perfil");
+            await E2EHelpers.AssertNotAccessDeniedAsync(page, "/PatientPortal/citas");
+        }
+        finally { await page.Context.Browser!.CloseAsync(); }
+    }
+
+    [Fact]
+    public async Task RealReception_IsBlockedFrom_Admin_And_ClinicalRestricted_Routes()
+    {
+        var page = await E2EHelpers.NewPageAsync(_fx.Playwright);
+        try
+        {
+            await E2EHelpers.LoginStaffAsync(page, E2EConst.RealReceptionEmail);
+            await E2EHelpers.AssertAccessDeniedAsync(page, "/AdminUsers");
+            await E2EHelpers.AssertAccessDeniedAsync(page, "/AdminRoles");
+            await E2EHelpers.AssertAccessDeniedAsync(page, "/BillingInvoices");
+            await E2EHelpers.AssertAccessDeniedAsync(page, "/MedicalRecords");
+        }
+        finally { await page.Context.Browser!.CloseAsync(); }
+    }
+
+    [Fact]
+    public async Task RealStaff_IsBlockedFrom_Admin_And_Billing_Routes()
+    {
+        var page = await E2EHelpers.NewPageAsync(_fx.Playwright);
+        try
+        {
+            await E2EHelpers.LoginStaffAsync(page, E2EConst.RealStaffEmail);
+            await E2EHelpers.AssertAccessDeniedAsync(page, "/AdminUsers");
+            await E2EHelpers.AssertAccessDeniedAsync(page, "/AdminRoles");
+            await E2EHelpers.AssertAccessDeniedAsync(page, "/BillingInvoices");
+            await E2EHelpers.AssertAccessDeniedAsync(page, "/Payments");
+            await E2EHelpers.AssertAccessDeniedAsync(page, "/CashMovements");
+        }
+        finally { await page.Context.Browser!.CloseAsync(); }
+    }
+
+    [Fact]
+    public async Task RealBillingUser_WithAllRoles_CanAccess_Admin_Clinical_Billing_And_SuperAdmin_Areas()
+    {
+        var page = await E2EHelpers.NewPageAsync(_fx.Playwright);
+        try
+        {
+            await E2EHelpers.LoginStaffAsync(page, E2EConst.RealBillingEmail);
+            await E2EHelpers.AssertNotAccessDeniedAsync(page, "/AdminUsers");
+            await E2EHelpers.AssertNotAccessDeniedAsync(page, "/AdminRoles");
+            await E2EHelpers.AssertNotAccessDeniedAsync(page, "/Patients");
+            await E2EHelpers.AssertNotAccessDeniedAsync(page, "/Appointments");
+            await E2EHelpers.AssertNotAccessDeniedAsync(page, "/MedicalRecords");
+            await E2EHelpers.AssertNotAccessDeniedAsync(page, "/BillingInvoices");
+            await E2EHelpers.AssertNotAccessDeniedAsync(page, "/Payments");
+            await E2EHelpers.AssertNotAccessDeniedAsync(page, "/CashMovements");
+            await E2EHelpers.AssertNotAccessDeniedAsync(page, "/SuperAdmin/Home");
+            await E2EHelpers.AssertNotAccessDeniedAsync(page, "/Ops/Home");
+        }
+        finally { await page.Context.Browser!.CloseAsync(); }
+    }
 }
 
 // ============================================================

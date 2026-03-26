@@ -650,8 +650,45 @@ public class DataSeeder
 
         foreach (var seed in seeds)
         {
+            var role = await roleManager.FindByNameAsync(seed.Role);
+            var roleName = role?.Name ?? seed.Role;
+
+            // Si ya existe, lo "repara" (desbloquea/activa/asegura rol y tenant)
             if (existingEmails.Contains(seed.Email.ToUpperInvariant()))
+            {
+                var existing = await userManager.FindByEmailAsync(seed.Email);
+                if (existing == null)
+                {
+                    // Fallback: por NormalizedEmail en caso de inconsistencias
+                    existing = await context.Users.IgnoreQueryFilters()
+                        .FirstOrDefaultAsync(u => u.NormalizedEmail == seed.Email.ToUpperInvariant());
+                }
+
+                if (existing != null)
+                {
+                    existing.UserName = seed.Email;
+                    existing.Email = seed.Email;
+                    existing.FirstName = seed.FirstName;
+                    existing.LastName = seed.LastName;
+                    existing.FullName = $"{seed.FirstName} {seed.LastName}";
+                    existing.EmailConfirmed = true;
+                    existing.IsActive = true;
+                    existing.IsLocked = false;
+                    existing.TenantId = tenantId;
+                    existing.UpdatedAt = DateTime.UtcNow;
+
+                    await userManager.UpdateAsync(existing);
+                    await userManager.SetLockoutEndDateAsync(existing, null);
+                    await userManager.ResetAccessFailedCountAsync(existing);
+
+                    if (!await userManager.IsInRoleAsync(existing, roleName))
+                        await userManager.AddToRoleAsync(existing, roleName);
+
+                    logger.LogInformation("Usuario seed reparado por rol {Role}: {Email}", roleName, seed.Email);
+                }
+
                 continue;
+            }
 
             var password = ResolveInitialPassword(seed.EnvVar, seed.Email, logger);
             var user = new ApplicationUser
@@ -663,6 +700,7 @@ public class DataSeeder
                 FullName = $"{seed.FirstName} {seed.LastName}",
                 EmailConfirmed = true,
                 IsActive = true,
+                IsLocked = false,
                 TenantId = tenantId,
                 CreatedAt = DateTime.UtcNow
             };
@@ -675,8 +713,6 @@ public class DataSeeder
                 continue;
             }
 
-            var role = await roleManager.FindByNameAsync(seed.Role);
-            var roleName = role?.Name ?? seed.Role;
             var addRole = await userManager.AddToRoleAsync(user, roleName);
             if (!addRole.Succeeded)
             {

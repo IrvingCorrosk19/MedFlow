@@ -3,25 +3,57 @@ using MedFlow.Application.Security;
 using MedFlow.Web.Authorization;
 using MedFlow.Web.ViewModels;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MedFlow.Web.Controllers;
 
 [Authorize]
+[Authorize(Roles = "Admin,SuperAdmin")]
 [RequirePermission(PermissionCodes.RolesManage)]
 public class AdminRolesController : Controller
 {
     private readonly IRoleAdminService _roles;
     private readonly IPermissionCatalogService _permissions;
+    private readonly IPermissionChecker _perm;
+    private readonly UserManager<MedFlow.Infrastructure.Identity.ApplicationUser> _userManager;
 
-    public AdminRolesController(IRoleAdminService roles, IPermissionCatalogService permissions)
+    public AdminRolesController(
+        IRoleAdminService roles,
+        IPermissionCatalogService permissions,
+        IPermissionChecker perm,
+        UserManager<MedFlow.Infrastructure.Identity.ApplicationUser> userManager)
     {
         _roles = roles;
         _permissions = permissions;
+        _perm = perm;
+        _userManager = userManager;
+    }
+
+    private async Task<IActionResult?> EnsureAllowedAsync(CancellationToken cancellationToken)
+    {
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null)
+            return Forbid();
+
+        var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+        var isSuperAdmin = await _userManager.IsInRoleAsync(user, "SuperAdmin");
+        if (!isAdmin && !isSuperAdmin)
+            return Forbid();
+
+        var userId = user.Id;
+        if (string.IsNullOrWhiteSpace(userId))
+            return Forbid();
+        if (!await _perm.UserHasPermissionAsync(userId, PermissionCodes.RolesManage, cancellationToken))
+            return Forbid();
+        return null;
     }
 
     public async Task<IActionResult> Index(CancellationToken cancellationToken)
     {
+        var gate = await EnsureAllowedAsync(cancellationToken);
+        if (gate != null) return gate;
+
         ViewData["Title"] = "Roles";
         ViewData["PageSubtitle"] = "Perfiles de acceso";
         ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item active\">Roles</li>";
