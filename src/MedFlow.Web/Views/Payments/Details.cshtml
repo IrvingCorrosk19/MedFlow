@@ -1,0 +1,35 @@
+@model MedFlow.Domain.Entities.Payment
+@using MedFlow.Domain.Enums
+@{
+    ViewData["PageTitle"] = "Pago";
+}
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card card-outline card-primary shadow-sm">
+            <div class="card-header"><h3 class="card-title font-weight-bold mb-0">Detalle</h3></div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Factura</dt>
+                    <dd class="col-sm-8"><a asp-controller="BillingInvoices" asp-action="Details" asp-route-id="@Model.BillingInvoiceId">@Model.BillingInvoice?.InvoiceNumber</a></dd>
+                    <dt class="col-sm-4">Paciente</dt>
+                    <dd class="col-sm-8">@Model.Patient?.NombreCompleto</dd>
+                    <dt class="col-sm-4">Fecha</dt>
+                    <dd class="col-sm-8">@Model.PaymentDate.ToLocalTime().ToString("g")</dd>
+                    <dt class="col-sm-4">Monto</dt>
+                    <dd class="col-sm-8"><span class="lead font-weight-bold">@Model.Amount.ToString("N2")</span></dd>
+                    <dt class="col-sm-4">Método</dt>
+                    <dd class="col-sm-8">@Model.PaymentMethod</dd>
+                    <dt class="col-sm-4">Referencia</dt>
+                    <dd class="col-sm-8">@(Model.ReferenceNumber ?? "—")</dd>
+                    <dt class="col-sm-4">Estado</dt>
+                    <dd class="col-sm-8"><span class="badge badge-@(Model.Status == PaymentEntryStatus.Registered ? "success" : "secondary")">@Model.Status</span></dd>
+                </dl>
+            </div>
+            <div class="card-footer">
+                <a asp-action="Index" class="btn btn-default">Volver</a>
+                <a asp-controller="BillingInvoices" asp-action="Details" asp-route-id="@Model.BillingInvoiceId" class="btn btn-outline-primary">Ver factura</a>
+            </div>
+        </div>
+    </div>
+</div>

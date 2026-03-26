@@ -1,0 +1,15 @@
+@model SubscriptionPlanEditDto
+@{
+    ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a href=\"" + Url.Action("Index", "Plans") + "\">Planes</a></li><li class=\"breadcrumb-item active\">Nuevo</li>";
+}
+<div class="card card-primary">
+    <div class="card-header"><h3 class="card-title mb-0">Nuevo plan SaaS</h3></div>
+    <div class="card-body">
+        <form asp-action="Create" asp-area="SuperAdmin" asp-controller="Plans" method="post">
+            @Html.AntiForgeryToken()
+            <partial name="_PlanFields" model="Model" />
+            <button type="submit" class="btn btn-primary">Crear plan</button>
+            <a asp-action="Index" class="btn btn-default">Cancelar</a>
+        </form>
+    </div>
+</div>

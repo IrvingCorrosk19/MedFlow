@@ -1,0 +1,94 @@
+@model IReadOnlyList<MedFlow.Domain.Entities.BillingInvoice>
+@using MedFlow.Domain.Enums
+@{
+    ViewData["PageTitle"] = "Facturas";
+    var patients = ViewBag.Patients as Microsoft.AspNetCore.Mvc.Rendering.SelectList;
+}
+
+<div class="card card-outline card-primary shadow-sm mb-3">
+    <div class="card-body">
+        <form method="get" class="form-row align-items-end">
+            <div class="form-group col-md-3">
+                <label class="small text-muted">Paciente</label>
+                <select name="patientId" class="form-control form-control-sm select2" asp-items="patients">
+                    <option value="">Todos</option>
+                </select>
+            </div>
+            <div class="form-group col-md-2">
+                <label class="small text-muted">Desde</label>
+                <input type="date" name="from" class="form-control form-control-sm" value="@ViewBag.From" />
+            </div>
+            <div class="form-group col-md-2">
+                <label class="small text-muted">Hasta</label>
+                <input type="date" name="to" class="form-control form-control-sm" value="@ViewBag.To" />
+            </div>
+            <div class="form-group col-md-2">
+                <label class="small text-muted">Estado</label>
+                <select name="status" class="form-control form-control-sm">
+                    <option value="">Todos</option>
+                    @foreach (InvoiceStatus s in Enum.GetValues<InvoiceStatus>())
+                    {
+                        <option value="@((int)s)" selected="@(ViewBag.Status != null && (InvoiceStatus)ViewBag.Status == s)">@s</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group col-md-3">
+                <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-filter"></i> Filtrar</button>
+                <a asp-action="Create" class="btn btn-success btn-sm"><i class="fa fa-plus"></i> Nueva factura</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card card-outline card-secondary shadow-sm">
+    <div class="card-header border-0">
+        <h3 class="card-title font-weight-bold"><i class="fa fa-file-text-o mr-2"></i>Listado</h3>
+    </div>
+    <div class="card-body table-responsive p-0">
+        <table id="tblInvoices" class="table table-hover table-striped mb-0 medflow-table">
+            <thead class="thead-light">
+                <tr>
+                    <th>Número</th>
+                    <th>Fecha</th>
+                    <th>Paciente</th>
+                    <th class="text-right">Total</th>
+                    <th class="text-right">Saldo</th>
+                    <th>Estado</th>
+                    <th class="text-right" style="width:120px">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var i in Model)
+                {
+                    var badge = i.Status == InvoiceStatus.Paid ? "success"
+                        : i.Status == InvoiceStatus.Cancelled ? "dark"
+                        : i.Status == InvoiceStatus.PartiallyPaid ? "warning" : "secondary";
+                    <tr>
+                        <td class="font-weight-semibold">@i.InvoiceNumber</td>
+                        <td>@i.IssueDate.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                        <td>@i.Patient?.NombreCompleto</td>
+                        <td class="text-right">@i.TotalAmount.ToString("N2")</td>
+                        <td class="text-right font-weight-medium">@i.BalanceDue.ToString("N2")</td>
+                        <td><span class="badge badge-@badge">@i.Status</span></td>
+                        <td class="text-right">
+                            <a asp-action="Details" asp-route-id="@i.Id" class="btn btn-sm btn-outline-primary">Ver</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+            $('.select2').select2({ theme: 'bootstrap4', width: '100%' });
+            $('#tblInvoices').DataTable({
+                order: [[1, 'desc']],
+                pageLength: 25,
+                language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' }
+            });
+        });
+    </script>
+}

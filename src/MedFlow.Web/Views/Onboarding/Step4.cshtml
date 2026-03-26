@@ -1,0 +1,65 @@
+@model OnboardingStep4Vm
+@{
+    ViewData["PageTitle"] = "Configuración inicial";
+    var tz = ViewBag.TimeZones as IReadOnlyList<string> ?? Array.Empty<string>();
+    var df = ViewBag.DateFormats as IReadOnlyList<string> ?? Array.Empty<string>();
+    var cur = ViewBag.Currencies as IReadOnlyList<string> ?? Array.Empty<string>();
+    var lang = ViewBag.Languages as IReadOnlyList<string> ?? Array.Empty<string>();
+}
+<partial name="_WizardProgress" />
+<div class="card onboarding-hero border-0">
+    <div class="card-body p-4 p-md-5">
+        <h2 class="h4 font-weight-bold mb-1">Paso 4 — Configuración inicial</h2>
+        <p class="text-muted small mb-4">Preferencias regionales y de visualización. Podrá cambiarlas luego en ajustes.</p>
+        <form asp-action="Step4" method="post" novalidate>
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+            <div class="form-group">
+                <label asp-for="TimeZoneId"></label>
+                <select asp-for="TimeZoneId" class="form-control">
+                    @foreach (var z in tz)
+                    {
+                        <option value="@z">@z</option>
+                    }
+                </select>
+                <span asp-validation-for="TimeZoneId" class="text-danger small"></span>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label asp-for="DateFormat"></label>
+                    <select asp-for="DateFormat" class="form-control">
+                        @foreach (var f in df)
+                        {
+                            <option value="@f">@f</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group col-md-4">
+                    <label asp-for="Currency"></label>
+                    <select asp-for="Currency" class="form-control">
+                        @foreach (var c in cur)
+                        {
+                            <option value="@c">@c</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group col-md-4">
+                    <label asp-for="Language"></label>
+                    <select asp-for="Language" class="form-control">
+                        @foreach (var l in lang)
+                        {
+                            <option value="@l">@l</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-4">
+                <a asp-action="Step3" class="btn btn-outline-secondary">Atrás</a>
+                <button type="submit" class="btn btn-primary px-4">Continuar</button>
+            </div>
+        </form>
+    </div>
+</div>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

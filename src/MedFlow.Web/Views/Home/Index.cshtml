@@ -1,0 +1,18 @@
+@inject MedFlow.Application.Interfaces.ITenantContext TenantContext
+@{
+    ViewData["Title"] = "Home Page";
+    var hasTenant = TenantContext.TenantId.HasValue;
+}
+<div class="text-center">
+    <h1 class="display-4">MedFlow AI</h1>
+    <p class="lead">Plataforma clínica multi-tenant.</p>
+    <p class="mt-3">
+        <a class="btn btn-primary btn-lg" href="/Onboarding">Registrar nueva clínica</a>
+    </p>
+    @if (hasTenant)
+    {
+        <p class="mt-4">
+            <a class="btn btn-outline-secondary" href="/PatientPortal/login">Portal del Paciente</a>
+        </p>
+    }
+</div>

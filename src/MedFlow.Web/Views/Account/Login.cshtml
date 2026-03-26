@@ -1,0 +1,103 @@
+@model MedFlow.Web.Models.AccountLoginViewModel
+@{
+    ViewData["Title"] = "Iniciar sesión";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <title>@ViewData["Title"] · MedFlow AI</title>
+    <link rel="stylesheet" href="~/lib/font-awesome/css/font-awesome.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap4/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="medflow-login-page">
+    <div class="medflow-login-bg" aria-hidden="true"></div>
+    <div class="medflow-login-grid">
+        <div class="medflow-login-hero">
+            <div class="medflow-login-hero-inner">
+                <h2>Operación clínica clara, en un solo lugar.</h2>
+                <p>Agenda, historial, facturación e inteligencia operativa — diseñado para equipos que exigen precisión y tranquilidad.</p>
+                <svg class="medflow-login-illustration" viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <defs>
+                        <linearGradient id="mfH" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0" stop-color="#2563eb" stop-opacity="0.2"/>
+                            <stop offset="1" stop-color="#0ea5e9" stop-opacity="0.15"/>
+                        </linearGradient>
+                    </defs>
+                    <rect x="16" y="24" width="288" height="152" rx="16" fill="url(#mfH)" stroke="#e2e8f0" stroke-width="1"/>
+                    <rect x="40" y="48" width="96" height="12" rx="4" fill="#cbd5e1"/>
+                    <rect x="40" y="72" width="200" height="8" rx="4" fill="#e2e8f0"/>
+                    <rect x="40" y="92" width="160" height="8" rx="4" fill="#e2e8f0"/>
+                    <circle cx="248" cy="72" r="28" fill="#2563eb" opacity="0.9"/>
+                    <path d="M236 72l8 8 16-20" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                    <rect x="40" y="124" width="72" height="40" rx="8" fill="#2563eb" opacity="0.85"/>
+                    <rect x="124" y="124" width="72" height="40" rx="8" fill="#10b981" opacity="0.75"/>
+                    <rect x="208" y="124" width="72" height="40" rx="8" fill="#f59e0b" opacity="0.7"/>
+                </svg>
+            </div>
+        </div>
+        <div class="medflow-login-panel">
+            <div class="medflow-login-card">
+                <div class="medflow-login-brand">
+                    <img src="~/img/medflow-mark.svg" width="48" height="48" alt="" />
+                    <div class="medflow-login-brand-text">
+                        <strong>MedFlow AI</strong>
+                        <span>Plataforma clínica inteligente</span>
+                    </div>
+                </div>
+                <p class="medflow-login-title">Iniciar sesión</p>
+                <div asp-validation-summary="ModelOnly" class="mf-validation-summary"></div>
+                <form asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Model.ReturnUrl" method="post" id="loginForm">
+                    <input type="hidden" asp-for="ReturnUrl" />
+                    <div class="form-group">
+                        <label asp-for="Email" class="small font-weight-bold text-muted">Correo electrónico</label>
+                        <div class="input-group">
+                            <input asp-for="Email" class="form-control" placeholder="nombre@clinica.com" autocomplete="username" />
+                            <div class="input-group-append">
+                                <span class="input-group-text"><i class="fa fa-envelope"></i></span>
+                            </div>
+                        </div>
+                        <span asp-validation-for="Email" class="text-danger small d-block mt-1"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="Password" class="small font-weight-bold text-muted">Contraseña</label>
+                        <div class="input-group">
+                            <input asp-for="Password" class="form-control" placeholder="••••••••" autocomplete="current-password" />
+                            <div class="input-group-append">
+                                <span class="input-group-text"><i class="fa fa-lock"></i></span>
+                            </div>
+                        </div>
+                        <span asp-validation-for="Password" class="text-danger small d-block mt-1"></span>
+                    </div>
+                    <div class="form-group form-check mb-4">
+                        <input asp-for="RememberMe" class="form-check-input" id="remember" />
+                        <label class="form-check-label small" for="remember">Recordarme en este equipo</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block" id="loginSubmit">
+                        <span class="mf-btn-label">Entrar</span>
+                    </button>
+                </form>
+                <p class="medflow-login-footer">© @DateTime.UtcNow.Year MedFlow AI · Acceso seguro</p>
+            </div>
+        </div>
+    </div>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap4/js/bootstrap.bundle.min.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+        $(function () {
+            var $f = $('#loginForm');
+            var $btn = $('#loginSubmit');
+            $f.on('submit', function () {
+                if ($.fn.valid && typeof $f.valid === 'function' && !$f.valid()) return;
+                $btn.addClass('is-loading').prop('disabled', true);
+            });
+        });
+    </script>
+</body>
+</html>

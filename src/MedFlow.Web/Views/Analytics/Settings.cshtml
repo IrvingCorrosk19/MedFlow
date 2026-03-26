@@ -1,0 +1,48 @@
+@model MedFlow.Application.Interfaces.AnalyticsSettingsDto
+@{
+    ViewData["Title"] = "Configuración de analítica";
+}
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show"><button type="button" class="close" data-dismiss="alert">&times;</button>@TempData["Success"]</div>
+}
+<div class="card card-outline card-primary">
+    <div class="card-header"><h3 class="card-title">Módulos analíticos</h3></div>
+    <form method="post" asp-action="Settings">
+        @Html.AntiForgeryToken()
+        <div class="card-body">
+            <div class="form-group">
+                <div class="custom-control custom-switch">
+                    <input type="hidden" name="Enabled" value="false" />
+                    <input type="checkbox" class="custom-control-input" id="Enabled" name="Enabled" value="true" checked="@Model.Enabled" />
+                    <label class="custom-control-label" for="Enabled">Analítica habilitada</label>
+                </div>
+                <small class="form-text text-muted">Permite el cálculo y visualización de métricas históricas.</small>
+            </div>
+            <div class="form-group">
+                <div class="custom-control custom-switch">
+                    <input type="checkbox" class="custom-control-input" id="BenchmarkingEnabled" name="BenchmarkingEnabled" value="true" checked="@Model.BenchmarkingEnabled" />
+                    <label class="custom-control-label" for="BenchmarkingEnabled">Benchmarking multi-tenant</label>
+                </div>
+                <small class="form-text text-muted">Comparativa anonimizada frente a cohortes similares.</small>
+            </div>
+            <div class="form-group">
+                <div class="custom-control custom-switch">
+                    <input type="hidden" name="AISummaryEnabled" value="false" />
+                    <input type="checkbox" class="custom-control-input" id="AISummaryEnabled" name="AISummaryEnabled" value="true" checked="@Model.AISummaryEnabled" />
+                    <label class="custom-control-label" for="AISummaryEnabled">Resumen IA en dashboard</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="custom-control custom-switch">
+                    <input type="hidden" name="PortalUsageTrackingEnabled" value="false" />
+                    <input type="checkbox" class="custom-control-input" id="PortalUsageTrackingEnabled" name="PortalUsageTrackingEnabled" value="true" checked="@Model.PortalUsageTrackingEnabled" />
+                    <label class="custom-control-label" for="PortalUsageTrackingEnabled">Seguimiento uso del portal</label>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer">
+            <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+    </form>
+</div>

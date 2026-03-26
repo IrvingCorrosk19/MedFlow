@@ -1,0 +1,148 @@
+@model PatientViewModel
+@{
+    ViewData["Title"] = "Nuevo paciente";
+    ViewData["PageSubtitle"] = "Registro en recepción";
+    ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a href=\"" + Url.Action("Index") + "\">Pacientes</a></li><li class=\"breadcrumb-item active\">Nuevo</li>";
+}
+
+<form asp-action="Create" method="post" novalidate>
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card card-outline card-primary shadow-sm mb-3">
+                <div class="card-header"><h3 class="card-title mb-0"><i class="fa fa-id-card-o mr-2"></i>Identificación</h3></div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label asp-for="PrimerNombre"></label>
+                            <input asp-for="PrimerNombre" class="form-control" autocomplete="given-name" />
+                            <span asp-validation-for="PrimerNombre" class="text-danger small d-block"></span>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label asp-for="SegundoNombre"></label>
+                            <input asp-for="SegundoNombre" class="form-control" autocomplete="additional-name" />
+                            <span asp-validation-for="SegundoNombre" class="text-danger small d-block"></span>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label asp-for="PrimerApellido"></label>
+                            <input asp-for="PrimerApellido" class="form-control" autocomplete="family-name" />
+                            <span asp-validation-for="PrimerApellido" class="text-danger small d-block"></span>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label asp-for="SegundoApellido"></label>
+                            <input asp-for="SegundoApellido" class="form-control" />
+                            <span asp-validation-for="SegundoApellido" class="text-danger small d-block"></span>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-4">
+                            <label asp-for="FechaNacimiento"></label>
+                            <input asp-for="FechaNacimiento" type="date" class="form-control" />
+                            <span asp-validation-for="FechaNacimiento" class="text-danger small d-block"></span>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label asp-for="Sexo"></label>
+                            <select asp-for="Sexo" class="form-control" data-select2>
+                                <option value="">Seleccione…</option>
+                                <option value="Masculino">Masculino</option>
+                                <option value="Femenino">Femenino</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label asp-for="TipoDocumento"></label>
+                            <select asp-for="TipoDocumento" class="form-control" data-select2>
+                                <option value="">Seleccione…</option>
+                                <option value="DNI">DNI</option>
+                                <option value="CE">CE</option>
+                                <option value="Pasaporte">Pasaporte</option>
+                                <option value="RUC">RUC</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label asp-for="NumeroDocumento"></label>
+                        <input asp-for="NumeroDocumento" class="form-control" />
+                        <span asp-validation-for="NumeroDocumento" class="text-danger small d-block"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card card-outline card-secondary shadow-sm mb-3">
+                <div class="card-header"><h3 class="card-title mb-0"><i class="fa fa-phone mr-2"></i>Contacto</h3></div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label asp-for="Telefono"></label>
+                            <input asp-for="Telefono" class="form-control" inputmode="tel" />
+                            <span asp-validation-for="Telefono" class="text-danger small d-block"></span>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label asp-for="Correo"></label>
+                            <input asp-for="Correo" type="email" class="form-control" autocomplete="email" />
+                            <span asp-validation-for="Correo" class="text-danger small d-block"></span>
+                        </div>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label asp-for="Direccion"></label>
+                        <input asp-for="Direccion" class="form-control" autocomplete="street-address" />
+                        <span asp-validation-for="Direccion" class="text-danger small d-block"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card card-outline card-warning shadow-sm mb-3">
+                <div class="card-header"><h3 class="card-title mb-0"><i class="fa fa-ambulance mr-2"></i>Emergencia y clínico</h3></div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label asp-for="ContactoEmergenciaNombre"></label>
+                            <input asp-for="ContactoEmergenciaNombre" class="form-control" />
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label asp-for="ContactoEmergenciaTelefono"></label>
+                            <input asp-for="ContactoEmergenciaTelefono" class="form-control" />
+                            <span asp-validation-for="ContactoEmergenciaTelefono" class="text-danger small d-block"></span>
+                        </div>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label asp-for="Alergias"></label>
+                        <textarea asp-for="Alergias" class="form-control" rows="2" placeholder="Alergias medicamentosas u otras"></textarea>
+                        <span asp-validation-for="Alergias" class="text-danger small d-block"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card card-outline card-light shadow-sm mb-3">
+                <div class="card-header"><h3 class="card-title mb-0"><i class="fa fa-sticky-note-o mr-2"></i>Observaciones</h3></div>
+                <div class="card-body">
+                    <div class="form-group mb-0">
+                        <textarea asp-for="Observaciones" class="form-control" rows="4" placeholder="Notas internas para el personal…"></textarea>
+                        <span asp-validation-for="Observaciones" class="text-danger small d-block"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card card-outline card-dark shadow-sm sticky-top" style="top:1rem;">
+                <div class="card-body">
+                    <div class="custom-control custom-switch mb-3">
+                        <input asp-for="EstadoActivo" class="custom-control-input" />
+                        <label asp-for="EstadoActivo" class="custom-control-label"></label>
+                    </div>
+                    <p class="text-muted small mb-4">Los pacientes inactivos no se muestran por defecto en los filtros de agenda.</p>
+                    <button type="submit" class="btn btn-primary btn-block mb-2"><i class="fa fa-save"></i> Guardar paciente</button>
+                    <a asp-action="Index" class="btn btn-default btn-block">Cancelar</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

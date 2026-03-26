@@ -1,0 +1,47 @@
+@model IReadOnlyList<SubscriptionPlanListDto>
+@{
+    ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item active\">Planes</li>";
+}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title mb-0">Catálogo de planes</h3>
+        <a asp-action="Create" class="btn btn-primary btn-sm"><i class="fa fa-plus"></i> Nuevo plan</a>
+    </div>
+    <div class="card-body table-responsive p-0">
+        <table class="table table-striped mb-0" id="plansTable">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Código</th>
+                    <th>Precio mensual</th>
+                    <th>Activo</th>
+                    <th>Orden</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var p in Model)
+            {
+                <tr>
+                    <td>@p.Name</td>
+                    <td><code>@p.Code</code></td>
+                    <td>@p.MonthlyPrice @p.Currency</td>
+                    <td>@(p.IsActive ? "Sí" : "No")</td>
+                    <td>@p.SortOrder</td>
+                    <td><a asp-action="Edit" asp-route-id="@p.Id" class="btn btn-xs btn-default">Editar</a></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
+@section Scripts {
+    <script>
+        $(function () {
+            $('#plansTable').DataTable({
+                language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
+                order: [[4, 'asc']]
+            });
+        });
+    </script>
+}

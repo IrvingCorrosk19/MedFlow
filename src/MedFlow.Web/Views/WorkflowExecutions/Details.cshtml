@@ -1,0 +1,89 @@
+@model MedFlow.Domain.Entities.WorkflowExecution
+@using MedFlow.Domain.Enums
+@{
+    var canManage = ViewBag.CanManage as bool? ?? false;
+}
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><h3 class="card-title">Información general</h3></div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Workflow</dt>
+                    <dd class="col-sm-8">@(Model.WorkflowDefinition?.Name ?? "-")</dd>
+                    <dt class="col-sm-4">Evento</dt>
+                    <dd class="col-sm-8"><code>@Model.EventType</code></dd>
+                    <dt class="col-sm-4">Estado</dt>
+                    <dd class="col-sm-8">
+                        @{
+                            var badge = Model.Status switch
+                            {
+                                WorkflowExecutionStatus.Succeeded => "success",
+                                WorkflowExecutionStatus.Failed => "danger",
+                                WorkflowExecutionStatus.Pending => "secondary",
+                                WorkflowExecutionStatus.Retrying => "warning",
+                                _ => "info"
+                            };
+                        }
+                        <span class="badge badge-@badge">@Model.Status</span>
+                    </dd>
+                    <dt class="col-sm-4">Intentos</dt>
+                    <dd class="col-sm-8">@Model.AttemptCount / @Model.MaxAttempts</dd>
+                    <dt class="col-sm-4">Creado</dt>
+                    <dd class="col-sm-8">@Model.CreatedAt.ToLocalTime().ToString("g")</dd>
+                    <dt class="col-sm-4">Iniciado</dt>
+                    <dd class="col-sm-8">@(Model.StartedAt != default ? Model.StartedAt.ToLocalTime().ToString("g") : "-")</dd>
+                    <dt class="col-sm-4">Completado</dt>
+                    <dd class="col-sm-8">@(Model.CompletedAt.HasValue ? Model.CompletedAt!.Value.ToLocalTime().ToString("g") : "-")</dd>
+                    @if (Model.ResponseStatusCode.HasValue)
+                    {
+                        <dt class="col-sm-4">Código HTTP</dt>
+                        <dd class="col-sm-8"><span class="badge badge-@(Model.ResponseStatusCode >= 200 && Model.ResponseStatusCode < 300 ? "success" : "danger")">@Model.ResponseStatusCode</span></dd>
+                    }
+                </dl>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white"><h3 class="card-title">Error</h3></div>
+            <div class="card-body"><pre class="mb-0 small">@Model.ErrorMessage</pre></div>
+        </div>
+        }
+        @if (canManage && Model.Status == WorkflowExecutionStatus.Failed)
+        {
+        <div class="card">
+            <div class="card-body">
+                <form asp-action="Retry" asp-route-id="@Model.Id" asp-route-returnUrl="@Context.Request.Path" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-warning"><i class="fa fa-refresh"></i> Reintentar ejecución</button>
+                </form>
+            </div>
+        </div>
+        }
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-header"><h3 class="card-title">Payload enviado</h3></div>
+    <div class="card-body">
+        <pre class="mb-0 small bg-light p-2" style="max-height:200px; overflow:auto;">@Model.PayloadJson</pre>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.ResponseBody))
+{
+<div class="card mt-3">
+    <div class="card-header"><h3 class="card-title">Respuesta del webhook</h3></div>
+    <div class="card-body">
+        <pre class="mb-0 small bg-light p-2" style="max-height:200px; overflow:auto;">@Model.ResponseBody</pre>
+    </div>
+</div>
+}
+
+<div class="mt-3">
+    <a asp-action="Index" class="btn btn-secondary">Volver a ejecuciones</a>
+    <a asp-controller="Automations" asp-action="Index" class="btn btn-outline-secondary">Automatizaciones</a>
+</div>

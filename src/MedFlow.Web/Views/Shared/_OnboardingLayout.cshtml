@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@(ViewData["Title"] ?? "MedFlow AI — Alta de clínica")</title>
+    <link rel="stylesheet" href="~/lib/font-awesome/css/font-awesome.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap4/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/adminlte/css/adminlte.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="hold-transition layout-top-nav medflow-onboarding">
+    <div class="wrapper">
+        <nav class="main-header navbar navbar-expand-md navbar-light navbar-white border-bottom-0 shadow-sm">
+            <div class="container">
+                <a href="/" class="navbar-brand font-weight-bold text-dark"><span class="mf-brand-accent">MedFlow</span> AI</a>
+                <span class="navbar-text small text-muted d-none d-md-inline">Alta de clínica</span>
+            </div>
+        </nav>
+        <div class="content-wrapper" style="margin-left:0;">
+            <div class="content pt-4 pb-5">
+                <div class="container" style="max-width: 960px;">
+                    <partial name="_OnboardingAlerts" />
+                    @RenderBody()
+                </div>
+            </div>
+        </div>
+        <footer class="main-footer text-center text-muted small border-0">
+            &copy; @DateTime.UtcNow.Year MedFlow AI · Onboarding seguro
+        </footer>
+    </div>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap4/js/bootstrap.bundle.min.js"></script>
+    <script src="~/lib/adminlte/js/adminlte.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

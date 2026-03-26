@@ -1,0 +1,93 @@
+@model IReadOnlyList<MedFlow.Application.Interfaces.AdminUserListItem>
+@{
+    ViewData["Title"] = "Usuarios";
+    ViewData["PageSubtitle"] = "Cuentas y acceso al sistema";
+    ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item active\">Usuarios</li>";
+}
+
+<div class="card card-outline card-primary shadow-sm">
+    <div class="card-header d-flex flex-wrap align-items-center justify-content-between">
+        <h3 class="card-title mb-0"><i class="fa fa-users mr-2"></i>Usuarios</h3>
+        <a asp-action="Create" class="btn btn-primary btn-sm mt-2 mt-sm-0">
+            <i class="fa fa-user-plus"></i> Nuevo usuario
+        </a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table id="tblUsers" class="table table-hover table-striped mb-0 text-nowrap">
+                <thead class="thead-light">
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Correo</th>
+                        <th>Usuario</th>
+                        <th>Roles</th>
+                        <th class="text-center">Estado</th>
+                        <th class="text-center">Bloqueo</th>
+                        <th class="text-right no-sort">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var u in Model)
+                    {
+                        <tr>
+                            <td class="font-weight-medium">@(u.FullName ?? "—")</td>
+                            <td>@(u.Email ?? "—")</td>
+                            <td>@(u.UserName ?? "—")</td>
+                            <td>
+                                @if (u.Roles.Count > 0)
+                                {
+                                    foreach (var r in u.Roles)
+                                    {
+                                        <span class="badge badge-info mr-1">@r</span>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                @if (u.IsActive)
+                                {
+                                    <span class="badge badge-success">Activo</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-secondary">Inactivo</span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                @if (u.IsLocked)
+                                {
+                                    <span class="badge badge-warning">Sí</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-light border">No</span>
+                                }
+                            </td>
+                            <td class="text-right text-nowrap">
+                                <a asp-action="Details" asp-route-id="@u.Id" class="btn btn-sm btn-info" title="Ver"><i class="fa fa-eye"></i></a>
+                                <a asp-action="Edit" asp-route-id="@u.Id" class="btn btn-sm btn-primary" title="Editar"><i class="fa fa-edit"></i></a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+            $('#tblUsers').DataTable({
+                responsive: true,
+                pageLength: 25,
+                order: [[0, 'asc']],
+                language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
+                columnDefs: [{ orderable: false, targets: 'no-sort' }]
+            });
+        });
+    </script>
+}

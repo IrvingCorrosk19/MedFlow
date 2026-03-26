@@ -1,0 +1,33 @@
+@model OnboardingSessionState
+@{
+    ViewData["PageTitle"] = "Confirmación";
+}
+<partial name="_WizardProgress" />
+<div class="card onboarding-hero border-0">
+    <div class="card-body p-4 p-md-5">
+        <h2 class="h4 font-weight-bold mb-1">Paso 5 — Confirmación</h2>
+        <p class="text-muted small mb-4">Revise los datos y cree la clínica. Esta operación es inmediata e irreversible.</p>
+        <dl class="row small mb-0">
+            <dt class="col-sm-4">Clínica</dt>
+            <dd class="col-sm-8">@Model.ClinicName <span class="text-muted">(@Model.Code)</span></dd>
+            <dt class="col-sm-4">Contacto</dt>
+            <dd class="col-sm-8">@(Model.ClinicEmail ?? "—") · @(Model.Phone ?? "—")</dd>
+            <dt class="col-sm-4">Dirección</dt>
+            <dd class="col-sm-8">@(Model.Address ?? "—")</dd>
+            <dt class="col-sm-4">Plan</dt>
+            <dd class="col-sm-8">@(Model.SubscriptionPlanName ?? "—") <span class="text-muted">(@(Model.SubscriptionPlanCode ?? ""))</span> · @(Model.StartWithTrial ? "Con trial" : "Sin trial")</dd>
+            <dt class="col-sm-4">Administrador</dt>
+            <dd class="col-sm-8">@Model.AdminFirstName @Model.AdminLastName — @Model.AdminEmail</dd>
+            <dt class="col-sm-4">Regional</dt>
+            <dd class="col-sm-8">@Model.TimeZoneId · @Model.DateFormat · @Model.Currency · @Model.Language</dd>
+        </dl>
+        <hr class="my-4" />
+        <form asp-action="Complete" method="post" novalidate>
+            @Html.AntiForgeryToken()
+            <div class="d-flex justify-content-between align-items-center">
+                <a asp-action="Step4" class="btn btn-outline-secondary">Atrás</a>
+                <button type="submit" class="btn btn-success btn-lg px-5">Crear clínica</button>
+            </div>
+        </form>
+    </div>
+</div>

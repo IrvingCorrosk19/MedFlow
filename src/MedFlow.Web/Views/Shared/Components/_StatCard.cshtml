@@ -1,0 +1,22 @@
+@model MedFlow.Web.Models.Ui.StatCardModel
+<div class="col-lg-3 col-md-6 mb-3">
+    <div class="small-box @Model.ColorClass shadow-sm">
+        <div class="inner">
+            <h3>@Model.Value</h3>
+            <p>@Model.Label</p>
+        </div>
+        <div class="icon">
+            <i class="@Model.IconClass"></i>
+        </div>
+        @if (!string.IsNullOrEmpty(Model.FooterUrl) && !string.IsNullOrEmpty(Model.FooterText))
+        {
+            <a href="@Model.FooterUrl" class="small-box-footer">
+                @Model.FooterText <i class="fa fa-arrow-circle-right"></i>
+            </a>
+        }
+        else
+        {
+            <div class="small-box-footer border-0" style="cursor: default;">&nbsp;</div>
+        }
+    </div>
+</div>

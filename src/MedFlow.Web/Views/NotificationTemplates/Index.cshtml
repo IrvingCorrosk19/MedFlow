@@ -1,0 +1,46 @@
+@model IReadOnlyList<NotificationTemplateDto>
+@using MedFlow.Domain.Enums
+<div class="row mb-3">
+    <div class="col">
+        <a asp-action="Create" class="btn btn-primary"><i class="fa fa-plus"></i> Nueva plantilla</a>
+        <a asp-action="Preferences" class="btn btn-outline-secondary"><i class="fa fa-cog"></i> Preferencias</a>
+    </div>
+</div>
+<div class="card">
+    <div class="card-body table-responsive p-0">
+        <table class="table table-striped mb-0" id="templatesTable">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Nombre</th>
+                    <th>Evento</th>
+                    <th>Canal</th>
+                    <th>Por defecto</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var t in Model)
+            {
+                <tr>
+                    <td><code>@t.Code</code></td>
+                    <td>@t.Name</td>
+                    <td>@t.EventType</td>
+                    <td><span class="badge badge-info">@t.Channel</span></td>
+                    <td>@(t.IsDefault ? "Sí" : "—")</td>
+                    <td>
+                        <a asp-action="Edit" asp-route-id="@t.Id" class="btn btn-xs btn-default">Editar</a>
+                        <form asp-action="Delete" asp-route-id="@t.Id" method="post" class="d-inline" onsubmit="return confirm('¿Eliminar plantilla?');">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-xs btn-danger">Eliminar</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
+@section Scripts {
+<script>$(function(){ $('#templatesTable').DataTable({language:{url:'//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'}}); });</script>
+}

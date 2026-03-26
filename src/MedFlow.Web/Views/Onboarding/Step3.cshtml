@@ -1,0 +1,52 @@
+@model OnboardingStep3Vm
+@{
+    ViewData["PageTitle"] = "Administrador";
+}
+<partial name="_WizardProgress" />
+<div class="card onboarding-hero border-0">
+    <div class="card-body p-4 p-md-5">
+        <h2 class="h4 font-weight-bold mb-1">Paso 3 — Administrador</h2>
+        <p class="text-muted small mb-4">Cree la cuenta del administrador de la clínica. La contraseña no se almacena en texto claro entre pasos.</p>
+        <form asp-action="Step3" method="post" autocomplete="off" novalidate>
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label asp-for="AdminFirstName"></label>
+                    <input asp-for="AdminFirstName" class="form-control" />
+                    <span asp-validation-for="AdminFirstName" class="text-danger small"></span>
+                </div>
+                <div class="form-group col-md-6">
+                    <label asp-for="AdminLastName"></label>
+                    <input asp-for="AdminLastName" class="form-control" />
+                    <span asp-validation-for="AdminLastName" class="text-danger small"></span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label asp-for="AdminEmail"></label>
+                <input asp-for="AdminEmail" class="form-control" type="email" autocomplete="off" />
+                <span asp-validation-for="AdminEmail" class="text-danger small"></span>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label asp-for="Password"></label>
+                    <input asp-for="Password" class="form-control" autocomplete="new-password" />
+                    <small class="form-text text-muted">Mín. 6 caracteres, mayúscula, minúscula y dígito.</small>
+                    <span asp-validation-for="Password" class="text-danger small d-block"></span>
+                </div>
+                <div class="form-group col-md-6">
+                    <label asp-for="ConfirmPassword"></label>
+                    <input asp-for="ConfirmPassword" class="form-control" autocomplete="new-password" />
+                    <span asp-validation-for="ConfirmPassword" class="text-danger small d-block"></span>
+                </div>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-4">
+                <a asp-action="Step2" class="btn btn-outline-secondary">Atrás</a>
+                <button type="submit" class="btn btn-primary px-4">Continuar</button>
+            </div>
+        </form>
+    </div>
+</div>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

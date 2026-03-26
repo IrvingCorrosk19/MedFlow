@@ -1,0 +1,16 @@
+@model SubscriptionPlanEditDto
+@{
+    ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a href=\"" + Url.Action("Index", "Plans") + "\">Planes</a></li><li class=\"breadcrumb-item active\">Editar</li>";
+    var id = (Guid)(ViewContext.RouteData.Values["id"] ?? Guid.Empty);
+}
+<div class="card card-primary">
+    <div class="card-header"><h3 class="card-title mb-0">Editar plan SaaS</h3></div>
+    <div class="card-body">
+        <form asp-action="Edit" asp-area="SuperAdmin" asp-controller="Plans" asp-route-id="@id" method="post">
+            @Html.AntiForgeryToken()
+            <partial name="_PlanFields" model="Model" />
+            <button type="submit" class="btn btn-primary">Guardar cambios</button>
+            <a asp-action="Index" class="btn btn-default">Volver</a>
+        </form>
+    </div>
+</div>

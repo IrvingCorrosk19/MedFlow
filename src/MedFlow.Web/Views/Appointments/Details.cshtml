@@ -1,0 +1,30 @@
+@model MedFlow.Domain.Entities.Appointment
+@{
+    ViewData["Title"] = "Detalle de cita";
+    ViewData["PageSubtitle"] = $"{Model.ScheduledDate:dd/MM/yyyy} {Model.StartTime:hh\\:mm}";
+    ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a href=\"" + Url.Action("Index") + "\">Citas</a></li><li class=\"breadcrumb-item active\">Detalle</li>";
+}
+
+<div class="card card-outline card-primary shadow-sm">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Paciente:</strong> @(Model.Patient?.NombreCompleto ?? "—")</p>
+                <p><strong>Doctor:</strong> @(Model.Doctor?.FullName ?? "—")</p>
+                <p><strong>Fecha:</strong> @Model.ScheduledDate.ToString("dd/MM/yyyy")</p>
+                <p><strong>Hora:</strong> @Model.StartTime.ToString(@"hh\:mm") - @Model.EndTime.ToString(@"hh\:mm")</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Estado:</strong> @Model.Status</p>
+                <p><strong>Consultorio:</strong> @(string.IsNullOrWhiteSpace(Model.ConsultationRoom) ? "—" : Model.ConsultationRoom)</p>
+                <p><strong>Motivo:</strong> @(string.IsNullOrWhiteSpace(Model.Reason) ? "—" : Model.Reason)</p>
+                <p><strong>Notas:</strong> @(string.IsNullOrWhiteSpace(Model.Notes) ? "—" : Model.Notes)</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-3 d-flex gap-2">
+    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary"><i class="fa fa-edit"></i> Editar</a>
+    <a asp-action="Index" class="btn btn-outline-secondary">Volver</a>
+</div>

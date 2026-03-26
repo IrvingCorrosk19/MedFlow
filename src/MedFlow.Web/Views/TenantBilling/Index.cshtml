@@ -1,0 +1,110 @@
+@model TenantBillingPortalDto
+@using MedFlow.Domain.Enums
+@{
+    ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item active\">Suscripción</li>";
+}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card card-outline card-primary">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fa fa-credit-card mr-2"></i>Plan actual</h3>
+                <span class="badge badge-@(Model.SubscriptionStatus == SubscriptionStatus.Active ? "success" : Model.SubscriptionStatus == SubscriptionStatus.Trial ? "info" : Model.SubscriptionStatus == SubscriptionStatus.PastDue ? "warning" : "secondary") float-right">@Model.SubscriptionStatus</span>
+            </div>
+            <div class="card-body">
+                <p class="mb-1"><strong>@Model.PlanName</strong> <code>@Model.PlanCode</code></p>
+                <p class="text-muted small mb-1">Facturación: @(Model.BillingPeriod == BillingPeriod.Annual ? "Anual" : "Mensual")</p>
+                @if (Model.NextBillingDate.HasValue)
+                {
+                    <p class="mb-0"><i class="fa fa-calendar mr-1"></i>Próximo cobro: @Model.NextBillingDate.Value.ToString("d")</p>
+                }
+                @if (Model.CancelAtPeriodEnd)
+                {
+                    <p class="text-warning small mt-1 mb-0"><i class="fa fa-exclamation-triangle"></i> Cancelación programada al final del período.</p>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-outline card-secondary">
+            <div class="card-header"><h3 class="card-title"><i class="fa fa-bar-chart mr-2"></i>Uso del plan</h3></div>
+            <div class="card-body">
+                <p class="mb-1">Usuarios: @Model.Usage.Users / @Model.Usage.MaxUsers (@Model.Usage.UsersUsagePercent.ToString("F0")%)</p>
+                <p class="mb-1">Doctores: @Model.Usage.Doctors / @Model.Usage.MaxDoctors (@Model.Usage.DoctorsUsagePercent.ToString("F0")%)</p>
+                <p class="mb-1">Pacientes: @Model.Usage.Patients / @Model.Usage.MaxPatients (@Model.Usage.PatientsUsagePercent.ToString("F0")%)</p>
+                <p class="mb-0">Citas este mes: @Model.Usage.AppointmentsThisMonth / @Model.Usage.MaxAppointmentsPerMonth (@Model.Usage.AppointmentsUsagePercent.ToString("F0")%)</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-outline card-info">
+            <div class="card-header"><h3 class="card-title"><i class="fa fa-cog mr-2"></i>Acciones</h3></div>
+            <div class="card-body">
+                <a asp-action="UpdateProfile" class="btn btn-outline-secondary btn-block mb-2"><i class="fa fa-edit mr-1"></i> Actualizar datos de facturación</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header"><h3 class="card-title"><i class="fa fa-file-text-o mr-2"></i>Facturas recientes</h3></div>
+            <div class="card-body table-responsive p-0">
+                @if (Model.RecentInvoices.Count == 0)
+                {
+                    <p class="text-muted p-3 mb-0">No hay facturas registradas.</p>
+                }
+                else
+                {
+                    <table class="table table-sm table-striped mb-0">
+                        <thead><tr><th>Nº</th><th>Fecha</th><th>Total</th><th>Estado</th><th></th></tr></thead>
+                        <tbody>
+                        @foreach (var i in Model.RecentInvoices)
+                        {
+                            <tr>
+                                <td>@i.InvoiceNumber</td>
+                                <td>@i.IssueDate.ToString("d")</td>
+                                <td>@i.TotalAmount.ToString("N2") @i.Currency</td>
+                                <td><span class="badge badge-@(i.Status == SaaSInvoiceStatus.Paid ? "success" : i.Status == SaaSInvoiceStatus.Failed ? "danger" : "secondary")">@i.Status</span></td>
+                                <td>@if (!string.IsNullOrEmpty(i.InvoiceUrl)) { <a href="@i.InvoiceUrl" target="_blank" class="btn btn-xs btn-default">Ver</a> }</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header"><h3 class="card-title"><i class="fa fa-exchange mr-2"></i>Transacciones recientes</h3></div>
+            <div class="card-body table-responsive p-0">
+                @if (Model.RecentTransactions.Count == 0)
+                {
+                    <p class="text-muted p-3 mb-0">No hay transacciones registradas.</p>
+                }
+                else
+                {
+                    <table class="table table-sm table-striped mb-0">
+                        <thead><tr><th>Fecha</th><th>Tipo</th><th>Estado</th><th>Monto</th><th>Descripción</th></tr></thead>
+                        <tbody>
+                        @foreach (var t in Model.RecentTransactions)
+                        {
+                            <tr>
+                                <td>@t.OccurredAt.ToString("g")</td>
+                                <td>@t.Type</td>
+                                <td><span class="badge badge-@(t.Status == SaasTransactionStatus.Succeeded ? "success" : t.Status == SaasTransactionStatus.Failed ? "danger" : "secondary")">@t.Status</span></td>
+                                <td>@t.Amount.ToString("N2") @t.Currency</td>
+                                <td>@(t.Description ?? "—")</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+    </div>
+</div>

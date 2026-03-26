@@ -1,0 +1,61 @@
+@model MedFlow.Web.ViewModels.DoctorViewModel
+
+<div class="card card-outline card-primary shadow-sm">
+    <div class="card-body">
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="FirstName"></label>
+                <input asp-for="FirstName" class="form-control" />
+                <span asp-validation-for="FirstName" class="text-danger small"></span>
+            </div>
+            <div class="form-group col-md-6">
+                <label asp-for="LastName"></label>
+                <input asp-for="LastName" class="form-control" />
+                <span asp-validation-for="LastName" class="text-danger small"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-4">
+                <label asp-for="Speciality"></label>
+                <input asp-for="Speciality" class="form-control" />
+                <span asp-validation-for="Speciality" class="text-danger small"></span>
+            </div>
+            <div class="form-group col-md-4">
+                <label asp-for="LicenseNumber"></label>
+                <input asp-for="LicenseNumber" class="form-control" />
+                <span asp-validation-for="LicenseNumber" class="text-danger small"></span>
+            </div>
+            <div class="form-group col-md-4">
+                <label asp-for="ConsultationRoom"></label>
+                <input asp-for="ConsultationRoom" class="form-control" />
+                <span asp-validation-for="ConsultationRoom" class="text-danger small"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="Phone"></label>
+                <input asp-for="Phone" class="form-control" />
+                <span asp-validation-for="Phone" class="text-danger small"></span>
+            </div>
+            <div class="form-group col-md-6">
+                <label asp-for="Email"></label>
+                <input asp-for="Email" class="form-control" />
+                <span asp-validation-for="Email" class="text-danger small"></span>
+            </div>
+        </div>
+        <div class="form-group">
+            <label asp-for="WorkingHours"></label>
+            <input asp-for="WorkingHours" class="form-control" placeholder="Ej: Lun-Vie 08:00-17:00" />
+            <span asp-validation-for="WorkingHours" class="text-danger small"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="Notes"></label>
+            <textarea asp-for="Notes" rows="3" class="form-control"></textarea>
+            <span asp-validation-for="Notes" class="text-danger small"></span>
+        </div>
+        <div class="form-check">
+            <input asp-for="IsActive" class="form-check-input" />
+            <label asp-for="IsActive" class="form-check-label"></label>
+        </div>
+    </div>
+</div>

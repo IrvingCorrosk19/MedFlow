@@ -1,0 +1,48 @@
+@model IReadOnlyList<SaasSubscriptionListItemDto>
+@{
+    ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item active\">Suscripciones</li>";
+}
+<div class="card">
+    <div class="card-header"><h3 class="card-title mb-0">Registros de suscripción</h3></div>
+    <div class="card-body table-responsive p-0">
+        <table class="table table-hover mb-0" id="subTable">
+            <thead>
+                <tr>
+                    <th>Clínica</th>
+                    <th>Código</th>
+                    <th>Plan</th>
+                    <th>Estado</th>
+                    <th>Inicio</th>
+                    <th>Trial fin</th>
+                    <th>Próx. cobro</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var s in Model)
+            {
+                <tr>
+                    <td>@s.TenantName</td>
+                    <td><code>@s.TenantCode</code></td>
+                    <td>@s.PlanName</td>
+                    <td><span class="badge badge-secondary">@s.Status</span></td>
+                    <td>@s.StartDate.ToString("yyyy-MM-dd")</td>
+                    <td>@(s.TrialEndDate?.ToString("yyyy-MM-dd") ?? "—")</td>
+                    <td>@(s.NextBillingDate?.ToString("yyyy-MM-dd") ?? "—")</td>
+                    <td><a asp-action="Details" asp-route-id="@s.Id" class="btn btn-xs btn-default">Detalle</a></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
+@section Scripts {
+    <script>
+        $(function () {
+            $('#subTable').DataTable({
+                language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
+                order: [[4, 'desc']]
+            });
+        });
+    </script>
+}

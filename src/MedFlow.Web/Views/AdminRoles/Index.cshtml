@@ -1,0 +1,79 @@
+@model IReadOnlyList<MedFlow.Application.Interfaces.RoleListItem>
+@{
+    ViewData["Title"] = "Roles";
+    ViewData["PageSubtitle"] = "Perfiles de acceso";
+    ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item active\">Roles</li>";
+}
+
+<div class="card card-outline card-primary shadow-sm">
+    <div class="card-header d-flex flex-wrap align-items-center justify-content-between">
+        <h3 class="card-title mb-0"><i class="fa fa-id-badge mr-2"></i>Roles</h3>
+        <a asp-action="Create" class="btn btn-primary btn-sm mt-2 mt-sm-0">
+            <i class="fa fa-plus"></i> Nuevo rol
+        </a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table id="tblRoles" class="table table-hover table-striped mb-0 text-nowrap">
+                <thead class="thead-light">
+                    <tr>
+                        <th>Rol</th>
+                        <th>Descripción</th>
+                        <th class="text-center">Permisos</th>
+                        <th class="text-center">Usuarios</th>
+                        <th class="text-center">Estado</th>
+                        <th class="text-right no-sort">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in Model)
+                    {
+                        <tr>
+                            <td class="font-weight-medium">@r.Name</td>
+                            <td class="text-muted">@(r.Description ?? "—")</td>
+                            <td class="text-center"><span class="badge badge-secondary">@r.PermissionCount</span></td>
+                            <td class="text-center"><span class="badge badge-light border">@r.UserCount</span></td>
+                            <td class="text-center">
+                                @if (r.IsActive)
+                                {
+                                    <span class="badge badge-success">Activo</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-secondary">Inactivo</span>
+                                }
+                            </td>
+                            <td class="text-right text-nowrap">
+                                <a asp-action="Details" asp-route-id="@r.Id" class="btn btn-sm btn-info" title="Ver"><i class="fa fa-eye"></i></a>
+                                <a asp-action="Permissions" asp-route-id="@r.Id" class="btn btn-sm btn-warning" title="Permisos"><i class="fa fa-key"></i></a>
+                                <a asp-action="Edit" asp-route-id="@r.Id" class="btn btn-sm btn-primary" title="Editar"><i class="fa fa-edit"></i></a>
+                                @if (r.UserCount == 0 && !string.Equals(r.Name, "SuperAdmin", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <form asp-action="Delete" asp-route-id="@r.Id" method="post" class="d-inline" data-confirm-delete>
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="fa fa-trash"></i></button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/security/admin-roles.js" asp-append-version="true"></script>
+    <script>
+        $(function () {
+            $('#tblRoles').DataTable({
+                responsive: true,
+                pageLength: 25,
+                order: [[0, 'asc']],
+                language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
+                columnDefs: [{ orderable: false, targets: 'no-sort' }]
+            });
+        });
+    </script>
+}

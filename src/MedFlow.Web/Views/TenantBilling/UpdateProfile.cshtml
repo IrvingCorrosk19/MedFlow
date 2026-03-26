@@ -1,0 +1,79 @@
+@model TenantBillingProfileEditViewModel
+@{
+    ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a asp-action=\"Index\" asp-controller=\"TenantBilling\">Suscripción</a></li><li class=\"breadcrumb-item active\">Datos de facturación</li>";
+}
+<div class="card">
+    <div class="card-header"><h3 class="card-title"><i class="fa fa-edit mr-2"></i>Datos de facturación</h3></div>
+    <div class="card-body">
+        <form asp-action="UpdateProfile" asp-controller="TenantBilling" method="post">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="BillingEmail">Email de facturación</label>
+                        <input asp-for="BillingEmail" class="form-control" type="email" />
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="LegalName">Razón social</label>
+                        <input asp-for="LegalName" class="form-control" />
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label asp-for="TaxId">RFC / NIF / Tax ID</label>
+                <input asp-for="TaxId" class="form-control" />
+            </div>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label asp-for="Country">País</label>
+                        <input asp-for="Country" class="form-control" maxlength="2" placeholder="MX, US, ES..." />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label asp-for="StateProvince">Estado / Provincia</label>
+                        <input asp-for="StateProvince" class="form-control" />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label asp-for="City">Ciudad</label>
+                        <input asp-for="City" class="form-control" />
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label asp-for="AddressLine1">Dirección</label>
+                <input asp-for="AddressLine1" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label asp-for="AddressLine2">Dirección línea 2</label>
+                <input asp-for="AddressLine2" class="form-control" />
+            </div>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label asp-for="PostalCode">Código postal</label>
+                        <input asp-for="PostalCode" class="form-control" />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label asp-for="PreferredCurrency">Moneda preferida</label>
+                        <select asp-for="PreferredCurrency" class="form-control">
+                            <option value="USD">USD</option>
+                            <option value="MXN">MXN</option>
+                            <option value="EUR">EUR</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary"><i class="fa fa-save mr-1"></i> Guardar</button>
+                <a asp-action="Index" asp-controller="TenantBilling" class="btn btn-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>

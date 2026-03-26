@@ -1,0 +1,94 @@
+@model MedFlow.Application.PatientPortal.PatientProfileDto
+@{
+    ViewData["Title"] = "Mi Perfil";
+    var allowEdit = ViewData["AllowEdit"] as bool? ?? false;
+}
+<h2 class="mb-4">Mi Perfil</h2>
+
+<div class="portal-card card mb-4">
+    <div class="card-header">Datos personales</div>
+    <div class="card-body">
+        @if (allowEdit)
+        {
+            <form asp-action="Index" method="post">
+                @Html.AntiForgeryToken()
+                <div class="row">
+                    <div class="col-md-6 form-group">
+                        <label class="text-muted small">Nombres</label>
+                        <p class="mb-0">@Model.PrimerNombre @(Model.SegundoNombre ?? "")</p>
+                    </div>
+                    <div class="col-md-6 form-group">
+                        <label class="text-muted small">Apellidos</label>
+                        <p class="mb-0">@Model.PrimerApellido @(Model.SegundoApellido ?? "")</p>
+                    </div>
+                    <div class="col-md-6 form-group">
+                        <label class="text-muted small">Documento</label>
+                        <p class="mb-0">@(Model.TipoDocumento ?? "") @(Model.NumeroDocumento ?? "-")</p>
+                    </div>
+                    <div class="col-md-6 form-group">
+                        <label class="text-muted small">Fecha de nacimiento</label>
+                        <p class="mb-0">@(Model.FechaNacimiento?.ToString("dd/MM/yyyy") ?? "-")</p>
+                    </div>
+                    <div class="col-md-6 form-group">
+                        <label asp-for="Telefono" class="text-muted small"></label>
+                        <input asp-for="Telefono" name="Telefono" class="form-control" value="@Model.Telefono" />
+                    </div>
+                    <div class="col-md-6 form-group">
+                        <label asp-for="Correo" class="text-muted small"></label>
+                        <input asp-for="Correo" name="Correo" class="form-control" value="@Model.Correo" />
+                    </div>
+                    <div class="col-12 form-group">
+                        <label asp-for="Direccion" class="text-muted small"></label>
+                        <input asp-for="Direccion" name="Direccion" class="form-control" value="@Model.Direccion" />
+                    </div>
+                    <div class="col-md-6 form-group">
+                        <label class="text-muted small">Contacto emergencia - Nombre</label>
+                        <input name="ContactoEmergenciaNombre" class="form-control" value="@Model.ContactoEmergenciaNombre" />
+                    </div>
+                    <div class="col-md-6 form-group">
+                        <label class="text-muted small">Contacto emergencia - Teléfono</label>
+                        <input name="ContactoEmergenciaTelefono" class="form-control" value="@Model.ContactoEmergenciaTelefono" />
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Guardar cambios</button>
+            </form>
+        }
+        else
+        {
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="text-muted small">Nombres</label>
+                    <p class="mb-0">@Model.PrimerNombre @(Model.SegundoNombre ?? "")</p>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="text-muted small">Apellidos</label>
+                    <p class="mb-0">@Model.PrimerApellido @(Model.SegundoApellido ?? "")</p>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="text-muted small">Documento</label>
+                    <p class="mb-0">@(Model.TipoDocumento ?? "") @(Model.NumeroDocumento ?? "-")</p>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="text-muted small">Fecha de nacimiento</label>
+                    <p class="mb-0">@(Model.FechaNacimiento?.ToString("dd/MM/yyyy") ?? "-")</p>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="text-muted small">Teléfono</label>
+                    <p class="mb-0">@(Model.Telefono ?? "-")</p>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="text-muted small">Correo</label>
+                    <p class="mb-0">@(Model.Correo ?? "-")</p>
+                </div>
+                <div class="col-12 mb-3">
+                    <label class="text-muted small">Dirección</label>
+                    <p class="mb-0">@(Model.Direccion ?? "-")</p>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="text-muted small">Contacto de emergencia</label>
+                    <p class="mb-0">@(Model.ContactoEmergenciaNombre ?? "-") @(string.IsNullOrEmpty(Model.ContactoEmergenciaTelefono) ? "" : $"({Model.ContactoEmergenciaTelefono})")</p>
+                </div>
+            </div>
+        }
+    </div>
+</div>

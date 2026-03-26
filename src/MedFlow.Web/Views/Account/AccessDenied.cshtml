@@ -1,0 +1,29 @@
+@{
+    ViewData["Title"] = "Acceso denegado";
+    var staffRoles = new[] { "Admin", "Reception", "Doctor", "Billing", "Staff" };
+    var isStaff = staffRoles.Any(r => User.IsInRole(r));
+    Layout = (User.Identity?.IsAuthenticated == true && User.IsInRole("Patient") && !isStaff)
+        ? "_AccessDeniedMinimalLayout"
+        : "_AdminLayout";
+}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4 p-md-5 text-center">
+                <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-4 mf-icon-circle-warning">
+                    <i class="fa fa-lock fa-2x text-warning"></i>
+                </div>
+                <h2 class="h4 font-weight-bold mb-2">Acceso denegado</h2>
+                <p class="text-muted mb-4">No tiene permiso para ver esta página. Si cree que es un error, contacte al administrador de su clínica.</p>
+                @if (User.Identity?.IsAuthenticated == true && User.IsInRole("Patient") && !isStaff)
+                {
+                    <a href="/PatientPortal/inicio" class="btn btn-primary px-4">Volver al portal del paciente</a>
+                }
+                else
+                {
+                    <a asp-controller="Dashboard" asp-action="Index" class="btn btn-primary px-4">Volver al inicio</a>
+                }
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,62 @@
+@model IReadOnlyList<MedFlow.Application.PatientPortal.PatientPaymentListItemDto>
+@{
+    ViewData["Title"] = "Mis Pagos";
+    var balanceDue = ViewData["BalanceDue"] as decimal? ?? 0;
+    var totalPaid = ViewData["TotalPaid"] as decimal? ?? 0;
+}
+<h2 class="mb-4">Mis Pagos</h2>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="dashboard-card">
+            <div class="card-label">Saldo pendiente</div>
+            <div class="card-value">@balanceDue.ToString("C")</div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="dashboard-card">
+            <div class="card-label">Total pagado</div>
+            <div class="card-value">@totalPaid.ToString("C")</div>
+        </div>
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="portal-card card">
+        <div class="card-body portal-empty">
+            <h5>Sin pagos</h5>
+        </div>
+    </div>
+}
+else
+{
+    <div class="portal-card card">
+        <div class="card-header">Historial</div>
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Monto</th>
+                        <th>Factura</th>
+                        <th>Metodo</th>
+                        <th>Referencia</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in Model)
+                    {
+                        <tr>
+                            <td>@p.PaymentDate.ToString("dd/MM/yyyy")</td>
+                            <td>@p.Amount.ToString("C")</td>
+                            <td>@(p.InvoiceNumber ?? "-")</td>
+                            <td>@p.PaymentMethod</td>
+                            <td>@(p.ReferenceNumber ?? "-")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

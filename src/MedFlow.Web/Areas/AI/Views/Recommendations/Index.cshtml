@@ -1,0 +1,29 @@
+@model IReadOnlyList<AIRecommendation>
+<div class="row">
+    @foreach (var r in Model)
+    {
+    <div class="col-md-6 col-lg-4 mb-3">
+        <div class="card card-outline card-@(r.Severity == "Critical" ? "danger" : r.Severity == "Warning" ? "warning" : "info") shadow-sm h-100">
+            <div class="card-header">
+                <span class="badge badge-@(r.Severity == "Critical" ? "danger" : r.Severity == "Warning" ? "warning" : "info")">@r.Type</span>
+                <span class="badge badge-secondary">Prioridad @r.Priority</span>
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">@r.Title</h5>
+                <p class="card-text small">@r.Description</p>
+                <p class="card-text"><strong>Acción:</strong> @r.SuggestedAction</p>
+                @if (!string.IsNullOrEmpty(r.EntityId) && !string.IsNullOrEmpty(r.ActionUrl))
+                {
+                <a href="@r.ActionUrl" class="btn btn-sm btn-primary">Ir</a>
+                }
+            </div>
+        </div>
+    </div>
+    }
+</div>
+@if (Model.Count == 0)
+{
+<div class="alert alert-info">
+    No hay recomendaciones en este momento. Las recomendaciones se generan en tiempo real según los datos del tenant.
+</div>
+}

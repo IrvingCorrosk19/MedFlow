@@ -1,0 +1,134 @@
+@model MedFlow.Domain.Entities.Patient
+@{
+    ViewData["Title"] = Model.NombreCompleto;
+    ViewData["PageSubtitle"] = "Expediente del paciente";
+    ViewData["Breadcrumb"] = $"<li class=\"breadcrumb-item\"><a href=\"{Url.Action("Index")}\">Pacientes</a></li><li class=\"breadcrumb-item active\">Ficha</li>";
+}
+
+<div class="row mb-3">
+    <div class="col-md-8">
+        <h2 class="mb-1 text-dark">@Model.NombreCompleto</h2>
+        <p class="text-muted mb-0 small">
+            <span class="mr-3"><i class="fa fa-hashtag"></i> @Model.Id.ToString().Substring(0, 8)…</span>
+            @if (Model.IsActive)
+            {
+                <span class="badge badge-success">Activo</span>
+            }
+            else
+            {
+                <span class="badge badge-secondary">Inactivo</span>
+            }
+        </p>
+    </div>
+    <div class="col-md-4 text-md-right mt-2 mt-md-0">
+        @if (string.IsNullOrEmpty(Model.UserId))
+        {
+            <form asp-action="EnablePortal" asp-route-id="@Model.Id" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-success" @(string.IsNullOrEmpty(Model.Correo) ? "disabled" : "") title="@(string.IsNullOrEmpty(Model.Correo) ? "El paciente debe tener correo electrónico" : "")"><i class="fa fa-unlock"></i> Habilitar portal</button>
+            </form>
+        }
+        else
+        {
+            <form asp-action="DisablePortal" asp-route-id="@Model.Id" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-warning" onclick="return confirm('¿Deshabilitar acceso al portal del paciente?');"><i class="fa fa-lock"></i> Deshabilitar portal</button>
+            </form>
+        }
+        <a asp-controller="MedicalRecords" asp-action="Patient" asp-route-patientId="@Model.Id" class="btn btn-info"><i class="fa fa-file-text-o"></i> Historia clínica</a>
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary"><i class="fa fa-edit"></i> Editar</a>
+        <a asp-action="Index" class="btn btn-default">Listado</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card card-outline card-primary shadow-sm h-100">
+            <div class="card-header"><h3 class="card-title mb-0"><i class="fa fa-user mr-2"></i>Datos personales</h3></div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4 text-muted small">Primer nombre</dt>
+                    <dd class="col-sm-8">@Model.PrimerNombre</dd>
+                    <dt class="col-sm-4 text-muted small">Segundo nombre</dt>
+                    <dd class="col-sm-8">@(Model.SegundoNombre ?? "—")</dd>
+                    <dt class="col-sm-4 text-muted small">Primer apellido</dt>
+                    <dd class="col-sm-8">@Model.PrimerApellido</dd>
+                    <dt class="col-sm-4 text-muted small">Segundo apellido</dt>
+                    <dd class="col-sm-8">@(Model.SegundoApellido ?? "—")</dd>
+                    <dt class="col-sm-4 text-muted small">Fecha nacimiento</dt>
+                    <dd class="col-sm-8">@(Model.FechaNacimiento?.ToString("dd/MM/yyyy") ?? "—")</dd>
+                    <dt class="col-sm-4 text-muted small">Sexo</dt>
+                    <dd class="col-sm-8">@(Model.Sexo ?? "—")</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card card-outline card-secondary shadow-sm h-100">
+            <div class="card-header"><h3 class="card-title mb-0"><i class="fa fa-id-badge mr-2"></i>Documento</h3></div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4 text-muted small">Tipo</dt>
+                    <dd class="col-sm-8">@(Model.TipoDocumento ?? "—")</dd>
+                    <dt class="col-sm-4 text-muted small">Número</dt>
+                    <dd class="col-sm-8">@(Model.NumeroDocumento ?? "—")</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card card-outline card-info shadow-sm">
+            <div class="card-header"><h3 class="card-title mb-0"><i class="fa fa-phone mr-2"></i>Contacto</h3></div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4 text-muted small">Teléfono</dt>
+                    <dd class="col-sm-8">@(Model.Telefono ?? "—")</dd>
+                    <dt class="col-sm-4 text-muted small">Correo</dt>
+                    <dd class="col-sm-8">@(Model.Correo ?? "—")</dd>
+                    <dt class="col-sm-4 text-muted small">Dirección</dt>
+                    <dd class="col-sm-8">@(Model.Direccion ?? "—")</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card card-outline card-warning shadow-sm">
+            <div class="card-header"><h3 class="card-title mb-0"><i class="fa fa-ambulance mr-2"></i>Emergencia</h3></div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4 text-muted small">Nombre</dt>
+                    <dd class="col-sm-8">@(Model.ContactoEmergenciaNombre ?? "—")</dd>
+                    <dt class="col-sm-4 text-muted small">Teléfono</dt>
+                    <dd class="col-sm-8">@(Model.ContactoEmergenciaTelefono ?? "—")</dd>
+                    <dt class="col-sm-4 text-muted small">Alergias</dt>
+                    <dd class="col-sm-8">@(string.IsNullOrWhiteSpace(Model.Alergias) ? "Ninguna registrada" : Model.Alergias)</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card card-outline card-light shadow-sm">
+    <div class="card-header"><h3 class="card-title mb-0"><i class="fa fa-sticky-note-o mr-2"></i>Observaciones</h3></div>
+    <div class="card-body">
+        @if (string.IsNullOrWhiteSpace(Model.Observaciones))
+        {
+            <p class="text-muted mb-0">Sin observaciones.</p>
+        }
+        else
+        {
+            <p class="mb-0" style="white-space: pre-wrap;">@Model.Observaciones</p>
+        }
+    </div>
+</div>
+
+<div class="text-muted small mt-3">
+    <i class="fa fa-clock-o"></i> Creado: @Model.CreatedAt.ToLocalTime().ToString("g")
+    @if (Model.UpdatedAt.HasValue)
+    {
+        <span class="ml-3"><i class="fa fa-refresh"></i> Última edición: @Model.UpdatedAt.Value.ToLocalTime().ToString("g")</span>
+    }
+</div>

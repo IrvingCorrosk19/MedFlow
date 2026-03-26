@@ -1,0 +1,42 @@
+@model MedFlow.Web.ViewModels.RolePermissionsViewModel
+@{
+    ViewData["Title"] = "Permisos del rol";
+    ViewData["PageSubtitle"] = Model.RoleName;
+    ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a href=\"" + Url.Action("Index") + "\">Roles</a></li><li class=\"breadcrumb-item\"><a href=\"" + Url.Action("Details", new { id = Model.RoleId }) + "\">Detalle</a></li><li class=\"breadcrumb-item active\">Permisos</li>";
+}
+
+<div class="card card-outline card-warning shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title mb-0"><i class="fa fa-key mr-2"></i>Permisos · @Model.RoleName</h3>
+        <a asp-action="Details" asp-route-id="@Model.RoleId" class="btn btn-sm btn-default">Volver</a>
+    </div>
+    <form asp-action="Permissions" asp-route-id="@Model.RoleId" method="post">
+        @Html.AntiForgeryToken()
+        <div class="card-body">
+            @foreach (var mod in Model.Modules)
+            {
+                <div class="card card-outline card-secondary mb-3">
+                    <div class="card-header py-2"><strong class="text-uppercase small">@mod.Module</strong></div>
+                    <div class="card-body py-2">
+                        <div class="row">
+                            @foreach (var p in mod.Items)
+                            {
+                                var cid = "p_" + p.Id.ToString("N");
+                                <div class="col-md-6 col-lg-4 mb-2">
+                                    <div class="custom-control custom-checkbox">
+                                        <input type="checkbox" class="custom-control-input" name="permissionIds" value="@p.Id" id="@cid" @(p.Selected ? "checked" : null) />
+                                        <label class="custom-control-label small" for="@cid" title="@p.Code">@p.Name</label>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+        <div class="card-footer">
+            <button type="submit" class="btn btn-primary"><i class="fa fa-save"></i> Guardar permisos</button>
+            <a asp-action="Details" asp-route-id="@Model.RoleId" class="btn btn-default">Cancelar</a>
+        </div>
+    </form>
+</div>

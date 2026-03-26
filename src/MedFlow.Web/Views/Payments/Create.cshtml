@@ -1,0 +1,47 @@
+@model MedFlow.Web.ViewModels.RegisterPaymentViewModel
+@using MedFlow.Domain.Enums
+@{
+    ViewData["PageTitle"] = "Registrar pago";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card card-outline card-success shadow-sm">
+            <div class="card-header"><h3 class="card-title font-weight-bold mb-0">Pago</h3></div>
+            <div class="card-body">
+                <form asp-action="Create" method="post">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <input type="hidden" asp-for="BillingInvoiceId" />
+                    <input type="hidden" asp-for="PatientId" />
+                    <div class="form-group">
+                        <label asp-for="Amount" class="font-weight-medium"></label>
+                        <input asp-for="Amount" class="form-control form-control-lg" step="0.01" min="0.01" />
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="PaymentDate"></label>
+                        <input asp-for="PaymentDate" type="datetime-local" class="form-control" />
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="PaymentMethod"></label>
+                        <select asp-for="PaymentMethod" class="form-control" asp-items="Html.GetEnumSelectList<ClinicalPaymentMethod>()"></select>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="ReferenceNumber"></label>
+                        <input asp-for="ReferenceNumber" class="form-control" />
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="Notes"></label>
+                        <textarea asp-for="Notes" class="form-control" rows="2"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-success btn-block btn-lg">Guardar</button>
+                    <a asp-action="Index" class="btn btn-default btn-block">Cancelar</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

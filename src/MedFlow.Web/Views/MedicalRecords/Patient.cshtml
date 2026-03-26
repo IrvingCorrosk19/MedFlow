@@ -1,0 +1,110 @@
+@model IReadOnlyList<MedFlow.Domain.Entities.MedicalRecord>
+@{
+    var patient = ViewBag.Patient as MedFlow.Domain.Entities.Patient;
+}
+@if (patient == null)
+{
+    <div class="alert alert-danger">Paciente no encontrado.</div>
+}
+else
+{
+
+<div class="row align-items-center mb-4">
+    <div class="col-lg-8">
+        <h2 class="mb-1 text-dark"><i class="fa fa-user-md text-primary mr-2"></i>@patient.NombreCompleto</h2>
+        <p class="text-muted mb-0 small">
+            @if (!string.IsNullOrEmpty(patient.NumeroDocumento))
+            {
+                <span class="mr-3">Doc. @patient.TipoDocumento @patient.NumeroDocumento</span>
+            }
+            <a asp-controller="Patients" asp-action="Details" asp-route-id="@patient.Id" class="text-primary">Ficha del paciente</a>
+        </p>
+    </div>
+    <div class="col-lg-4 text-lg-right mt-2 mt-lg-0">
+        <a asp-action="Create" asp-route-patientId="@patient.Id" class="btn btn-primary btn-sm">
+            <i class="fa fa-plus"></i> Nueva consulta
+        </a>
+    </div>
+</div>
+
+@if (Model.Count == 0)
+{
+    <div class="card card-outline card-secondary shadow-sm">
+        <div class="card-body text-center py-5">
+            <i class="fa fa-stethoscope fa-4x text-muted mb-3"></i>
+            <h4 class="text-muted">Sin consultas registradas</h4>
+            <p class="text-muted mb-4">Inicie el expediente clínico con la primera consulta.</p>
+            <a asp-action="Create" asp-route-patientId="@patient.Id" class="btn btn-primary"><i class="fa fa-plus"></i> Registrar consulta</a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="medflow-clinical-timeline">
+        @foreach (var m in Model)
+        {
+            <div class="timeline-item mb-4">
+                <div class="timeline-marker bg-primary"></div>
+                <div class="timeline-card card card-outline card-light shadow-sm">
+                    <div class="card-header py-2 d-flex flex-wrap justify-content-between align-items-center">
+                        <div>
+                            <strong class="text-dark">@m.VisitDate.ToString("dd MMM yyyy · HH:mm")</strong>
+                            <span class="text-muted small ml-2">| @m.Doctor?.FullName</span>
+                        </div>
+                        <div>
+                            <a asp-action="Details" asp-route-id="@m.Id" class="btn btn-xs btn-outline-info btn-sm">Ver</a>
+                            <a asp-action="Edit" asp-route-id="@m.Id" class="btn btn-xs btn-outline-primary btn-sm">Editar</a>
+                        </div>
+                    </div>
+                    <div class="card-body py-3">
+                        @if (!string.IsNullOrWhiteSpace(m.ChiefComplaint))
+                        {
+                            <p class="mb-2 small"><span class="text-muted text-uppercase font-weight-bold">Motivo</span><br />@m.ChiefComplaint</p>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(m.Diagnosis))
+                        {
+                            <p class="mb-2 small"><span class="text-muted text-uppercase font-weight-bold">Diagnóstico</span><br /><span class="text-dark">@m.Diagnosis</span></p>
+                        }
+                        @if (m.HeightCm.HasValue || m.WeightKg.HasValue || !string.IsNullOrEmpty(m.BloodPressure) || m.HeartRateBpm.HasValue || m.TemperatureCelsius.HasValue)
+                        {
+                            <div class="mb-2 small">
+                                <span class="text-muted text-uppercase font-weight-bold">Signos</span>
+                                <span class="ml-2">
+                                    @if (m.BloodPressure != null) { <span class="badge badge-light border">PA @m.BloodPressure</span> }
+                                    @if (m.HeartRateBpm.HasValue) { <span class="badge badge-light border">FC @m.HeartRateBpm</span> }
+                                    @if (m.TemperatureCelsius.HasValue) { <span class="badge badge-light border">T° @m.TemperatureCelsius</span> }
+                                    @if (m.WeightKg.HasValue) { <span class="badge badge-light border">Peso @m.WeightKg kg</span> }
+                                    @if (m.HeightCm.HasValue) { <span class="badge badge-light border">Talla @m.HeightCm cm</span> }
+                                </span>
+                            </div>
+                        }
+                        @if (m.Prescriptions.Any())
+                        {
+                            <div class="mb-0 small">
+                                <span class="text-muted text-uppercase font-weight-bold">Receta</span>
+                                <ul class="mb-0 pl-3 mt-1">
+                                    @foreach (var rx in m.Prescriptions)
+                                    {
+                                        <li>@rx.MedicationName @(rx.Dosage != null ? $"· {rx.Dosage}" : "")</li>
+                                    }
+                                </ul>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+}
+
+@section Styles {
+    <style>
+        .medflow-clinical-timeline { position: relative; padding-left: 1.5rem; }
+        .medflow-clinical-timeline::before { content: ""; position: absolute; left: 6px; top: 0; bottom: 0; width: 2px; background: linear-gradient(180deg, #1a5f7a, #e2e8f0); }
+        .timeline-item { position: relative; }
+        .timeline-marker { position: absolute; left: -1.35rem; top: 0.5rem; width: 10px; height: 10px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 2px #1a5f7a; }
+        .timeline-card { margin-left: 0.5rem; border-left: 3px solid #1a5f7a !important; }
+    </style>
+}

@@ -1,0 +1,65 @@
+@model MedFlow.Web.ViewModels.AppointmentViewModel
+@{
+    var patients = ViewBag.Patients as IReadOnlyList<MedFlow.Domain.Entities.Patient> ?? Array.Empty<MedFlow.Domain.Entities.Patient>();
+    var doctors = ViewBag.Doctors as IReadOnlyList<MedFlow.Domain.Entities.Doctor> ?? Array.Empty<MedFlow.Domain.Entities.Doctor>();
+}
+
+<div class="card card-outline card-primary shadow-sm">
+    <div class="card-body">
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="PatientId"></label>
+                <select asp-for="PatientId" class="form-control" asp-items="@(new SelectList(patients, "Id", "NombreCompleto"))" data-select2>
+                    <option value="">Seleccione paciente...</option>
+                </select>
+                <span asp-validation-for="PatientId" class="text-danger small"></span>
+            </div>
+            <div class="form-group col-md-6">
+                <label asp-for="DoctorId"></label>
+                <select asp-for="DoctorId" class="form-control" asp-items="@(new SelectList(doctors, "Id", "FullName"))" data-select2>
+                    <option value="">Seleccione doctor...</option>
+                </select>
+                <span asp-validation-for="DoctorId" class="text-danger small"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-4">
+                <label asp-for="ScheduledDate"></label>
+                <input asp-for="ScheduledDate" type="date" class="form-control" />
+                <span asp-validation-for="ScheduledDate" class="text-danger small"></span>
+            </div>
+            <div class="form-group col-md-4">
+                <label asp-for="StartTime"></label>
+                <input asp-for="StartTime" type="time" class="form-control" />
+                <span asp-validation-for="StartTime" class="text-danger small"></span>
+            </div>
+            <div class="form-group col-md-4">
+                <label asp-for="EndTime"></label>
+                <input asp-for="EndTime" type="time" class="form-control" />
+                <span asp-validation-for="EndTime" class="text-danger small"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="ConsultationRoom"></label>
+                <input asp-for="ConsultationRoom" class="form-control" />
+                <span asp-validation-for="ConsultationRoom" class="text-danger small"></span>
+            </div>
+            <div class="form-group col-md-6">
+                <label asp-for="Status"></label>
+                <select asp-for="Status" asp-items="Html.GetEnumSelectList<MedFlow.Domain.Enums.AppointmentStatus>()" class="form-control"></select>
+                <span asp-validation-for="Status" class="text-danger small"></span>
+            </div>
+        </div>
+        <div class="form-group">
+            <label asp-for="Reason"></label>
+            <textarea asp-for="Reason" rows="2" class="form-control"></textarea>
+            <span asp-validation-for="Reason" class="text-danger small"></span>
+        </div>
+        <div class="form-group mb-0">
+            <label asp-for="Notes"></label>
+            <textarea asp-for="Notes" rows="3" class="form-control"></textarea>
+            <span asp-validation-for="Notes" class="text-danger small"></span>
+        </div>
+    </div>
+</div>

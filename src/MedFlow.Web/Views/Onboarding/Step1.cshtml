@@ -1,0 +1,48 @@
+@model OnboardingStep1Vm
+@{
+    ViewData["PageTitle"] = "Datos de la clínica";
+}
+<partial name="_WizardProgress" />
+<div class="card onboarding-hero border-0">
+    <div class="card-body p-4 p-md-5">
+        <h2 class="h4 font-weight-bold mb-1">Paso 1 — Datos de la clínica</h2>
+        <p class="text-muted small mb-4">Identifique su organización. El código se usará como subdominio único (slug).</p>
+        <form asp-action="Step1" method="post" novalidate>
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+            <div class="form-group">
+                <label asp-for="ClinicName"></label>
+                <input asp-for="ClinicName" class="form-control" autocomplete="organization" />
+                <span asp-validation-for="ClinicName" class="text-danger small"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Code">Código único (subdominio)</label>
+                <input asp-for="Code" class="form-control" placeholder="ej: clinica-norte" />
+                <small class="form-text text-muted">Solo minúsculas, números y guiones. No se puede cambiar después.</small>
+                <span asp-validation-for="Code" class="text-danger small d-block"></span>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label asp-for="ClinicEmail">Correo de la clínica</label>
+                    <input asp-for="ClinicEmail" class="form-control" type="email" />
+                    <span asp-validation-for="ClinicEmail" class="text-danger small"></span>
+                </div>
+                <div class="form-group col-md-6">
+                    <label asp-for="Phone">Teléfono</label>
+                    <input asp-for="Phone" class="form-control" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label asp-for="Address">Dirección</label>
+                <input asp-for="Address" class="form-control" />
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-4">
+                <a asp-controller="Home" asp-action="Index" class="btn btn-link text-muted">Cancelar</a>
+                <button type="submit" class="btn btn-primary px-4">Continuar</button>
+            </div>
+        </form>
+    </div>
+</div>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

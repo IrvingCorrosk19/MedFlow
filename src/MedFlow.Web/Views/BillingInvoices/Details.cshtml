@@ -1,0 +1,208 @@
+@model MedFlow.Domain.Entities.BillingInvoice
+@using MedFlow.Domain.Enums
+@{
+    ViewData["PageTitle"] = Model.InvoiceNumber;
+    var reg = ViewBag.RegisterPayment as MedFlow.Web.ViewModels.RegisterPaymentViewModel;
+    var invBadge = Model.Status == InvoiceStatus.Paid ? "success"
+        : Model.Status == InvoiceStatus.Cancelled ? "dark"
+        : Model.Status == InvoiceStatus.PartiallyPaid ? "warning" : "secondary";
+}
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card card-outline card-primary shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+                <div>
+                    <h3 class="card-title font-weight-bold mb-0">@Model.InvoiceNumber</h3>
+                    <span class="badge badge-@invBadge ml-2">@Model.Status</span>
+                </div>
+                <div>
+                    @if (Model.Status != InvoiceStatus.Cancelled && Model.AmountPaid == 0)
+                    {
+                        <form asp-action="CancelInvoice" method="post" class="d-inline" id="frmCancelInv">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.Id" />
+                            <button type="button" class="btn btn-outline-danger btn-sm btn-cancel-inv"><i class="fa fa-ban"></i> Cancelar factura</button>
+                        </form>
+                    }
+                    <a asp-action="Index" class="btn btn-default btn-sm">Volver</a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="text-muted small text-uppercase">Paciente</div>
+                        <div class="lead mb-0">@Model.Patient?.NombreCompleto</div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-muted small text-uppercase">Emisión</div>
+                        <div>@Model.IssueDate.ToLocalTime().ToString("dd/MM/yyyy")</div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-muted small text-uppercase">Vencimiento</div>
+                        <div>@(Model.DueDate?.ToLocalTime().ToString("dd/MM/yyyy") ?? "—")</div>
+                    </div>
+                </div>
+                @if (Model.Doctor != null)
+                {
+                    <div class="mb-2"><span class="text-muted">Doctor:</span> @Model.Doctor.FullName</div>
+                }
+                @if (Model.AppointmentId != null)
+                {
+                    <div class="mb-2"><span class="text-muted">Cita:</span> @Model.AppointmentId</div>
+                }
+                @if (!string.IsNullOrEmpty(Model.Notes))
+                {
+                    <div class="alert alert-light border mb-0"><strong>Notas:</strong> @Model.Notes</div>
+                }
+            </div>
+        </div>
+
+        <div class="card card-outline card-secondary shadow-sm mt-3">
+            <div class="card-header"><h3 class="card-title font-weight-bold mb-0">Conceptos</h3></div>
+            <div class="card-body table-responsive p-0">
+                <table class="table table-sm mb-0">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Tipo</th>
+                            <th>Descripción</th>
+                            <th class="text-right">Cant.</th>
+                            <th class="text-right">P. unit.</th>
+                            <th class="text-right">Desc.</th>
+                            <th class="text-right">Total línea</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var line in Model.Items)
+                        {
+                            <tr>
+                                <td>@line.ItemType</td>
+                                <td>@line.Description</td>
+                                <td class="text-right">@line.Quantity</td>
+                                <td class="text-right">@line.UnitPrice.ToString("N2")</td>
+                                <td class="text-right">@line.DiscountAmount.ToString("N2")</td>
+                                <td class="text-right font-weight-medium">@line.TotalLineAmount.ToString("N2")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card card-outline card-info shadow-sm mt-3">
+            <div class="card-header"><h3 class="card-title font-weight-bold mb-0">Pagos registrados</h3></div>
+            <div class="card-body table-responsive p-0">
+                <table id="tblPay" class="table table-hover mb-0">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Fecha</th>
+                            <th class="text-right">Monto</th>
+                            <th>Método</th>
+                            <th>Ref.</th>
+                            <th>Estado</th>
+                            <th class="text-right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in Model.Payments.OrderByDescending(x => x.PaymentDate))
+                        {
+                            <tr>
+                                <td>@p.PaymentDate.ToLocalTime().ToString("g")</td>
+                                <td class="text-right font-weight-medium">@p.Amount.ToString("N2")</td>
+                                <td>@p.PaymentMethod</td>
+                                <td>@(p.ReferenceNumber ?? "—")</td>
+                                <td><span class="badge badge-@(p.Status == PaymentEntryStatus.Registered ? "success" : "secondary")">@p.Status</span></td>
+                                <td class="text-right">
+                                    @if (p.Status == PaymentEntryStatus.Registered)
+                                    {
+                                        <form asp-action="CancelPayment" method="post" class="d-inline frm-cancel-pay">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@p.Id" />
+                                            <input type="hidden" name="billingInvoiceId" value="@Model.Id" />
+                                            <button type="button" class="btn btn-xs btn-outline-warning btn-cancel-pay">Anular</button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card card-outline card-success shadow-sm mb-3">
+            <div class="card-header bg-white"><h3 class="card-title font-weight-bold mb-0">Resumen</h3></div>
+            <div class="card-body">
+                <dl class="row mb-0 small">
+                    <dt class="col-7">Subtotal</dt><dd class="col-5 text-right">@Model.Subtotal.ToString("N2")</dd>
+                    <dt class="col-7">Descuento</dt><dd class="col-5 text-right text-danger">-@Model.DiscountAmount.ToString("N2")</dd>
+                    <dt class="col-7">Impuestos</dt><dd class="col-5 text-right">@Model.TaxAmount.ToString("N2")</dd>
+                    <dt class="col-7 font-weight-bold">Total</dt><dd class="col-5 text-right font-weight-bold">@Model.TotalAmount.ToString("N2")</dd>
+                    <dt class="col-7">Pagado</dt><dd class="col-5 text-right text-success">@Model.AmountPaid.ToString("N2")</dd>
+                    <dt class="col-7 font-weight-bold">Saldo</dt><dd class="col-5 text-right font-weight-bold text-primary">@Model.BalanceDue.ToString("N2")</dd>
+                </dl>
+            </div>
+        </div>
+
+        @if (reg != null && Model.Status != InvoiceStatus.Cancelled && Model.BalanceDue > 0.01m)
+        {
+            <div class="card card-outline card-warning shadow-sm">
+                <div class="card-header"><h3 class="card-title font-weight-bold mb-0"><i class="fa fa-money mr-1"></i>Registrar pago</h3></div>
+                <div class="card-body">
+                    <form asp-action="RegisterPayment" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="BillingInvoiceId" value="@reg.BillingInvoiceId" />
+                        <input type="hidden" name="PatientId" value="@reg.PatientId" />
+                        <div class="form-group">
+                            <label>Monto</label>
+                            <input name="Amount" class="form-control" value="@reg.Amount.ToString(System.Globalization.CultureInfo.InvariantCulture)" step="0.01" min="0.01" />
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha</label>
+                            <input name="PaymentDate" type="datetime-local" class="form-control" value="@reg.PaymentDate.ToString("yyyy-MM-ddTHH:mm")" />
+                        </div>
+                        <div class="form-group">
+                            <label>Método</label>
+                            <select name="PaymentMethod" class="form-control">
+                                @foreach (ClinicalPaymentMethod m in Enum.GetValues<ClinicalPaymentMethod>())
+                                {
+                                    <option value="@((int)m)" selected="@(reg.PaymentMethod == m)">@m</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Referencia</label>
+                            <input name="ReferenceNumber" class="form-control" />
+                        </div>
+                        <div class="form-group">
+                            <label>Notas</label>
+                            <textarea name="Notes" class="form-control" rows="2"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-success btn-block">Registrar pago</button>
+                    </form>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+            $('#tblPay').DataTable({ paging: false, searching: false, info: false, language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' } });
+            $('.btn-cancel-inv').on('click', function () {
+                Swal.fire({ title: '¿Cancelar factura?', text: 'No podrá registrar pagos después.', icon: 'warning', showCancelButton: true, confirmButtonText: 'Sí, cancelar' }).then(function (r) {
+                    if (r.isConfirmed) $('#frmCancelInv').submit();
+                });
+            });
+            $('.btn-cancel-pay').on('click', function () {
+                var f = $(this).closest('form');
+                Swal.fire({ title: '¿Anular pago?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Sí' }).then(function (r) {
+                    if (r.isConfirmed) f.submit();
+                });
+            });
+        });
+    </script>
+}

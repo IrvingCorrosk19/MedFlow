@@ -1,0 +1,14 @@
+@* ViewData: ModuleTitle (required), ModuleSubtitle (optional) *@
+<div class="d-flex flex-wrap justify-content-between align-items-start mb-3">
+    <div>
+        <h3 class="m-0 text-dark font-weight-bold">@ViewData["ModuleTitle"]</h3>
+        @if (ViewData["ModuleSubtitle"] != null)
+        {
+            <p class="text-muted small mb-0 mt-1">@ViewData["ModuleSubtitle"]</p>
+        }
+    </div>
+    @if (ViewData["ModuleActionHtml"] != null)
+    {
+        <div class="mt-2 mt-md-0">@Html.Raw(ViewData["ModuleActionHtml"])</div>
+    }
+</div>

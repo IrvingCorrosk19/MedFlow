@@ -1,0 +1,51 @@
+@model IReadOnlyList<MedFlow.Application.Interfaces.WebhookEventVm>
+@{
+    ViewData["Title"] = "Webhooks";
+    var failedOnly = ViewData["FailedOnly"] as bool? ?? false;
+}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="card-title"><i class="fa fa-bolt"></i> Stripe Webhook Events</h3>
+                <div>
+                    <a asp-action="Index" asp-route-failedOnly="@(!failedOnly)" class="btn btn-sm @(failedOnly ? "btn-outline-primary" : "btn-primary")">
+                        @(failedOnly ? "Ver todos" : "Solo fallidos")
+                    </a>
+                </div>
+            </div>
+            <div class="card-body table-responsive p-0">
+                <table class="table table-sm table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Event ID</th>
+                            <th>Tipo</th>
+                            <th>Procesado</th>
+                            <th>ProcesadoAt</th>
+                            <th>Error</th>
+                            <th>Creado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var e in Model)
+                        {
+                            <tr class="@(e.IsProcessed ? "" : "table-warning")">
+                                <td><code>@(e.ProviderEventId.Length > 24 ? e.ProviderEventId[..24] + "…" : e.ProviderEventId)</code></td>
+                                <td>@e.EventType</td>
+                                <td>
+                                    @if (e.IsProcessed)
+                                    { <span class="badge badge-success">Sí</span> }
+                                    else
+                                    { <span class="badge badge-warning">No</span> }
+                                </td>
+                                <td>@(e.ProcessedAt?.ToString("yyyy-MM-dd HH:mm") ?? "-")</td>
+                                <td class="text-danger small">@(e.ErrorMessage ?? "-")</td>
+                                <td>@e.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

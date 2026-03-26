@@ -1,0 +1,91 @@
+@model IReadOnlyList<MedFlow.Domain.Entities.CashMovement>
+@using MedFlow.Domain.Enums
+@{
+    ViewData["PageTitle"] = "Caja";
+    var day = ViewBag.Day as string;
+}
+
+<div class="card card-outline card-primary shadow-sm mb-3">
+    <div class="card-body">
+        <form method="get" class="form-inline">
+            <label class="mr-2 small text-muted">Día</label>
+            <input type="date" name="day" class="form-control form-control-sm mr-2" value="@day" />
+            <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-calendar"></i> Ver</button>
+        </form>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-3">
+        <div class="small-box bg-success">
+            <div class="inner">
+                <h3>@(((decimal)ViewBag.Income).ToString("N2"))</h3>
+                <p>Ingresos</p>
+            </div>
+            <div class="icon"><i class="fa fa-arrow-circle-up"></i></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="small-box bg-danger">
+            <div class="inner">
+                <h3>@(((decimal)ViewBag.Expense).ToString("N2"))</h3>
+                <p>Egresos</p>
+            </div>
+            <div class="icon"><i class="fa fa-arrow-circle-down"></i></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="small-box bg-info">
+            <div class="inner">
+                <h3>@(((decimal)ViewBag.Net).ToString("N2"))</h3>
+                <p>Neto día</p>
+            </div>
+            <div class="icon"><i class="fa fa-balance-scale"></i></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="small-box bg-secondary">
+            <div class="inner">
+                <h3>@(((decimal)ViewBag.Adjustment).ToString("N2"))</h3>
+                <p>Ajustes</p>
+            </div>
+            <div class="icon"><i class="fa fa-wrench"></i></div>
+        </div>
+    </div>
+</div>
+
+<div class="card card-outline card-secondary shadow-sm">
+    <div class="card-header"><h3 class="card-title font-weight-bold mb-0">Movimientos</h3></div>
+    <div class="card-body table-responsive p-0">
+        <table id="tblC" class="table table-hover mb-0">
+            <thead class="thead-light">
+                <tr>
+                    <th>Fecha</th>
+                    <th>Tipo</th>
+                    <th class="text-right">Monto</th>
+                    <th>Descripción</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var m in Model)
+                {
+                    var cls = m.MovementType == CashMovementType.Income ? "success" : m.MovementType == CashMovementType.Expense ? "danger" : "warning";
+                    <tr>
+                        <td>@m.MovementDate.ToLocalTime().ToString("g")</td>
+                        <td><span class="badge badge-@cls">@m.MovementType</span></td>
+                        <td class="text-right font-weight-medium">@m.Amount.ToString("N2")</td>
+                        <td>@(m.Description ?? "—")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+            $('#tblC').DataTable({ order: [[0, 'desc']], pageLength: 50, language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' } });
+        });
+    </script>
+}

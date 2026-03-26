@@ -1,0 +1,312 @@
+@inject MedFlow.Application.Interfaces.ITenantContext TenantContext
+@{
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+    var http = ViewContext.HttpContext;
+    bool IsCtrl(string c) => string.Equals(controller, c, StringComparison.OrdinalIgnoreCase);
+    string Active(string c, string? a = null) =>
+        IsCtrl(c) && (a == null || string.Equals(action, a, StringComparison.OrdinalIgnoreCase))
+            ? "active"
+            : "";
+    bool Feat(string key)
+    {
+        if (User.IsInRole("SuperAdmin")) return true;
+        if (http.Items.TryGetValue(key, out var v) && v is bool b) return b;
+        return true;
+    }
+    var featReports = Feat("PlanFeatureReports");
+    var featBilling = Feat("PlanFeatureBilling");
+    var featAutomation = Feat("PlanFeatureAutomation");
+    var isIdentity = IsCtrl("Identity");
+    var openClinica = IsCtrl("Patients") || IsCtrl("Doctors") || IsCtrl("Appointments");
+    var openFinanza = featBilling && (IsCtrl("BillingInvoices") || IsCtrl("Payments") || IsCtrl("CashMovements") || IsCtrl("EventLogs"));
+    var openSeguridad = IsCtrl("AdminUsers") || IsCtrl("AdminRoles") || IsCtrl("Permissions") || IsCtrl("SecurityAudit");
+    var openInteligencia = featReports && (IsCtrl("Reports") || IsCtrl("Analytics"));
+    var isAIArea = ViewContext.RouteData.Values["area"]?.ToString() == "AI";
+}
+<aside class="main-sidebar sidebar-dark-primary elevation-4 medflow-sidebar">
+    <a asp-controller="Dashboard" asp-action="Index" class="brand-link">
+        @if (!string.IsNullOrWhiteSpace(TenantContext.LogoUrl))
+        {
+            <img src="@TenantContext.LogoUrl" alt="" class="brand-image img-circle elevation-3" style="opacity: .9; object-fit: cover;" />
+        }
+        else
+        {
+            <img src="~/lib/adminlte/img/AdminLTELogo.png" alt="" class="brand-image img-circle elevation-3" style="opacity: .9" />
+        }
+        <span class="brand-text font-weight-light">@(TenantContext.TenantName ?? "MedFlow AI")</span>
+    </a>
+    <div class="sidebar">
+        <nav class="mt-2">
+            <ul class="nav nav-pills nav-sidebar flex-column nav-child-indent" data-widget="treeview" role="navigation" data-accordion="false">
+                <li class="nav-item">
+                    <a asp-controller="Dashboard" asp-action="Index" class="nav-link @Active("Dashboard")">
+                        <i class="nav-icon fa fa-dashboard"></i>
+                        <p>Dashboard</p>
+                    </a>
+                </li>
+
+                @if (User.IsInRole("SuperAdmin"))
+                {
+                    <li class="nav-header text-uppercase small text-muted">Plataforma SaaS</li>
+                    <li class="nav-item">
+                        <a asp-area="SuperAdmin" asp-controller="Home" asp-action="Index" class="nav-link @(ViewContext.RouteData.Values["area"]?.ToString() == "SuperAdmin" ? "active" : "")">
+                            <i class="nav-icon fa fa-building"></i>
+                            <p>SuperAdmin</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a asp-area="Ops" asp-controller="Home" asp-action="Index" class="nav-link @(ViewContext.RouteData.Values["area"]?.ToString() == "Ops" ? "active" : "")">
+                            <i class="nav-icon fa fa-heartbeat"></i>
+                            <p>Operaciones</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a asp-area="SuperAdmin" asp-controller="Tenants" asp-action="Index" class="nav-link">
+                            <i class="nav-icon fa fa-hospital-o"></i>
+                            <p>Clínicas</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a asp-area="SuperAdmin" asp-controller="Plans" asp-action="Index" class="nav-link">
+                            <i class="nav-icon fa fa-tags"></i>
+                            <p>Planes</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a asp-area="SuperAdmin" asp-controller="Subscriptions" asp-action="Index" class="nav-link">
+                            <i class="nav-icon fa fa-credit-card"></i>
+                            <p>Suscripciones</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a asp-area="SuperAdmin" asp-controller="Billing" asp-action="Overview" class="nav-link">
+                            <i class="nav-icon fa fa-money"></i>
+                            <p>Billing SaaS</p>
+                        </a>
+                    </li>
+                }
+
+                <li class="nav-header text-uppercase small text-muted">Operación clínica</li>
+                <li class="nav-item has-treeview @(openClinica ? "menu-open" : "")">
+                    <a href="#" class="nav-link @(openClinica ? "active" : "")">
+                        <i class="nav-icon fa fa-stethoscope"></i>
+                        <p>
+                            Clínica
+                            <i class="right fa fa-angle-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a asp-controller="Patients" asp-action="Index" class="nav-link @Active("Patients")">
+                                <i class="fa fa-circle-o nav-icon"></i>
+                                <p>Pacientes</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a asp-controller="Doctors" asp-action="Index" class="nav-link @Active("Doctors")">
+                                <i class="fa fa-circle-o nav-icon"></i>
+                                <p>Doctores</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a asp-controller="Appointments" asp-action="Index" class="nav-link @Active("Appointments")">
+                                <i class="fa fa-circle-o nav-icon"></i>
+                                <p>Citas</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <li class="nav-item">
+                    <a asp-controller="MedicalRecords" asp-action="Index" class="nav-link @Active("MedicalRecords")">
+                        <i class="nav-icon fa fa-file-text-o"></i>
+                        <p>Historia clínica</p>
+                    </a>
+                </li>
+
+                @if (featReports)
+                {
+                <li class="nav-header text-uppercase small text-muted">Inteligencia</li>
+                <li class="nav-item has-treeview @(openInteligencia ? "menu-open" : "")">
+                    <a href="#" class="nav-link @(openInteligencia ? "active" : "")">
+                        <i class="nav-icon fa fa-line-chart"></i>
+                        <p>
+                            Reportes
+                            <i class="right fa fa-angle-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a asp-controller="Reports" asp-action="Appointments" class="nav-link @Active("Reports", "Appointments")">
+                                <i class="fa fa-calendar nav-icon"></i>
+                                <p>Citas</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a asp-controller="Reports" asp-action="Patients" class="nav-link @Active("Reports", "Patients")">
+                                <i class="fa fa-users nav-icon"></i>
+                                <p>Pacientes</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a asp-controller="Reports" asp-action="Financial" class="nav-link @Active("Reports", "Financial")">
+                                <i class="fa fa-money nav-icon"></i>
+                                <p>Financiero</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a asp-controller="Reports" asp-action="Doctors" class="nav-link @Active("Reports", "Doctors")">
+                                <i class="fa fa-user-md nav-icon"></i>
+                                <p>Doctores</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a asp-controller="Analytics" asp-action="Index" class="nav-link @Active("Analytics", "Index")">
+                                <i class="fa fa-dashboard nav-icon"></i>
+                                <p>Dashboard ejecutivo</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a asp-controller="Analytics" asp-action="Trends" class="nav-link @Active("Analytics", "Trends")">
+                                <i class="fa fa-line-chart nav-icon"></i>
+                                <p>Tendencias</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a asp-controller="Analytics" asp-action="Benchmarking" class="nav-link @Active("Analytics", "Benchmarking")">
+                                <i class="fa fa-trophy nav-icon"></i>
+                                <p>Benchmarking</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a asp-controller="Analytics" asp-action="Snapshots" class="nav-link @Active("Analytics", "Snapshots")">
+                                <i class="fa fa-database nav-icon"></i>
+                                <p>Snapshots</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a asp-controller="Analytics" asp-action="Settings" class="nav-link @Active("Analytics", "Settings")">
+                                <i class="fa fa-cog nav-icon"></i>
+                                <p>Configuración</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                }
+
+                @if (featBilling)
+                {
+                <li class="nav-header text-uppercase small text-muted">Facturación y caja</li>
+                <li class="nav-item has-treeview @(openFinanza ? "menu-open" : "")">
+                    <a href="#" class="nav-link @(openFinanza ? "active" : "")">
+                        <i class="nav-icon fa fa-money"></i>
+                        <p>
+                            Finanzas
+                            <i class="right fa fa-angle-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a asp-controller="BillingInvoices" asp-action="Index" class="nav-link @Active("BillingInvoices")">
+                                <i class="fa fa-circle-o nav-icon"></i>
+                                <p>Facturas</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a asp-controller="Payments" asp-action="Index" class="nav-link @Active("Payments")">
+                                <i class="fa fa-circle-o nav-icon"></i>
+                                <p>Pagos</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a asp-controller="CashMovements" asp-action="Index" class="nav-link @Active("CashMovements")">
+                                <i class="fa fa-circle-o nav-icon"></i>
+                                <p>Caja</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a asp-controller="EventLogs" asp-action="Index" class="nav-link @Active("EventLogs")">
+                                <i class="fa fa-circle-o nav-icon"></i>
+                                <p>Eventos del sistema</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                }
+
+                <li class="nav-header text-uppercase small text-muted">Seguridad</li>
+                <li class="nav-item has-treeview @(openSeguridad ? "menu-open" : "")">
+                    <a href="#" class="nav-link @(openSeguridad ? "active" : "")">
+                        <i class="nav-icon fa fa-shield"></i>
+                        <p>
+                            Seguridad
+                            <i class="right fa fa-angle-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a asp-controller="AdminUsers" asp-action="Index" class="nav-link @Active("AdminUsers")">
+                                <i class="fa fa-circle-o nav-icon"></i>
+                                <p>Usuarios</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a asp-controller="AdminRoles" asp-action="Index" class="nav-link @Active("AdminRoles")">
+                                <i class="fa fa-circle-o nav-icon"></i>
+                                <p>Roles</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a asp-controller="Permissions" asp-action="Index" class="nav-link @Active("Permissions")">
+                                <i class="fa fa-circle-o nav-icon"></i>
+                                <p>Permisos</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a asp-controller="SecurityAudit" asp-action="Index" class="nav-link @Active("SecurityAudit")">
+                                <i class="fa fa-circle-o nav-icon"></i>
+                                <p>Auditoría</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <li class="nav-header text-uppercase small text-muted">Administración</li>
+                @if (featAutomation)
+                {
+                <li class="nav-item">
+                    <a asp-controller="Automations" asp-action="Index" class="nav-link @Active("Automations")">
+                        <i class="nav-icon fa fa-magic"></i>
+                        <p>Automatizaciones</p>
+                    </a>
+                </li>
+                }
+                <li class="nav-item">
+                    <a asp-area="AI" asp-controller="AIDashboard" asp-action="Index" class="nav-link @(isAIArea ? "active" : "")">
+                        <i class="nav-icon fa fa-brain"></i>
+                        <p>IA Operativa</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a asp-controller="TenantBilling" asp-action="Index" class="nav-link @Active("TenantBilling")">
+                        <i class="nav-icon fa fa-credit-card"></i>
+                        <p>Mi suscripción</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a asp-controller="Settings" asp-action="Index" class="nav-link @Active("Settings")">
+                        <i class="nav-icon fa fa-cog"></i>
+                        <p>Configuración</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a asp-controller="NotificationTemplates" asp-action="Index" class="nav-link @Active("NotificationTemplates")">
+                        <i class="nav-icon fa fa-bell"></i>
+                        <p>Notificaciones</p>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+</aside>

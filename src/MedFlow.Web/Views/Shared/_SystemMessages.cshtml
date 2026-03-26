@@ -1,0 +1,9 @@
+@{
+    var success = TempData["Success"] as string;
+    var error = TempData["Error"] as string;
+    var warning = TempData["Warning"] as string;
+}
+@if (!string.IsNullOrEmpty(success) || !string.IsNullOrEmpty(error) || !string.IsNullOrEmpty(warning))
+{
+    <div class="mb-3" id="medflow-flash" data-success="@success" data-error="@error" data-warning="@warning"></div>
+}

@@ -1,0 +1,106 @@
+@using MedFlow.Domain.Entities
+@using MedFlow.Domain.Enums
+@{
+    ViewData["Title"] = "Citas";
+    ViewData["PageSubtitle"] = "Agenda clínica";
+    ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item active\">Citas</li>";
+
+    var appointments = ViewBag.Appointments as IReadOnlyList<Appointment> ?? Array.Empty<Appointment>();
+    var doctors = ViewBag.Doctors as IReadOnlyList<Doctor> ?? Array.Empty<Doctor>();
+    DateTime from = ViewBag.From ?? DateTime.Today;
+    DateTime to = ViewBag.To ?? DateTime.Today.AddDays(7);
+    Guid? doctorId = ViewBag.DoctorId as Guid?;
+}
+
+<div class="card card-outline card-primary shadow-sm">
+    <div class="card-header d-flex flex-wrap align-items-center justify-content-between">
+        <h3 class="card-title mb-0"><i class="fa fa-calendar mr-2"></i>Listado de citas</h3>
+        <a asp-action="Create" class="btn btn-primary btn-sm mt-2 mt-sm-0">
+            <i class="fa fa-plus"></i> Nueva cita
+        </a>
+    </div>
+    <div class="card-body border-bottom bg-light">
+        <form method="get" class="form-row align-items-end">
+            <div class="form-group col-md-2 mb-2 mb-md-0">
+                <label class="small text-muted mb-0">Desde</label>
+                <input type="date" name="from" class="form-control form-control-sm" value="@from.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="form-group col-md-2 mb-2 mb-md-0">
+                <label class="small text-muted mb-0">Hasta</label>
+                <input type="date" name="to" class="form-control form-control-sm" value="@to.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="form-group col-md-4 col-lg-3 mb-2 mb-md-0">
+                <label class="small text-muted mb-0">Doctor</label>
+                <select name="doctorId" class="form-control form-control-sm">
+                    <option value="">Todos</option>
+                    @foreach (var d in doctors)
+                    {
+                        <option value="@d.Id" selected="@(doctorId.HasValue && doctorId.Value == d.Id)">@d.FullName</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group col-auto mb-0">
+                <button type="submit" class="btn btn-default btn-sm"><i class="fa fa-filter"></i> Aplicar</button>
+            </div>
+        </form>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table id="tblAppointments" class="table table-hover table-striped mb-0 text-nowrap">
+                <thead class="thead-light">
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Hora</th>
+                        <th>Paciente</th>
+                        <th>Doctor</th>
+                        <th>Estado</th>
+                        <th>Motivo</th>
+                        <th class="text-right no-sort">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var a in appointments)
+                    {
+                        var statusClass = a.Status switch
+                        {
+                            AppointmentStatus.Completed => "badge-success",
+                            AppointmentStatus.Cancelled => "badge-danger",
+                            AppointmentStatus.NoShow => "badge-warning",
+                            _ => "badge-secondary"
+                        };
+                        <tr>
+                            <td>@a.ScheduledDate.ToString("dd/MM/yyyy")</td>
+                            <td>@a.StartTime.ToString(@"hh\:mm") - @a.EndTime.ToString(@"hh\:mm")</td>
+                            <td>@(a.Patient?.NombreCompleto ?? "—")</td>
+                            <td>@(a.Doctor?.FullName ?? "—")</td>
+                            <td><span class="badge @statusClass">@a.Status</span></td>
+                            <td>@(string.IsNullOrWhiteSpace(a.Reason) ? "—" : a.Reason)</td>
+                            <td class="text-right text-nowrap">
+                                <a asp-action="Details" asp-route-id="@a.Id" class="btn btn-sm btn-info" title="Ver"><i class="fa fa-eye"></i></a>
+                                <a asp-action="Edit" asp-route-id="@a.Id" class="btn btn-sm btn-primary" title="Editar"><i class="fa fa-edit"></i></a>
+                                <form asp-action="Delete" asp-route-id="@a.Id" method="post" class="d-inline" data-confirm-delete>
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="fa fa-trash"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+            $('#tblAppointments').DataTable({
+                responsive: true,
+                pageLength: 25,
+                order: [[0, 'desc'], [1, 'asc']],
+                language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
+                columnDefs: [{ orderable: false, targets: 'no-sort' }]
+            });
+        });
+    </script>
+}

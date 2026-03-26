@@ -1,0 +1,62 @@
+@model IReadOnlyList<MedFlow.Domain.Entities.EventLog>
+@using MedFlow.Domain.Enums
+@{
+    ViewData["PageTitle"] = "Eventos del sistema";
+}
+
+<div class="card card-outline card-primary shadow-sm mb-3">
+    <div class="card-body">
+        <form method="get" class="form-inline">
+            <label class="mr-2 small text-muted">Estado</label>
+            <select name="status" class="form-control form-control-sm mr-2">
+                <option value="">Todos</option>
+                @foreach (OutboxEventStatus s in Enum.GetValues<OutboxEventStatus>())
+                {
+                    <option value="@((int)s)" selected="@(ViewBag.Status != null && (OutboxEventStatus)ViewBag.Status == s)">@s</option>
+                }
+            </select>
+            <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+        </form>
+    </div>
+</div>
+
+<div class="card card-outline card-secondary shadow-sm">
+    <div class="card-header"><h3 class="card-title font-weight-bold mb-0">Outbox</h3></div>
+    <div class="card-body table-responsive p-0">
+        <table id="tblE" class="table table-sm table-hover mb-0">
+            <thead class="thead-light">
+                <tr>
+                    <th>Fecha</th>
+                    <th>Tipo</th>
+                    <th>Agregado</th>
+                    <th>Estado</th>
+                    <th>Reintentos</th>
+                    <th>Payload</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var e in Model)
+                {
+                    <tr>
+                        <td class="text-nowrap">@e.CreatedAt.ToLocalTime().ToString("g")</td>
+                        <td><code>@e.EventType</code></td>
+                        <td><small>@e.AggregateType / @e.AggregateId</small></td>
+                        <td>
+                            <span class="badge badge-@(e.Status == OutboxEventStatus.Processed ? "success" : e.Status == OutboxEventStatus.Failed ? "danger" : "warning")">@e.Status</span>
+                        </td>
+                        <td>@e.RetryCount</td>
+                        <td style="max-width: 320px; font-size: .75rem; word-break: break-all;">@e.PayloadJson</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+            $('#tblE').DataTable({ order: [[0, 'desc']], pageLength: 25, language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' } });
+        });
+    </script>
+}

@@ -1,0 +1,38 @@
+@model IReadOnlyList<SaasTransactionListItemDto>
+@{
+    ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a href=\"/SuperAdmin/Billing/Overview\">Billing</a></li><li class=\"breadcrumb-item active\">Transacciones</li>";
+}
+<div class="card">
+    <div class="card-body table-responsive p-0">
+        <table class="table table-striped mb-0" id="txTable">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Clínica</th>
+                    <th>Tipo</th>
+                    <th>Estado</th>
+                    <th>Monto</th>
+                    <th>Descripción</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var t in Model)
+            {
+                <tr>
+                    <td>@t.OccurredAt.ToString("g")</td>
+                    <td>@t.TenantName <small class="text-muted">@t.TenantCode</small></td>
+                    <td>@t.Type</td>
+                    <td><span class="badge badge-@(t.Status == SaasTransactionStatus.Succeeded ? "success" : t.Status == SaasTransactionStatus.Failed ? "danger" : "secondary")">@t.Status</span></td>
+                    <td>@t.Amount.ToString("N2") @t.Currency</td>
+                    <td>@(t.Description ?? "—")</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
+@section Scripts {
+    <script>
+        $(function () { $('#txTable').DataTable({ language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' }, order: [[0, 'desc']] }); });
+    </script>
+}

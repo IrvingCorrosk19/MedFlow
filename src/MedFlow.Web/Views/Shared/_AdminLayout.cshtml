@@ -1,0 +1,107 @@
+@inject MedFlow.Application.Interfaces.ITenantContext TenantContext
+@{
+    var brandName = TenantContext.TenantName ?? "MedFlow AI";
+    var logo = TenantContext.LogoUrl;
+    var primary = TenantContext.PrimaryColor;
+    var secondary = TenantContext.SecondaryColor;
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="application-name" content="@brandName" />
+    <title>@(ViewData["Title"] ?? brandName)</title>
+    <link rel="stylesheet" href="~/lib/font-awesome/css/font-awesome.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap4/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/adminlte/css/adminlte.min.css" />
+    <link rel="stylesheet" href="~/lib/select2/css/select2.min.css" />
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap4.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @if (!string.IsNullOrEmpty(primary) || !string.IsNullOrEmpty(secondary))
+    {
+        <style>
+            :root {
+                @(string.IsNullOrEmpty(primary) ? "" : $"--mf-primary:{primary};--mf-primary-hover:{primary};")
+                @(string.IsNullOrEmpty(secondary) ? "" : $"--mf-secondary:{secondary};")
+            }
+            .medflow-skin .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active {
+                border-left-color: var(--mf-primary) !important;
+            }
+            .medflow-skin .btn-primary {
+                background-color: var(--mf-primary) !important;
+                border-color: var(--mf-primary) !important;
+            }
+        </style>
+    }
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed medflow-skin">
+    <div class="wrapper">
+        <partial name="_AdminNavbar" />
+        <partial name="_AdminSidebar" />
+        <div class="content-wrapper">
+            <div class="content-header">
+                <div class="container-fluid">
+                    <div class="row mb-2 align-items-center">
+                        <div class="col-sm-6">
+                            <h1 class="m-0 text-dark font-weight-semibold">@(ViewData["PageTitle"] ?? ViewData["Title"] ?? "MedFlow AI")</h1>
+                            @if (ViewData["PageSubtitle"] != null)
+                            {
+                                <p class="text-muted mb-0 small">@ViewData["PageSubtitle"]</p>
+                            }
+                        </div>
+                        <div class="col-sm-6">
+                            <ol class="breadcrumb float-sm-right mb-0">
+                                <li class="breadcrumb-item"><a asp-controller="Dashboard" asp-action="Index">Inicio</a></li>
+                                @if (ViewData["Breadcrumb"] != null)
+                                {
+                                    @Html.Raw(ViewData["Breadcrumb"])
+                                }
+                                else if (ViewData["Title"] != null)
+                                {
+                                    <li class="breadcrumb-item active">@ViewData["Title"]</li>
+                                }
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <section class="content">
+                <div class="container-fluid">
+                    @if (ViewContext.HttpContext.Items["TenantCommercialPastDue"] as bool? == true)
+                    {
+                        <div class="alert alert-warning alert-dismissible fade show">
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                            <strong>Pago pendiente.</strong> Su suscripción está marcada como impago. Regularice para evitar la suspensión del servicio.
+                        </div>
+                    }
+                    @if (ViewContext.HttpContext.Items["TenantCommercialSuspendedLimited"] as bool? == true)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show">
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                            <strong>Cuenta suspendida.</strong> Solo tiene acceso a funciones administrativas mínimas. Contacte a soporte o regularice su situación comercial.
+                        </div>
+                    }
+                    <partial name="_SystemMessages" />
+                    @RenderBody()
+                </div>
+            </section>
+        </div>
+        <partial name="_AdminFooter" />
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap4/js/bootstrap.bundle.min.js"></script>
+    <script src="~/lib/adminlte/js/adminlte.min.js"></script>
+    <script src="~/lib/select2/js/select2.full.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <script src="~/js/medflow.ui.js" asp-append-version="true"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

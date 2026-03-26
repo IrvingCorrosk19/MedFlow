@@ -1,0 +1,94 @@
+@inject MedFlow.Application.Interfaces.ITenantContext TenantContext
+@{
+    var brandName = TenantContext.TenantName ?? "MedFlow AI";
+    var logo = TenantContext.LogoUrl;
+    var primary = string.IsNullOrEmpty(TenantContext.PrimaryColor) ? "#1a5f7a" : TenantContext.PrimaryColor;
+    var secondary = string.IsNullOrEmpty(TenantContext.SecondaryColor) ? "#0d9488" : TenantContext.SecondaryColor;
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="application-name" content="@(brandName) - Portal del Paciente" />
+    <title>@(ViewData["Title"] ?? "Portal del Paciente") - @brandName</title>
+    <link rel="stylesheet" href="~/lib/font-awesome/css/font-awesome.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap4/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/patient-portal.css" asp-append-version="true" />
+    <style>
+        :root { --portal-primary: @primary; --portal-accent: @secondary; }
+    </style>
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="patient-portal">
+    <nav class="navbar navbar-expand-lg navbar-light portal-navbar">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" asp-area="PatientPortal" asp-controller="Home" asp-action="Index">
+                @if (!string.IsNullOrEmpty(logo))
+                {
+                    <img src="@logo" alt="@brandName" class="portal-logo mr-2" />
+                }
+                <span class="brand-text">@brandName</span>
+                <span class="badge badge-portal ml-2">Portal del Paciente</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#portalNav" aria-controls="portalNav" aria-expanded="false" aria-label="Menu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="portalNav">
+                @if (User.Identity?.IsAuthenticated == true && User.IsInRole("Patient"))
+                {
+                    <ul class="navbar-nav mr-auto">
+                        <li class="nav-item"><a class="nav-link" asp-area="PatientPortal" asp-controller="Home" asp-action="Index"><i class="fa fa-home"></i> Inicio</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-area="PatientPortal" asp-controller="Profile" asp-action="Index"><i class="fa fa-user"></i> Mi Perfil</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-area="PatientPortal" asp-controller="Appointments" asp-action="Upcoming"><i class="fa fa-calendar"></i> Mis Citas</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-area="PatientPortal" asp-controller="Appointments" asp-action="History"><i class="fa fa-history"></i> Historial</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-area="PatientPortal" asp-controller="Billing" asp-action="Invoices"><i class="fa fa-file-text"></i> Facturas</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-area="PatientPortal" asp-controller="Billing" asp-action="Payments"><i class="fa fa-credit-card"></i> Pagos</a></li>
+                        <li class="nav-item">
+                            <a class="nav-link position-relative" asp-area="PatientPortal" asp-controller="Notifications" asp-action="Index">
+                                <i class="fa fa-bell"></i> Notificaciones
+                                @if (ViewContext.HttpContext.Items["UnreadNotificationsCount"] is int cnt && cnt > 0)
+                                {
+                                    <span class="badge badge-danger badge-pill">@cnt</span>
+                                }
+                            </a>
+                        </li>
+                    </ul>
+                    <ul class="navbar-nav ml-auto">
+                        <li class="nav-item">
+                            <form asp-area="PatientPortal" asp-controller="Auth" asp-action="Logout" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-link nav-link border-0 p-0"><i class="fa fa-sign-out"></i> Cerrar sesión</button>
+                            </form>
+                        </li>
+                    </ul>
+                }
+            </div>
+        </div>
+    </nav>
+    <main class="portal-main">
+        <div class="container py-4">
+            <partial name="_SystemMessages" />
+            @RenderBody()
+        </div>
+    </main>
+    <footer class="portal-footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <span class="text-muted small">@brandName - @DateTime.UtcNow.Year - Portal del Paciente</span>
+                </div>
+                <div class="col-md-6 text-md-right">
+                    <a href="#" class="text-muted small">Ayuda</a>
+                    <span class="mx-2">|</span>
+                    <a href="#" class="text-muted small">Contacto</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap4/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

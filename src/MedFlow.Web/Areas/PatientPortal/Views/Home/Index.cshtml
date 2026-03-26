@@ -1,0 +1,115 @@
+@model MedFlow.Application.PatientPortal.PatientPortalDashboardDto
+@{
+    ViewData["Title"] = "Inicio";
+    var options = ViewData["Options"] as MedFlow.Application.Options.PatientPortalOptions;
+}
+<h2 class="mb-4">Hola, @Model.Profile.FullName</h2>
+
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="dashboard-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="card-label">Proxima cita</div>
+                    @if (Model.NextAppointment != null)
+                    {
+                        <div class="card-value" style="font-size:1.1rem;">@Model.NextAppointment.ScheduledDate.ToString("ddd d MMM")</div>
+                        <div class="small text-muted">@Model.NextAppointment.StartTime.ToString(@"hh\:mm") - @Model.NextAppointment.DoctorName</div>
+                        <a asp-area="PatientPortal" asp-action="Upcoming" asp-controller="Appointments" class="btn btn-sm btn-outline-primary mt-2">Ver detalles</a>
+                    }
+                    else
+                    {
+                        <div class="card-value text-muted" style="font-size:1rem;">Sin citas programadas</div>
+                    }
+                </div>
+                <div class="card-icon bg-primary text-white"><i class="fa fa-calendar"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="dashboard-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="card-label">Estado de cuenta</div>
+                    <div class="card-value">@Model.BalanceDue.ToString("C")</div>
+                    <div class="small text-muted">@Model.PendingAppointmentsCount citas pendientes</div>
+                    @if (options?.ShowBilling == true)
+                    {
+                        <a asp-area="PatientPortal" asp-action="Invoices" asp-controller="Billing" class="btn btn-sm btn-outline-primary mt-2">Ver facturas</a>
+                    }
+                </div>
+                <div class="card-icon bg-info text-white"><i class="fa fa-file-text"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="dashboard-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="card-label">Notificaciones</div>
+                    <div class="card-value">@Model.UnreadNotificationsCount</div>
+                    <div class="small text-muted">sin leer</div>
+                    @if (options?.ShowNotifications == true)
+                    {
+                        <a asp-area="PatientPortal" asp-action="Index" asp-controller="Notifications" class="btn btn-sm btn-outline-primary mt-2">Ver todas</a>
+                    }
+                </div>
+                <div class="card-icon bg-warning text-white"><i class="fa fa-bell"></i></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="portal-card card">
+            <div class="card-header">Ultimas notificaciones</div>
+            <div class="card-body">
+                @if (Model.RecentNotifications.Any())
+                {
+                    <ul class="list-unstyled mb-0">
+                        @foreach (var n in Model.RecentNotifications.Take(5))
+                        {
+                            <li class="py-2 border-bottom @(n.IsRead ? "" : "font-weight-bold")">
+                                <small class="text-muted">@n.CreatedAt.ToString("dd/MM HH:mm")</small>
+                                <div>@n.Title</div>
+                                @if (!string.IsNullOrEmpty(n.Message))
+                                {
+                                    <small class="text-muted">@(n.Message.Length > 80 ? n.Message.Substring(0, 80) + "..." : n.Message)</small>
+                                }
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <p class="text-muted portal-empty small">No hay notificaciones recientes.</p>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6 mb-4">
+        <div class="portal-card card">
+            <div class="card-header">Accesos rapidos</div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6 mb-2">
+                        <a asp-area="PatientPortal" asp-action="Index" asp-controller="Profile" class="btn btn-outline-secondary btn-block"><i class="fa fa-user"></i> Mi Perfil</a>
+                    </div>
+                    <div class="col-6 mb-2">
+                        <a asp-area="PatientPortal" asp-action="Upcoming" asp-controller="Appointments" class="btn btn-outline-secondary btn-block"><i class="fa fa-calendar"></i> Mis Citas</a>
+                    </div>
+                    @if (options?.ShowBilling == true)
+                    {
+                        <div class="col-6 mb-2">
+                            <a asp-area="PatientPortal" asp-action="Invoices" asp-controller="Billing" class="btn btn-outline-secondary btn-block"><i class="fa fa-file-text"></i> Facturas</a>
+                        </div>
+                        <div class="col-6 mb-2">
+                            <a asp-area="PatientPortal" asp-action="Payments" asp-controller="Billing" class="btn btn-outline-secondary btn-block"><i class="fa fa-credit-card"></i> Pagos</a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

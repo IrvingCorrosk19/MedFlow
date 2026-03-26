@@ -1,0 +1,148 @@
+@model IReadOnlyList<MedFlow.Domain.Entities.WorkflowDefinition>
+@using MedFlow.Domain.Enums
+@{
+    var metrics = ViewBag.Metrics as MedFlow.Application.Interfaces.Workflow.WorkflowMetrics;
+    var triggerEvents = ViewBag.TriggerEvents as IReadOnlyList<string> ?? [];
+}
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        <button type="button" class="close" data-dismiss="alert">&times;</button>@TempData["Success"]
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        <button type="button" class="close" data-dismiss="alert">&times;</button>@TempData["Error"]
+    </div>
+}
+
+<div class="row mb-3">
+    <div class="col-md-3">
+        <div class="small-box bg-info">
+            <div class="inner">
+                <h3>@(metrics?.TotalExecuted ?? 0)</h3>
+                <p>Ejecutadas</p>
+            </div>
+            <div class="icon"><i class="fa fa-play"></i></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="small-box bg-success">
+            <div class="inner">
+                <h3>@(metrics?.Succeeded ?? 0)</h3>
+                <p>Exitosas</p>
+            </div>
+            <div class="icon"><i class="fa fa-check"></i></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="small-box bg-danger">
+            <div class="inner">
+                <h3>@(metrics?.Failed ?? 0)</h3>
+                <p>Fallidas</p>
+            </div>
+            <div class="icon"><i class="fa fa-times"></i></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="small-box bg-secondary">
+            <div class="inner">
+                <h3>@(metrics?.AverageExecutionSeconds.ToString("F1") ?? "0")s</h3>
+                <p>Tiempo prom.</p>
+            </div>
+            <div class="icon"><i class="fa fa-clock-o"></i></div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col">
+        @if (ViewBag.CanManage == true)
+        {
+        <a asp-action="Create" class="btn btn-primary"><i class="fa fa-plus"></i> Nuevo workflow</a>
+        }
+        <a asp-controller="WorkflowExecutions" asp-action="Index" class="btn btn-outline-secondary"><i class="fa fa-list"></i> Ver ejecuciones</a>
+    </div>
+</div>
+
+<div class="card card-outline card-primary shadow-sm">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fa fa-plug mr-2"></i>Workflows configurados</h3>
+    </div>
+    <div class="card-body table-responsive p-0">
+        <table id="tblWorkflows" class="table table-hover mb-0">
+            <thead class="thead-light">
+                <tr>
+                    <th>Nombre</th>
+                    <th>Código</th>
+                    <th>Evento</th>
+                    <th>Estado</th>
+                    <th>Webhook</th>
+                    <th style="width: 180px;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var w in Model)
+                {
+                <tr>
+                    <td>@w.Name</td>
+                    <td><code>@w.Code</code></td>
+                    <td><span class="badge badge-secondary">@w.TriggerEvent</span></td>
+                    <td>
+                        @if (w.IsActive)
+                        { <span class="badge badge-success">Activo</span> }
+                        else
+                        { <span class="badge badge-secondary">Inactivo</span> }
+                    </td>
+                    <td><small class="text-muted" style="max-width:200px; overflow:hidden; text-overflow:ellipsis; display:block;">@w.WebhookUrl</small></td>
+                    <td>
+                        @if (ViewBag.CanManage == true)
+                        {
+                        <a asp-action="Edit" asp-route-id="@w.Id" class="btn btn-xs btn-default" title="Editar">Editar</a>
+                        <form asp-action="TestWebhook" asp-route-id="@w.Id" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-xs btn-info" title="Probar webhook">Probar</button>
+                        </form>
+                        @if (w.IsActive)
+                        {
+                        <form asp-action="ToggleActive" asp-route-id="@w.Id" asp-route-isActive="false" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-xs btn-warning">Desactivar</button>
+                        </form>
+                        }
+                        else
+                        {
+                        <form asp-action="ToggleActive" asp-route-id="@w.Id" asp-route-isActive="true" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-xs btn-success">Activar</button>
+                        </form>
+                        }
+                        <form asp-action="Delete" asp-route-id="@w.Id" method="post" class="d-inline" onsubmit="return confirm('¿Eliminar este workflow?');">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-xs btn-danger">Eliminar</button>
+                        </form>
+                        }
+                        else
+                        {
+                        <a asp-action="Edit" asp-route-id="@w.Id" class="btn btn-xs btn-default">Ver</a>
+                        }
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    $(function () {
+        $('#tblWorkflows').DataTable({
+            order: [[0, 'asc']],
+            pageLength: 25,
+            language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' }
+        });
+    });
+</script>
+}

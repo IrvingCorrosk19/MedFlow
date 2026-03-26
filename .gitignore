@@ -1,0 +1,32 @@
+# Build outputs
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# Test results
+TestResults/
+*.trx
+*.coverage
+playwright-report/
+test-results/
+
+# Playwright binaries
+**/playwright/.local-chromium/
+**/playwright/.local-firefox/
+**/playwright/.local-webkit/
+**/.playwright/
+
+# Environment / secrets
+*.env
+appsettings.Development.json
+appsettings.Production.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# dotnet
+*.nupkg
+.nuget/

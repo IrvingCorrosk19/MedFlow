@@ -1,0 +1,25 @@
+@model OnboardingSuccessVm
+@{
+    ViewData["PageTitle"] = "Clínica creada";
+}
+<div class="card onboarding-hero border-0 text-center p-4 p-md-5">
+    <div class="mb-3 text-success" style="font-size:3rem;line-height:1;"><i class="fa fa-check-circle"></i></div>
+    <h2 class="h4 font-weight-bold mb-2">Clínica creada correctamente</h2>
+    <p class="text-muted mb-4">
+        Su organización <strong>@Model.TenantCode</strong> está lista.
+        @if (!string.IsNullOrEmpty(Model.AdminEmail))
+        {
+            <span>El administrador puede iniciar sesión con <strong>@Model.AdminEmail</strong>.</span>
+        }
+    </p>
+    @if (!string.IsNullOrEmpty(Model.HostHint))
+    {
+        <p class="text-muted small mb-2">Acceda con su subdominio:</p>
+        <p class="mb-4"><a href="@Model.HostHint" class="btn btn-outline-primary">@Model.HostHint</a></p>
+    }
+    else
+    {
+        <p class="text-muted small mb-4">Configure el DNS o archivo hosts para apuntar el subdominio <code>@Model.TenantCode</code> a esta aplicación, o use el header <code>X-Tenant-ID</code> en entornos de desarrollo.</p>
+    }
+    <a class="btn btn-primary" asp-controller="Account" asp-action="Login">Ir al inicio de sesión</a>
+</div>

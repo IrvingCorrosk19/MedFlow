@@ -1,0 +1,100 @@
+@model SubscriptionPlanEditDto
+<div asp-validation-summary="All" class="text-danger"></div>
+<div class="form-row">
+    <div class="form-group col-md-6">
+        <label>Nombre</label>
+        <input asp-for="Name" class="form-control" />
+    </div>
+    <div class="form-group col-md-6">
+        <label>Código</label>
+        <input asp-for="Code" class="form-control" />
+    </div>
+</div>
+<div class="form-group">
+    <label>Descripción</label>
+    <textarea asp-for="Description" class="form-control" rows="2"></textarea>
+</div>
+<div class="form-row">
+    <div class="form-group col-md-4">
+        <label>Precio mensual</label>
+        <input asp-for="MonthlyPrice" class="form-control" type="number" step="0.01" />
+    </div>
+    <div class="form-group col-md-4">
+        <label>Precio anual (opcional)</label>
+        <input asp-for="AnnualPrice" class="form-control" type="number" step="0.01" />
+    </div>
+    <div class="form-group col-md-4">
+        <label>Moneda</label>
+        <input asp-for="Currency" class="form-control" />
+    </div>
+</div>
+<h5 class="mt-3">Stripe (Billing SaaS)</h5>
+<div class="form-row">
+    <div class="form-group col-md-4">
+        <label>Stripe Product ID</label>
+        <input asp-for="StripeProductId" class="form-control" placeholder="prod_xxx" />
+    </div>
+    <div class="form-group col-md-4">
+        <label>Stripe Price ID (mensual)</label>
+        <input asp-for="StripePriceIdMonthly" class="form-control" placeholder="price_xxx" />
+    </div>
+    <div class="form-group col-md-4">
+        <label>Stripe Price ID (anual)</label>
+        <input asp-for="StripePriceIdAnnual" class="form-control" placeholder="price_xxx" />
+    </div>
+</div>
+<h5 class="mt-3">Límites (0 = ilimitado en validación)</h5>
+<div class="form-row">
+    <div class="form-group col-md-3">
+        <label>Max usuarios</label>
+        <input asp-for="MaxUsers" class="form-control" type="number" />
+    </div>
+    <div class="form-group col-md-3">
+        <label>Max doctores</label>
+        <input asp-for="MaxDoctors" class="form-control" type="number" />
+    </div>
+    <div class="form-group col-md-3">
+        <label>Max pacientes</label>
+        <input asp-for="MaxPatients" class="form-control" type="number" />
+    </div>
+    <div class="form-group col-md-3">
+        <label>Max citas / mes</label>
+        <input asp-for="MaxAppointmentsPerMonth" class="form-control" type="number" />
+    </div>
+</div>
+<div class="form-group">
+    <label>Max sucursales (opcional)</label>
+    <input asp-for="MaxBranches" class="form-control" type="number" />
+</div>
+<h5 class="mt-3">Módulos incluidos</h5>
+<div class="form-row">
+    <div class="form-group col-md-4">
+        <div class="form-check"><input asp-for="IncludesBillingModule" class="form-check-input" /><label class="form-check-label" asp-for="IncludesBillingModule">Facturación</label></div>
+        <div class="form-check"><input asp-for="IncludesAutomationModule" class="form-check-input" /><label class="form-check-label" asp-for="IncludesAutomationModule">Automatización</label></div>
+    </div>
+    <div class="form-group col-md-4">
+        <div class="form-check"><input asp-for="IncludesReportsModule" class="form-check-input" /><label class="form-check-label" asp-for="IncludesReportsModule">Reportes</label></div>
+        <div class="form-check"><input asp-for="IncludesPatientPortal" class="form-check-input" /><label class="form-check-label" asp-for="IncludesPatientPortal">Portal paciente</label></div>
+    </div>
+    <div class="form-group col-md-4">
+        <div class="form-check"><input asp-for="IncludesMultiBranch" class="form-check-input" /><label class="form-check-label" asp-for="IncludesMultiBranch">Multi-sucursal</label></div>
+        <div class="form-check"><input asp-for="IncludesAdvancedAnalytics" class="form-check-input" /><label class="form-check-label" asp-for="IncludesAdvancedAnalytics">Analytics avanzado</label></div>
+    </div>
+</div>
+<div class="form-row">
+    <div class="form-group col-md-4">
+        <label>Días de trial</label>
+        <input asp-for="TrialDays" class="form-control" type="number" />
+    </div>
+    <div class="form-group col-md-4">
+        <label>Orden</label>
+        <input asp-for="SortOrder" class="form-control" type="number" />
+    </div>
+    <div class="form-group col-md-4">
+        <label>&nbsp;</label>
+        <div class="form-check pt-2">
+            <input asp-for="IsActive" class="form-check-input" />
+            <label class="form-check-label" asp-for="IsActive">Activo en catálogo</label>
+        </div>
+    </div>
+</div>

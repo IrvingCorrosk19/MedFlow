@@ -1,0 +1,138 @@
+@model MedFlow.Web.ViewModels.BillingInvoiceCreateViewModel
+@using MedFlow.Domain.Enums
+@{
+    ViewData["PageTitle"] = "Nueva factura";
+    var patients = ViewBag.Patients as Microsoft.AspNetCore.Mvc.Rendering.SelectList;
+    var doctors = ViewBag.Doctors as Microsoft.AspNetCore.Mvc.Rendering.SelectList;
+}
+
+<form asp-action="Create" method="post" id="frmBill">
+    @Html.AntiForgeryToken()
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card card-outline card-primary shadow-sm">
+                <div class="card-header"><h3 class="card-title font-weight-bold mb-0">Datos generales</h3></div>
+                <div class="card-body">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label asp-for="PatientId">Paciente</label>
+                            <select asp-for="PatientId" class="form-control select2" asp-items="patients" required></select>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label asp-for="DoctorId">Doctor (opcional)</label>
+                            <select asp-for="DoctorId" class="form-control select2" asp-items="doctors">
+                                <option value="">—</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-4">
+                            <label asp-for="IssueDate">Fecha emisión</label>
+                            <input asp-for="IssueDate" type="date" class="form-control" />
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label asp-for="DueDate">Vencimiento</label>
+                            <input asp-for="DueDate" type="date" class="form-control" />
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label>Cita (opcional)</label>
+                            <input type="hidden" asp-for="AppointmentId" />
+                            <input type="text" class="form-control" value="@(Model.AppointmentId?.ToString() ?? "")" readonly placeholder="Desde agenda" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card card-outline card-secondary shadow-sm mt-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title font-weight-bold mb-0">Conceptos</h3>
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="btnAddLine"><i class="fa fa-plus"></i> Línea</button>
+                </div>
+                <div class="card-body p-0 table-responsive">
+                    <table class="table table-sm mb-0" id="linesTable">
+                        <thead class="thead-light">
+                            <tr>
+                                <th style="width:140px">Tipo</th>
+                                <th>Descripción</th>
+                                <th style="width:70px">Cant.</th>
+                                <th style="width:110px">P. unit.</th>
+                                <th style="width:100px">Desc. línea</th>
+                                <th style="width:40px"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (var i = 0; i < Model.Lines.Count; i++)
+                            {
+                                <tr class="line-row">
+                                    <td>
+                                        <select asp-for="Lines[i].ItemType" class="form-control form-control-sm" asp-items="Html.GetEnumSelectList<BillingInvoiceItemType>()"></select>
+                                    </td>
+                                    <td><input asp-for="Lines[i].Description" class="form-control form-control-sm" /></td>
+                                    <td><input asp-for="Lines[i].Quantity" class="form-control form-control-sm" type="number" min="1" /></td>
+                                    <td><input asp-for="Lines[i].UnitPrice" class="form-control form-control-sm" step="0.01" min="0" /></td>
+                                    <td><input asp-for="Lines[i].LineDiscount" class="form-control form-control-sm" step="0.01" min="0" /></td>
+                                    <td><button type="button" class="btn btn-link text-danger btn-sm btn-remove" tabindex="-1"><i class="fa fa-times"></i></button></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card card-outline card-success shadow-sm sticky-top" style="top:72px">
+                <div class="card-header"><h3 class="card-title font-weight-bold mb-0">Totales</h3></div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label asp-for="DiscountAmount">Descuento global</label>
+                        <input asp-for="DiscountAmount" class="form-control" step="0.01" min="0" />
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="TaxAmount">Impuestos</label>
+                        <input asp-for="TaxAmount" class="form-control" step="0.01" min="0" />
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="Notes">Notas</label>
+                        <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-success btn-block btn-lg"><i class="fa fa-save"></i> Guardar factura</button>
+                    <a asp-action="Index" class="btn btn-default btn-block">Cancelar</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $(function () {
+            $('.select2').select2({ theme: 'bootstrap4', width: '100%' });
+            var idx = @Model.Lines.Count;
+            function reindex() {
+                $('#linesTable tbody tr').each(function (i) {
+                    $(this).find('[name]').each(function () {
+                        var n = $(this).attr('name');
+                        if (n) $(this).attr('name', n.replace(/Lines\[\d+\]/, 'Lines[' + i + ']'));
+                    });
+                });
+            }
+            $('#btnAddLine').on('click', function () {
+                var $clone = $('#linesTable tbody tr:first').clone();
+                $clone.find('input').val(function (i, v) {
+                    if ($(this).attr('name').indexOf('Quantity') > 0) return '1';
+                    if ($(this).attr('name').indexOf('UnitPrice') > 0 || $(this).attr('name').indexOf('LineDiscount') > 0) return '0';
+                    if ($(this).attr('name').indexOf('Description') > 0) return 'Servicio';
+                    return v;
+                });
+                $('#linesTable tbody').append($clone);
+                reindex();
+            });
+            $(document).on('click', '.btn-remove', function () {
+                var $tbody = $('#linesTable tbody');
+                if ($tbody.find('tr').length > 1) { $(this).closest('tr').remove(); reindex(); }
+            });
+        });
+    </script>
+}

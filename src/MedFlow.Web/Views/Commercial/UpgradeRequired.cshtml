@@ -1,0 +1,23 @@
+@{
+    ViewData["Title"] = "Plan insuficiente";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    var feature = ViewBag.Feature as string;
+}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card card-outline card-warning">
+            <div class="card-header">
+                <h3 class="card-title mb-0"><i class="fa fa-level-up"></i> Función no incluida</h3>
+            </div>
+            <div class="card-body">
+                <p class="lead">La función solicitada no está habilitada en el plan actual de su clínica.</p>
+                @if (!string.IsNullOrEmpty(feature))
+                {
+                    <p class="text-muted">Área: <span class="badge badge-secondary">@feature</span></p>
+                }
+                <p>Actualice su plan o contacte al administrador de la plataforma MedFlow AI para ampliar su suscripción.</p>
+                <a asp-controller="Dashboard" asp-action="Index" class="btn btn-primary">Ir al dashboard</a>
+            </div>
+        </div>
+    </div>
+</div>

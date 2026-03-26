@@ -1,0 +1,46 @@
+@{
+    ViewData["Title"] = "Operaciones";
+    var status = ViewData["HealthStatus"] as string ?? "Unknown";
+    var duration = (double)(ViewData["HealthDuration"] ?? 0);
+    var workers = ViewData["Workers"] as IReadOnlyList<MedFlow.Application.Interfaces.WorkerHeartbeatVm> ?? [];
+    var entries = ViewData["HealthEntries"] as IReadOnlyList<MedFlow.Application.Interfaces.HealthEntryVm> ?? [];
+}
+<div class="mb-3">
+    <a asp-controller="Webhooks" asp-action="Index" class="btn btn-outline-secondary btn-sm"><i class="fa fa-bolt"></i> Webhooks</a>
+</div>
+<div class="row">
+    <div class="col-md-4">
+        <div class="card card-outline @(status == "Healthy" ? "card-success" : status == "Degraded" ? "card-warning" : "card-danger")">
+            <div class="card-header"><h3 class="card-title"><i class="fa fa-heartbeat"></i> Health</h3></div>
+            <div class="card-body">
+                <p class="mb-0"><strong>Status:</strong> @status</p>
+                <p class="mb-0"><strong>Duration:</strong> @duration.ToString("F0") ms</p>
+                @foreach (var e in entries)
+                {
+                    <p class="mb-0 small">@e.Name: @e.Status</p>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card card-outline card-primary">
+            <div class="card-header"><h3 class="card-title"><i class="fa fa-cogs"></i> Workers</h3></div>
+            <div class="card-body table-responsive p-0">
+                <table class="table table-sm table-hover mb-0">
+                    <thead><tr><th>Worker</th><th>Last seen</th><th>Status</th><th>Details</th></tr></thead>
+                    <tbody>
+                        @foreach (var w in workers)
+                        {
+                        <tr class="@((DateTime.UtcNow - w.LastSeenAt).TotalMinutes > 5 ? "table-warning" : "")">
+                            <td>@w.WorkerName</td>
+                            <td>@w.LastSeenAt.ToString("yyyy-MM-dd HH:mm")</td>
+                            <td>@w.Status</td>
+                            <td>@w.Details</td>
+                        </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

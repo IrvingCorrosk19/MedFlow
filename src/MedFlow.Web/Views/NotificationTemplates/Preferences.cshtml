@@ -1,0 +1,62 @@
+@model IReadOnlyList<NotificationPreferenceDto>
+@using MedFlow.Domain.Enums
+@{
+    var templates = ViewBag.Templates as IReadOnlyList<NotificationTemplateDto> ?? [];
+    var eventTypes = ViewBag.EventTypes as IReadOnlyList<NotificationEventType> ?? [];
+    var channels = ViewBag.Channels as IReadOnlyList<NotificationChannel> ?? [];
+    Guid? TemplateId(NotificationEventType et, NotificationChannel ch) =>
+        templates.FirstOrDefault(t => t.EventType == et && t.Channel == ch)?.Id;
+    bool IsEnabled(NotificationEventType et, NotificationChannel ch) =>
+        Model.FirstOrDefault(p => p.EventType == et && p.Channel == ch)?.IsEnabled ?? false;
+}
+<div class="card">
+    <div class="card-body">
+        <p class="text-muted">Active los canales por evento. Debe crear plantillas antes de habilitar.</p>
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Evento</th>
+                    <th>Email</th>
+                    <th>In-App</th>
+                    <th>Webhook</th>
+                    <th>WhatsApp</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var et in eventTypes.Where(e => e != NotificationEventType.Custom))
+            {
+                <tr>
+                    <td>@et</td>
+                    @foreach (var ch in new[] { NotificationChannel.Email, NotificationChannel.InApp, NotificationChannel.Webhook, NotificationChannel.WhatsApp })
+                    {
+                        <td>
+                            @{
+                                var tid = TemplateId(et, ch);
+                                var enabled = IsEnabled(et, ch);
+                            }
+                            @if (tid.HasValue)
+                            {
+                                <form asp-action="SetPreference" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="EventType" value="@((int)et)" />
+                                    <input type="hidden" name="Channel" value="@((int)ch)" />
+                                    <input type="hidden" name="TemplateId" value="@tid" />
+                                    <input type="hidden" name="IsEnabled" value="false" />
+                                    <div class="form-check">
+                                        <input type="checkbox" name="IsEnabled" value="true" checked="@enabled" onchange="this.form.submit()" class="form-check-input" />
+                                    </div>
+                                </form>
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </td>
+                    }
+                </tr>
+            }
+            </tbody>
+        </table>
+        <a asp-action="Index" class="btn btn-secondary">Volver a plantillas</a>
+    </div>
+</div>

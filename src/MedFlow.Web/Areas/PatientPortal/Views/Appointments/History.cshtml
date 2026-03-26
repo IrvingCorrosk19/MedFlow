@@ -1,0 +1,35 @@
+@model IReadOnlyList<MedFlow.Application.PatientPortal.PatientAppointmentListItemDto>
+@{
+    ViewData["Title"] = "Historial de Citas";
+}
+<h2 class="mb-4">Historial</h2>
+
+@if (!Model.Any())
+{
+    <div class="portal-card card">
+        <div class="card-body portal-empty">
+            <h5>Sin historial</h5>
+        </div>
+    </div>
+}
+else
+{
+    <div class="portal-card card">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead><tr><th>Fecha</th><th>Hora</th><th>Doctor</th><th>Estado</th></tr></thead>
+                <tbody>
+                    @foreach (var a in Model)
+                    {
+                        <tr>
+                            <td>@a.ScheduledDate.ToString("dd/MM/yyyy")</td>
+                            <td>@a.StartTime.ToString(@"hh\:mm")</td>
+                            <td>@a.DoctorName</td>
+                            <td><span class="badge badge-secondary">@a.Status</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

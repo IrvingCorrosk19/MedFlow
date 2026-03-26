@@ -1,0 +1,26 @@
+@model MedFlow.Application.PatientPortal.PatientInvoiceListItemDto
+@{
+    ViewData["Title"] = "Factura " + Model.InvoiceNumber;
+}
+<h2 class="mb-4">Factura @Model.InvoiceNumber</h2>
+
+<div class="portal-card card">
+    <div class="card-body">
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <p><strong>Fecha:</strong> @Model.IssueDate.ToString("dd/MM/yyyy")</p>
+                @if (Model.DueDate.HasValue)
+                {
+                    <p><strong>Vencimiento:</strong> @Model.DueDate.Value.ToString("dd/MM/yyyy")</p>
+                }
+            </div>
+            <div class="col-md-6 text-md-right">
+                <p><strong>Total:</strong> @Model.TotalAmount.ToString("C")</p>
+                <p><strong>Pagado:</strong> @Model.AmountPaid.ToString("C")</p>
+                <p><strong>Saldo:</strong> @Model.BalanceDue.ToString("C")</p>
+                <span class="badge badge-secondary">@Model.Status</span>
+            </div>
+        </div>
+        <a asp-action="Invoices" class="btn btn-outline-secondary">Volver</a>
+    </div>
+</div>

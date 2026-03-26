@@ -1,0 +1,32 @@
+@model MedFlow.Domain.Entities.Doctor
+@{
+    ViewData["Title"] = "Detalle de doctor";
+    ViewData["PageSubtitle"] = Model.FullName;
+    ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a href=\"" + Url.Action("Index") + "\">Doctores</a></li><li class=\"breadcrumb-item active\">Detalle</li>";
+}
+
+<div class="card card-outline card-primary shadow-sm">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Nombre:</strong> @Model.FullName</p>
+                <p><strong>Especialidad:</strong> @(string.IsNullOrWhiteSpace(Model.Speciality) ? "—" : Model.Speciality)</p>
+                <p><strong>Licencia:</strong> @(string.IsNullOrWhiteSpace(Model.LicenseNumber) ? "—" : Model.LicenseNumber)</p>
+                <p><strong>Consultorio:</strong> @(string.IsNullOrWhiteSpace(Model.ConsultationRoom) ? "—" : Model.ConsultationRoom)</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Teléfono:</strong> @(string.IsNullOrWhiteSpace(Model.Phone) ? "—" : Model.Phone)</p>
+                <p><strong>Correo:</strong> @(string.IsNullOrWhiteSpace(Model.Email) ? "—" : Model.Email)</p>
+                <p><strong>Horario:</strong> @(string.IsNullOrWhiteSpace(Model.WorkingHours) ? "—" : Model.WorkingHours)</p>
+                <p><strong>Estado:</strong> @(Model.IsActive ? "Activo" : "Inactivo")</p>
+            </div>
+        </div>
+        <hr />
+        <p class="mb-0"><strong>Notas:</strong> @(string.IsNullOrWhiteSpace(Model.Notes) ? "—" : Model.Notes)</p>
+    </div>
+</div>
+
+<div class="mt-3 d-flex gap-2">
+    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary"><i class="fa fa-edit"></i> Editar</a>
+    <a asp-action="Index" class="btn btn-outline-secondary">Volver</a>
+</div>

@@ -1,0 +1,239 @@
+@model MedFlow.Application.Reporting.ExecutiveAdvancedDashboardVm
+@using System.Text.Json
+@{
+    var j = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    var chartData = new
+    {
+        aptLabels = Model.AppointmentsTrend.Select(x => x.Date.ToString("dd/MM")).ToList(),
+        aptData = Model.AppointmentsTrend.Select(x => (double)x.Value).ToList(),
+        revLabels = Model.RevenueTrend.Select(x => x.Date.ToString("dd/MM")).ToList(),
+        revData = Model.RevenueTrend.Select(x => (double)x.Value).ToList(),
+        completionLabels = Model.CompletionRateTrend.Select(x => x.Date.ToString("dd/MM")).ToList(),
+        completionData = Model.CompletionRateTrend.Select(x => (double)x.Value).ToList(),
+        newPatientsLabels = Model.NewPatientsTrend.Select(x => x.Date.ToString("dd/MM")).ToList(),
+        newPatientsData = Model.NewPatientsTrend.Select(x => (int)(x.Count ?? 0)).ToList()
+    };
+    var chartJson = JsonSerializer.Serialize(chartData, j);
+}
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        <button type="button" class="close" data-dismiss="alert">&times;</button>@TempData["Success"]
+    </div>
+}
+
+<div class="row mb-2">
+    <div class="col-12 d-flex flex-wrap justify-content-between align-items-center">
+        <form method="get" class="form-inline">
+            <input type="date" name="from" value="@ViewData["From"]" class="form-control form-control-sm mr-1" />
+            <input type="date" name="to" value="@ViewData["To"]" class="form-control form-control-sm mr-1" />
+            <select name="days" class="form-control form-control-sm mr-1">
+                <option value="7" selected="@(ViewBag.Days == 7)">7 días</option>
+                <option value="14" selected="@(ViewBag.Days == 14)">14 días</option>
+                <option value="30" selected="@(ViewBag.Days == 30)">30 días</option>
+                <option value="60" selected="@(ViewBag.Days == 60)">60 días</option>
+                <option value="90" selected="@(ViewBag.Days == 90)">90 días</option>
+            </select>
+            <button type="submit" class="btn btn-primary btn-sm">Aplicar</button>
+        </form>
+        <div class="btn-group btn-group-sm">
+            @if (ViewBag.CanManage == true)
+            {
+            <form asp-action="Aggregate" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="date" value="@DateTime.UtcNow.AddDays(-1).ToString("yyyy-MM-dd")" />
+                <button type="submit" class="btn btn-outline-warning"><i class="fa fa-refresh"></i> Agregar ayer</button>
+            </form>
+            }
+            <button type="button" class="btn btn-outline-secondary" onclick="window.print();"><i class="fa fa-print"></i> Imprimir</button>
+        </div>
+    </div>
+</div>
+
+@if (ViewBag.Health != null)
+{
+    var h = ViewBag.Health as MedFlow.Application.Interfaces.TenantHealthVm;
+    if (h != null)
+    {
+<div class="row mb-2">
+    <div class="col-12">
+        <div class="card card-outline @(h.Score >= 70 ? "card-success" : h.Score >= 50 ? "card-warning" : "card-danger") shadow-sm">
+            <div class="card-header"><h3 class="card-title"><i class="fa fa-heartbeat"></i> Tenant Health Score: @h.Score.ToString("F0")/100 - @h.Classification</h3></div>
+            <div class="card-body">
+                <p class="mb-1">@h.Summary</p>
+                @if (h.Factors.Count > 0) { <p class="mb-0 small text-muted">Factores: @string.Join(" | ", h.Factors)</p> }
+                @if (h.Recommendations.Count > 0) { <p class="mb-0 small"><strong>Recomendaciones:</strong> @string.Join("; ", h.Recommendations)</p> }
+            </div>
+        </div>
+    </div>
+</div>
+    }
+}
+
+<div class="row mb-3">
+    <div class="col-md-3">
+        <div class="small-box bg-info">
+            <div class="inner">
+                <h3>@Model.Kpis.AvgAppointmentsPerDay.ToString("F1")</h3>
+                <p>Prom. citas/día</p>
+            </div>
+            <div class="icon"><i class="fa fa-calendar"></i></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="small-box bg-success">
+            <div class="inner">
+                <h3>@Model.Kpis.AvgRevenuePerDay.ToString("N0")</h3>
+                <p>Prom. ingresos/día</p>
+            </div>
+            <div class="icon"><i class="fa fa-money"></i></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="small-box bg-primary">
+            <div class="inner">
+                <h3>@Model.Kpis.CompletionRateAvg.ToString("F0")%</h3>
+                <p>Tasa completitud</p>
+            </div>
+            <div class="icon"><i class="fa fa-check"></i></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="small-box bg-warning">
+            <div class="inner">
+                <h3>@Model.Kpis.RevenueGrowthPercent.ToString("F1")%</h3>
+                <p>Var. ingresos</p>
+            </div>
+            <div class="icon"><i class="fa fa-line-chart"></i></div>
+        </div>
+    </div>
+</div>
+
+@if (Model.Benchmark != null)
+{
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="card card-outline card-secondary shadow-sm">
+            <div class="card-header"><h3 class="card-title"><i class="fa fa-trophy"></i> Benchmarking</h3></div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3"><span class="badge badge-info">Percentil citas: @Model.Benchmark.PercentileAppointments</span></div>
+                    <div class="col-md-3"><span class="badge badge-success">Percentil ingresos: @Model.Benchmark.PercentileRevenue</span></div>
+                    <div class="col-md-2"><span class="text-muted small">Rank citas: #@Model.Benchmark.RankByAppointments</span></div>
+                    <div class="col-md-2"><span class="text-muted small">Rank ingresos: #@Model.Benchmark.RankByRevenue</span></div>
+                    <div class="col-md-2"><span class="text-muted small">@Model.Benchmark.TenantName</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+}
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card card-outline card-primary shadow-sm">
+            <div class="card-header"><h3 class="card-title">Citas completadas (tendencia)</h3></div>
+            <div class="card-body" style="height:260px"><canvas id="chartApt"></canvas></div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card card-outline card-success shadow-sm">
+            <div class="card-header"><h3 class="card-title">Ingresos (tendencia)</h3></div>
+            <div class="card-body" style="height:260px"><canvas id="chartRevenue"></canvas></div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card card-outline card-info shadow-sm">
+            <div class="card-header"><h3 class="card-title">Tasa de completitud (%)</h3></div>
+            <div class="card-body" style="height:260px"><canvas id="chartCompletion"></canvas></div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card card-outline card-warning shadow-sm">
+            <div class="card-header"><h3 class="card-title">Pacientes nuevos</h3></div>
+            <div class="card-body" style="height:260px"><canvas id="chartNewPatients"></canvas></div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card card-outline card-dark shadow-sm">
+            <div class="card-header"><h3 class="card-title">Últimos 7 días (resumen)</h3></div>
+            <div class="card-body table-responsive p-0">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="thead-light"><tr><th>Fecha</th><th>Citas</th><th>Cancel.</th><th>Ingresos</th><th>Nuevos</th><th>IA</th><th>WF</th></tr></thead>
+                    <tbody>
+                        @foreach (var s in Model.Last7DaysSummary)
+                        {
+                        <tr>
+                            <td>@s.Date.ToString("dd/MM/yyyy")</td>
+                            <td>@s.AppointmentsCompleted</td>
+                            <td>@s.AppointmentsCancelled</td>
+                            <td>@s.Revenue.ToString("N0")</td>
+                            <td>@s.NewPatients</td>
+                            <td>@s.AIInsightsGenerated</td>
+                            <td>@s.WorkflowExecutions</td>
+                        </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card card-outline card-secondary shadow-sm">
+            <div class="card-header"><h3 class="card-title">KPIs período</h3></div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li><strong>Citas promedio/día:</strong> @Model.Kpis.AvgAppointmentsPerDay.ToString("F1")</li>
+                    <li><strong>Ingresos promedio/día:</strong> @Model.Kpis.AvgRevenuePerDay.ToString("N2")</li>
+                    <li><strong>Tasa cancelación:</strong> @Model.Kpis.CancellationRateAvg.ToString("F1")%</li>
+                    <li><strong>Crecimiento citas:</strong> @Model.Kpis.AppointmentsGrowthPercent.ToString("F1")%</li>
+                    <li><strong>Insights IA (período):</strong> @Model.Kpis.TotalInsightsPeriod</li>
+                    <li><strong>Tasa éxito workflows:</strong> @Model.Kpis.WorkflowSuccessRate.ToString("F0")%</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+        $(function () {
+            try {
+                var p = @Html.Raw(chartJson);
+                if (typeof Chart === 'undefined') return;
+                function line(id, labels, data, color) {
+                    var el = document.getElementById(id);
+                    if (!el || !labels || !labels.length) return;
+                    new Chart(el, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{ label: '', data: data, fill: true, backgroundColor: (color||'rgba(0,123,255,0.1)'), borderColor: color||'#007bff', tension: 0.25 }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+                    });
+                }
+                function bar(id, labels, data, color) {
+                    var el = document.getElementById(id);
+                    if (!el || !labels || !labels.length) return;
+                    new Chart(el, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{ label: '', data: data, backgroundColor: color||'rgba(255,193,7,0.6)' }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+                    });
+                }
+                line('chartApt', p.aptLabels, p.aptData, 'rgba(0,123,255,0.8)');
+                line('chartRevenue', p.revLabels, p.revData, 'rgba(40,167,69,0.8)');
+                line('chartCompletion', p.completionLabels, p.completionData, 'rgba(23,162,184,0.8)');
+                bar('chartNewPatients', p.newPatientsLabels, p.newPatientsData, 'rgba(255,193,7,0.6)');
+            } catch (e) { console.error(e); }
+        });
+    </script>
+}

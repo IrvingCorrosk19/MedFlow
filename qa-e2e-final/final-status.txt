@@ -1,0 +1,29 @@
+MedFlow E2E QA — Final Status
+==============================
+Date: 2026-03-26
+Framework: Playwright .NET (xUnit)
+App: http://localhost:5115
+
+RESULT: 21/21 PASSED ✅
+
+Tests run consecutively twice with 0 failures.
+
+Test files:
+  - MedFlow.QaE2E/UnitTest1.cs           (6 main role tests + helpers)
+  - MedFlow.QaE2E/E2EExtendedTests.cs    (15 extended tests: URL bypass, negative, admin/reception flows)
+
+Bugs fixed:
+  1. Bootstrap custom-control checkbox intercept (test)
+  2. WaitForNavigation race condition on 302 redirects (test)
+  3. Guid.Empty passes [Required] validation (documented, app bug)
+  4. NpgsqlRetryingExecutionStrategy + user transactions = HTTP 500 (FIXED in PaymentService.cs)
+  5. Appointment slot conflict across test runs (test — ticks-based unique slots)
+  6. SweetAlert2 confirm required for payment cancel (test)
+
+Deliverables:
+  - full-e2e-results.md      Test results by class
+  - forms-tested-by-role.md  Forms and validations per role
+  - negative-tests.md        All negative/rejection cases
+  - url-bypass-tests.md      Authorization bypass matrix
+  - bugs-fixed-final.md      Bug details and fixes
+  - final-status.txt         This file

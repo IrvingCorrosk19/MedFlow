@@ -1,0 +1,50 @@
+@model IReadOnlyList<MedFlow.Application.PatientPortal.PatientAppointmentListItemDto>
+@{
+    ViewData["Title"] = "Mis Citas";
+    var options = ViewData["Options"] as MedFlow.Application.Options.PatientPortalOptions;
+}
+<h2 class="mb-4">Mis Citas</h2>
+
+@if (!Model.Any())
+{
+    <div class="portal-card card">
+        <div class="card-body portal-empty">
+            <i class="fa fa-calendar-o d-block"></i>
+            <h5>No hay citas programadas</h5>
+            <p>No tiene citas proximas.</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row">
+        @foreach (var a in Model)
+        {
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="portal-card card h-100">
+                    <div class="card-body">
+                        <span class="badge badge-secondary">@a.Status</span>
+                        <small class="text-muted">@a.ScheduledDate.ToString("ddd d MMM yyyy")</small>
+                        <h5 class="mt-2">@a.DoctorName</h5>
+                        <p class="mb-2">@a.StartTime.ToString(@"hh\:mm")</p>
+                        @if (options?.AllowAppointmentConfirmation == true && a.Status == MedFlow.Domain.Enums.AppointmentStatus.Scheduled)
+                        {
+                            <form asp-action="Confirm" asp-route-id="@a.Id" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-success">Confirmar</button>
+                            </form>
+                        }
+                        @if (options?.AllowAppointmentCancellation == true)
+                        {
+                            <form asp-action="Cancel" asp-route-id="@a.Id" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="motivo" value="" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Cancelar</button>
+                            </form>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

@@ -1,0 +1,40 @@
+@model IReadOnlyList<SaaSInvoiceListItemDto>
+@{
+    ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a href=\"/SuperAdmin/Billing/Overview\">Billing</a></li><li class=\"breadcrumb-item active\">Facturas</li>";
+}
+<div class="card">
+    <div class="card-body table-responsive p-0">
+        <table class="table table-striped mb-0" id="invTable">
+            <thead>
+                <tr>
+                    <th>Nº</th>
+                    <th>Clínica</th>
+                    <th>Fecha</th>
+                    <th>Vencimiento</th>
+                    <th>Total</th>
+                    <th>Estado</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var i in Model)
+            {
+                <tr>
+                    <td>@i.InvoiceNumber</td>
+                    <td>@i.TenantName</td>
+                    <td>@i.IssueDate.ToString("d")</td>
+                    <td>@(i.DueDate?.ToString("d") ?? "—")</td>
+                    <td>@i.TotalAmount.ToString("N2") @i.Currency</td>
+                    <td><span class="badge badge-@(i.Status == SaaSInvoiceStatus.Paid ? "success" : i.Status == SaaSInvoiceStatus.Failed ? "danger" : "secondary")">@i.Status</span></td>
+                    <td>@if (!string.IsNullOrEmpty(i.InvoiceUrl)) { <a href="@i.InvoiceUrl" target="_blank" class="btn btn-xs btn-default">Ver</a> }</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
+@section Scripts {
+    <script>
+        $(function () { $('#invTable').DataTable({ language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' }, order: [[2, 'desc']] }); });
+    </script>
+}

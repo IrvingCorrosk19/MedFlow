@@ -1,0 +1,86 @@
+@model IReadOnlyList<SaasTenantListItemDto>
+@{
+    ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item active\">Clínicas</li>";
+}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title mb-0">Directorio de clínicas</h3>
+        <a asp-action="Create" class="btn btn-primary btn-sm"><i class="fa fa-plus"></i> Nueva clínica</a>
+    </div>
+    <div class="card-body table-responsive p-0">
+        <table class="table table-hover table-striped mb-0" id="saasTenantsTable">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Código</th>
+                    <th>Plan</th>
+                    <th>Suscripción</th>
+                    <th>Tenant</th>
+                    <th>Trial / fin</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var t in Model)
+            {
+                <tr>
+                    <td><a asp-action="Details" asp-route-id="@t.Id">@t.Name</a></td>
+                    <td><code>@t.Code</code></td>
+                    <td>@(t.PlanName ?? "—")</td>
+                    <td>
+                        @if (t.SubscriptionStatus == null)
+                        {
+                            <span>—</span>
+                        }
+                        else
+                        {
+                            var st = t.SubscriptionStatus.Value;
+                            var cls = st == SubscriptionStatus.Active ? "badge-success"
+                                : st == SubscriptionStatus.Trial ? "badge-info"
+                                : st == SubscriptionStatus.PastDue ? "badge-warning"
+                                : st == SubscriptionStatus.Suspended ? "badge-danger"
+                                : "badge-secondary";
+                            <span class="badge @cls">@st</span>
+                        }
+                    </td>
+                    <td>
+                        @if (t.IsSuspended)
+                        {
+                            <span class="badge badge-danger">Suspendida</span>
+                        }
+                        else
+                        {
+                            <span class="badge badge-success">OK</span>
+                        }
+                    </td>
+                    <td>
+                        @if (t.TrialEndDate.HasValue)
+                        {
+                            <span class="text-muted">Trial @t.TrialEndDate.Value.ToString("yyyy-MM-dd")</span>
+                        }
+                        else if (t.EndDate.HasValue)
+                        {
+                            <span class="text-muted">Fin @t.EndDate.Value.ToString("yyyy-MM-dd")</span>
+                        }
+                        else
+                        {
+                            <span>—</span>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+            $('#saasTenantsTable').DataTable({
+                language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
+                order: [[0, 'asc']],
+                pageLength: 25
+            });
+        });
+    </script>
+}

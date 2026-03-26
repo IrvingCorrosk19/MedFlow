@@ -1,0 +1,63 @@
+@model NotificationTemplateEditDto
+@using MedFlow.Domain.Enums
+@{
+    var eventTypes = ViewBag.EventTypes as IReadOnlyList<NotificationEventType> ?? [];
+    var channels = ViewBag.Channels as IReadOnlyList<NotificationChannel> ?? [];
+}
+<div class="card">
+    <div class="card-body">
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label>Evento</label>
+                    <select asp-for="EventType" class="form-control" asp-items="Html.GetEnumSelectList<NotificationEventType>()"></select>
+                </div>
+                <div class="form-group col-md-4">
+                    <label>Canal</label>
+                    <select asp-for="Channel" class="form-control" asp-items="Html.GetEnumSelectList<NotificationChannel>()"></select>
+                </div>
+                <div class="form-group col-md-4">
+                    <label>Código</label>
+                    <input asp-for="Code" class="form-control" placeholder="appointment-reminder-email" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Nombre</label>
+                <input asp-for="Name" class="form-control" />
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label>Asunto (Email)</label>
+                    <input asp-for="SubjectTemplate" class="form-control" placeholder="Recordatorio: {{PatientName}}" />
+                </div>
+                <div class="form-group col-md-6">
+                    <label>From Email</label>
+                    <input asp-for="FromEmail" class="form-control" type="email" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Cuerpo (texto)</label>
+                <textarea asp-for="BodyTemplate" class="form-control" rows="4" placeholder="Hola {{PatientName}}, tu cita es el {{AppointmentDate}}."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Cuerpo HTML (opcional)</label>
+                <textarea asp-for="HtmlBodyTemplate" class="form-control" rows="6"></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label>Webhook URL (para canal Webhook)</label>
+                    <input asp-for="WebhookUrl" class="form-control" placeholder="https://n8n.example.com/webhook/xxx" />
+                </div>
+                <div class="form-group col-md-6">
+                    <div class="form-check pt-4">
+                        <input asp-for="IsDefault" class="form-check-input" />
+                        <label asp-for="IsDefault" class="form-check-label">Plantilla por defecto</label>
+                    </div>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Crear</button>
+            <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+        </form>
+    </div>
+</div>

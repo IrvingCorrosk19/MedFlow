@@ -1,0 +1,34 @@
+@using Microsoft.AspNetCore.Identity
+@using MedFlow.Infrastructure.Identity
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+
+@if (SignInManager.IsSignedIn(User))
+{
+    <li class="nav-item dropdown">
+        <a class="nav-link d-flex align-items-center py-2" data-toggle="dropdown" href="#" aria-expanded="false">
+            <span class="mf-user-avatar mr-2 d-inline-flex align-items-center justify-content-center rounded-circle bg-primary text-white small font-weight-bold">
+                @(User.Identity?.Name?.Length > 0 ? User.Identity.Name.Substring(0, 1).ToUpperInvariant() : "?")
+            </span>
+            <span class="d-none d-lg-inline text-muted small font-weight-bold">@User.Identity?.Name</span>
+            <i class="fa fa-angle-down ml-1 text-muted small"></i>
+        </a>
+        <div class="dropdown-menu dropdown-menu-right shadow border-0">
+            <a asp-controller="Settings" asp-action="Index" class="dropdown-item">
+                <i class="fa fa-cog mr-2 text-muted"></i> Mi cuenta
+            </a>
+            <div class="dropdown-divider"></div>
+            <form asp-controller="Account" asp-action="Logout" method="post">
+                <button type="submit" class="dropdown-item text-danger">
+                    <i class="fa fa-sign-out mr-2"></i> Cerrar sesión
+                </button>
+            </form>
+        </div>
+    </li>
+}
+else
+{
+    <li class="nav-item">
+        <a class="nav-link mf-link-login" asp-controller="Account" asp-action="Login">Iniciar sesión</a>
+    </li>
+}

@@ -1,0 +1,60 @@
+@model AIInsight
+@using MedFlow.Domain.Enums
+@{
+    var canManage = ViewBag.CanManage as bool? ?? false;
+}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title">@Model.Title</h3>
+        <span class="badge badge-@(Model.Severity == AISeverity.Critical ? "danger" : Model.Severity == AISeverity.Warning ? "warning" : "info")">@Model.Severity</span>
+    </div>
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-3">Tipo</dt>
+            <dd class="col-sm-9">@Model.InsightType</dd>
+            <dt class="col-sm-3">Resumen</dt>
+            <dd class="col-sm-9">@Model.Summary</dd>
+            @if (!string.IsNullOrEmpty(Model.Recommendation))
+            {
+                <dt class="col-sm-3">Recomendación</dt>
+                <dd class="col-sm-9">@Model.Recommendation</dd>
+            }
+            @if (Model.Score.HasValue)
+            {
+                <dt class="col-sm-3">Score</dt>
+                <dd class="col-sm-9">@Model.Score.Value.ToString("F1")</dd>
+            }
+            @if (Model.Confidence.HasValue)
+            {
+                <dt class="col-sm-3">Confianza</dt>
+                <dd class="col-sm-9">@(Model.Confidence.Value.ToString("P0"))</dd>
+            }
+            <dt class="col-sm-3">Entidad</dt>
+            <dd class="col-sm-9">@Model.EntityType @(Model.EntityId != null ? $"· {Model.EntityId}" : "")</dd>
+            <dt class="col-sm-3">Generado</dt>
+            <dd class="col-sm-9">@Model.GeneratedAt.ToLocalTime().ToString("g")</dd>
+            <dt class="col-sm-3">Estado</dt>
+            <dd class="col-sm-9">@Model.Status</dd>
+        </dl>
+        @if (!string.IsNullOrEmpty(Model.EvidenceJson))
+        {
+        <hr />
+        <h6>Evidencia</h6>
+        <pre class="bg-light p-2 small">@Model.EvidenceJson</pre>
+        }
+    </div>
+    @if (canManage && Model.Status == AIInsightStatus.New)
+    {
+    <div class="card-footer">
+        <form asp-action="Acknowledge" asp-route-id="@Model.Id" method="post" class="d-inline">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-success">Marcar revisado</button>
+        </form>
+        <form asp-action="Dismiss" asp-route-id="@Model.Id" method="post" class="d-inline">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-secondary">Descartar</button>
+        </form>
+    </div>
+    }
+</div>
+<a asp-action="Index" class="btn btn-outline-secondary mt-2">Volver a insights</a>

@@ -1,0 +1,36 @@
+@model IReadOnlyList<SaasTenantListItemDto>
+@{
+    ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a asp-action=\"Overview\">Billing</a></li><li class=\"breadcrumb-item active\">Tenants</li>";
+}
+<div class="card">
+    <div class="card-body table-responsive p-0">
+        <table class="table table-striped mb-0" id="tenantsTable">
+            <thead>
+                <tr>
+                    <th>Clínica</th>
+                    <th>Código</th>
+                    <th>Plan</th>
+                    <th>Estado</th>
+                    <th>Trial hasta</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var t in Model)
+            {
+                <tr>
+                    <td>@t.Name</td>
+                    <td><code>@t.Code</code></td>
+                    <td>@(t.PlanName ?? "—")</td>
+                    <td><span class="badge badge-@(t.SubscriptionStatus?.ToString() == "Active" ? "success" : t.SubscriptionStatus?.ToString() == "PastDue" ? "warning" : "secondary")">@(t.SubscriptionStatus?.ToString() ?? "—")</span></td>
+                    <td>@(t.TrialEndDate?.ToString("d") ?? "—")</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
+@section Scripts {
+    <script>
+        $(function () { $('#tenantsTable').DataTable({ language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' } }); });
+    </script>
+}

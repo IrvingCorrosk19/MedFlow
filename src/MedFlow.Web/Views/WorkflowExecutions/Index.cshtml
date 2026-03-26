@@ -1,0 +1,122 @@
+@model IReadOnlyList<MedFlow.Domain.Entities.WorkflowExecution>
+@using MedFlow.Domain.Enums
+@{
+    var metrics = ViewBag.Metrics as MedFlow.Application.Interfaces.Workflow.WorkflowMetrics;
+    var canManage = ViewBag.CanManage as bool? ?? false;
+}
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        <button type="button" class="close" data-dismiss="alert">&times;</button>@TempData["Success"]
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        <button type="button" class="close" data-dismiss="alert">&times;</button>@TempData["Error"]
+    </div>
+}
+
+<div class="row mb-3">
+    <div class="col-md-2">
+        <div class="small-box bg-info"><div class="inner"><h3>@(metrics?.TotalExecuted ?? 0)</h3><p>Total</p></div></div>
+    </div>
+    <div class="col-md-2">
+        <div class="small-box bg-success"><div class="inner"><h3>@(metrics?.Succeeded ?? 0)</h3><p>Exitosas</p></div></div>
+    </div>
+    <div class="col-md-2">
+        <div class="small-box bg-danger"><div class="inner"><h3>@(metrics?.Failed ?? 0)</h3><p>Fallidas</p></div></div>
+    </div>
+    <div class="col-md-2">
+        <div class="small-box bg-warning"><div class="inner"><h3>@(metrics?.Pending ?? 0)</h3><p>Pendientes</p></div></div>
+    </div>
+    <div class="col-md-2">
+        <div class="small-box bg-secondary"><div class="inner"><h3>@(metrics?.Retrying ?? 0)</h3><p>Reintentando</p></div></div>
+    </div>
+</div>
+
+<div class="card card-outline card-secondary shadow-sm mb-3">
+    <div class="card-body">
+        <form method="get" class="form-inline">
+            <input type="hidden" name="workflowId" value="@ViewBag.WorkflowId" />
+            <label class="mr-2 small">Estado</label>
+            <select name="status" class="form-control form-control-sm mr-2">
+                <option value="">Todos</option>
+                @foreach (WorkflowExecutionStatus s in Enum.GetValues<WorkflowExecutionStatus>())
+                {
+                    <option value="@((int)s)" selected="@(ViewBag.Status != null && (WorkflowExecutionStatus)ViewBag.Status == s)">@s</option>
+                }
+            </select>
+            <input type="text" name="eventType" class="form-control form-control-sm mr-2" placeholder="Evento" value="@ViewBag.EventType" />
+            <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body table-responsive p-0">
+        <table id="tblExec" class="table table-sm table-hover mb-0">
+            <thead class="thead-light">
+                <tr>
+                    <th>Fecha</th>
+                    <th>Workflow</th>
+                    <th>Evento</th>
+                    <th>Estado</th>
+                    <th>Intentos</th>
+                    <th>Respuesta</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var e in Model)
+                {
+                <tr>
+                    <td class="text-nowrap">@e.CreatedAt.ToLocalTime().ToString("g")</td>
+                    <td><small>@(e.WorkflowDefinition?.Name ?? "-")</small></td>
+                    <td><code>@e.EventType</code></td>
+                    <td>
+                        @{
+                            var badge = e.Status switch
+                            {
+                                WorkflowExecutionStatus.Succeeded => "success",
+                                WorkflowExecutionStatus.Failed => "danger",
+                                WorkflowExecutionStatus.Pending => "secondary",
+                                WorkflowExecutionStatus.Retrying => "warning",
+                                WorkflowExecutionStatus.Processing => "info",
+                                WorkflowExecutionStatus.Cancelled => "secondary",
+                                _ => "secondary"
+                            };
+                        }
+                        <span class="badge badge-@badge">@e.Status</span>
+                    </td>
+                    <td>@e.AttemptCount / @e.MaxAttempts</td>
+                    <td>
+                        @if (e.ResponseStatusCode.HasValue)
+                        { <span class="badge badge-@(e.ResponseStatusCode >= 200 && e.ResponseStatusCode < 300 ? "success" : "danger")">@e.ResponseStatusCode</span> }
+                        else if (!string.IsNullOrEmpty(e.ErrorMessage))
+                        { <small class="text-danger" style="max-width:150px; overflow:hidden; text-overflow:ellipsis; display:block;" title="@e.ErrorMessage">@e.ErrorMessage</small> }
+                    </td>
+                    <td>
+                        <a asp-action="Details" asp-route-id="@e.Id" class="btn btn-xs btn-default">Ver</a>
+                        @if (canManage && e.Status == WorkflowExecutionStatus.Failed)
+                        {
+                        <form asp-action="Retry" asp-route-id="@e.Id" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-xs btn-warning">Reintentar</button>
+                        </form>
+                        }
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    $(function () {
+        $('#tblExec').DataTable({ order: [[0, 'desc']], pageLength: 25, language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' } });
+    });
+</script>
+}

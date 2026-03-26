@@ -1,0 +1,95 @@
+@model IReadOnlyList<MedFlow.Domain.Entities.Doctor>
+@{
+    ViewData["Title"] = "Doctores";
+    ViewData["PageSubtitle"] = "Directorio médico de la clínica";
+    ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item active\">Doctores</li>";
+}
+
+<div class="card card-outline card-primary shadow-sm">
+    <div class="card-header d-flex flex-wrap align-items-center justify-content-between">
+        <h3 class="card-title mb-0"><i class="fa fa-user-md mr-2"></i>Listado de doctores</h3>
+        <a asp-action="Create" class="btn btn-primary btn-sm mt-2 mt-sm-0">
+            <i class="fa fa-plus"></i> Nuevo doctor
+        </a>
+    </div>
+    <div class="card-body border-bottom bg-light">
+        <form method="get" class="form-row align-items-end">
+            <div class="form-group col-md-5 col-lg-4 mb-2 mb-md-0">
+                <label class="small text-muted mb-0">Búsqueda</label>
+                <input type="search" name="search" value="@ViewBag.Search" class="form-control form-control-sm" placeholder="Nombre, especialidad, licencia, correo..." />
+            </div>
+            <div class="form-group col-md-3 col-lg-2 mb-2 mb-md-0">
+                <label class="small text-muted mb-0">Estado</label>
+                <select name="isActive" class="form-control form-control-sm">
+                    <option value="">Todos</option>
+                    <option value="true" selected="@(ViewBag.IsActive == true)">Activos</option>
+                    <option value="false" selected="@(ViewBag.IsActive == false)">Inactivos</option>
+                </select>
+            </div>
+            <div class="form-group col-auto mb-0">
+                <button type="submit" class="btn btn-default btn-sm"><i class="fa fa-filter"></i> Aplicar</button>
+            </div>
+        </form>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table id="tblDoctors" class="table table-hover table-striped mb-0 text-nowrap">
+                <thead class="thead-light">
+                    <tr>
+                        <th>Doctor</th>
+                        <th>Especialidad</th>
+                        <th>Licencia</th>
+                        <th>Teléfono</th>
+                        <th>Correo</th>
+                        <th class="text-center">Estado</th>
+                        <th class="text-right no-sort">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var d in Model)
+                    {
+                        <tr>
+                            <td class="font-weight-medium">@d.FullName</td>
+                            <td>@(string.IsNullOrWhiteSpace(d.Speciality) ? "—" : d.Speciality)</td>
+                            <td>@(string.IsNullOrWhiteSpace(d.LicenseNumber) ? "—" : d.LicenseNumber)</td>
+                            <td>@(string.IsNullOrWhiteSpace(d.Phone) ? "—" : d.Phone)</td>
+                            <td>@(string.IsNullOrWhiteSpace(d.Email) ? "—" : d.Email)</td>
+                            <td class="text-center">
+                                @if (d.IsActive)
+                                {
+                                    <span class="badge badge-success">Activo</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-secondary">Inactivo</span>
+                                }
+                            </td>
+                            <td class="text-right text-nowrap">
+                                <a asp-action="Details" asp-route-id="@d.Id" class="btn btn-sm btn-info" title="Ver"><i class="fa fa-eye"></i></a>
+                                <a asp-action="Edit" asp-route-id="@d.Id" class="btn btn-sm btn-primary" title="Editar"><i class="fa fa-edit"></i></a>
+                                <form asp-action="Delete" asp-route-id="@d.Id" method="post" class="d-inline" data-confirm-delete>
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="fa fa-trash"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+            $('#tblDoctors').DataTable({
+                responsive: true,
+                pageLength: 25,
+                order: [[0, 'asc']],
+                language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
+                columnDefs: [{ orderable: false, targets: 'no-sort' }]
+            });
+        });
+    </script>
+}

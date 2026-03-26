@@ -1,0 +1,60 @@
+@model SaasBillingOverviewDto
+@{
+    ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item active\">Billing</li>";
+}
+<div class="row">
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-info">
+            <div class="inner">
+                <h3>@Model.TotalTenants</h3>
+                <p>Tenants</p>
+            </div>
+            <div class="icon"><i class="fa fa-building"></i></div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-success">
+            <div class="inner">
+                <h3>@Model.ActiveSubscriptions</h3>
+                <p>Suscr. activas</p>
+            </div>
+            <div class="icon"><i class="fa fa-check-circle"></i></div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box @(Model.PastDueCount > 0 ? "bg-warning" : "bg-secondary")">
+            <div class="inner">
+                <h3>@Model.PastDueCount</h3>
+                <p>Past due</p>
+            </div>
+            <div class="icon"><i class="fa fa-exclamation-triangle"></i></div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-primary">
+            <div class="inner">
+                <h3>@Model.MonthlyRecurringRevenue.ToString("N2")</h3>
+                <p>MRR (USD)</p>
+            </div>
+            <div class="icon"><i class="fa fa-dollar"></i></div>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><h3 class="card-title">Este mes</h3></div>
+            <div class="card-body">
+                <p><strong>Cobrado:</strong> @Model.TotalPaidThisMonth.ToString("N2") USD</p>
+                <p><strong>Pagos fallidos:</strong> @Model.FailedPaymentsThisMonth</p>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row mt-3">
+    <div class="col-12">
+        <a asp-area="SuperAdmin" asp-controller="Billing" asp-action="Tenants" class="btn btn-outline-primary">Ver tenants</a>
+        <a asp-area="SuperAdmin" asp-controller="Billing" asp-action="Transactions" class="btn btn-outline-primary">Transacciones</a>
+        <a asp-area="SuperAdmin" asp-controller="Billing" asp-action="Invoices" class="btn btn-outline-primary">Facturas</a>
+    </div>
+</div>

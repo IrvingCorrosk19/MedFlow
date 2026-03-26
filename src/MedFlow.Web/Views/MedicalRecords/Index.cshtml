@@ -1,0 +1,50 @@
+@model IReadOnlyList<MedFlow.Domain.Entities.Patient>
+@{
+    ViewData["Title"] = "Historia clínica";
+}
+
+<div class="card card-outline card-primary shadow-sm">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center">
+        <h3 class="card-title mb-0"><i class="fa fa-file-text-o mr-2 text-primary"></i>Pacientes</h3>
+    </div>
+    <div class="card-body border-bottom bg-light py-3">
+        <form method="get" class="form-inline">
+            <input type="search" name="search" value="@ViewBag.Search" class="form-control form-control-sm mr-2" style="min-width:240px" placeholder="Buscar paciente…" />
+            <button type="submit" class="btn btn-sm btn-default"><i class="fa fa-search"></i></button>
+        </form>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="thead-light">
+                    <tr>
+                        <th>Paciente</th>
+                        <th>Documento</th>
+                        <th class="text-right">Expediente</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in Model)
+                    {
+                        <tr>
+                            <td class="font-weight-medium">@p.NombreCompleto</td>
+                            <td class="text-muted small">@(p.NumeroDocumento ?? "—")</td>
+                            <td class="text-right">
+                                <a asp-action="Patient" asp-route-patientId="@p.Id" class="btn btn-sm btn-outline-primary">
+                                    <i class="fa fa-folder-open-o"></i> Abrir historia
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (!Model.Any())
+        {
+            <div class="p-5 text-center text-muted">
+                <i class="fa fa-users fa-3x mb-3 opacity-50"></i>
+                <p class="mb-0">No hay pacientes que coincidan.</p>
+            </div>
+        }
+    </div>
+</div>

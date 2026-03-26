@@ -1,0 +1,72 @@
+@model OnboardingStep2Vm
+@{
+    ViewData["PageTitle"] = "Plan SaaS";
+    var cards = ViewBag.PlanCards as IReadOnlyList<OnboardingPlanCardVm> ?? Array.Empty<OnboardingPlanCardVm>();
+    var anyTrial = cards.Any(c => c.TrialDays > 0);
+}
+<partial name="_WizardProgress" />
+<div class="card onboarding-hero border-0">
+    <div class="card-body p-4 p-md-5">
+        <h2 class="h4 font-weight-bold mb-1">Paso 2 — Plan</h2>
+        <p class="text-muted small mb-4">Elija el plan y revise límites y módulos incluidos.</p>
+        @if (cards.Count == 0)
+        {
+            <div class="alert alert-warning">No hay planes activos disponibles. Contacte al administrador de la plataforma.</div>
+        }
+        else
+        {
+            <form asp-action="Step2" method="post" novalidate>
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+                <div class="list-group mb-4 shadow-sm">
+                    @foreach (var p in cards)
+                    {
+                        var sel = Model.SubscriptionPlanId == p.Id;
+                        <div class="list-group-item list-group-item-action d-flex flex-column flex-md-row align-items-start align-items-md-center @(sel ? "border-primary" : "")" style="cursor:pointer;">
+                            <div class="custom-control custom-radio mr-md-3">
+                                <input type="radio" class="custom-control-input" name="SubscriptionPlanId" id="plan_@p.Id" value="@p.Id" @(sel ? "checked" : "") />
+                                <label class="custom-control-label font-weight-bold" for="plan_@p.Id">@p.Name</label>
+                            </div>
+                            <div class="flex-grow-1 small text-muted mt-2 mt-md-0">
+                                <div>@p.MonthlyPrice.ToString("N2") @p.Currency / mes · Trial: @(p.TrialDays) días</div>
+                                <div class="mt-1">
+                                    <span class="badge badge-light border">Usuarios @p.MaxUsers</span>
+                                    <span class="badge badge-light border">Médicos @p.MaxDoctors</span>
+                                    <span class="badge badge-light border">Pacientes @p.MaxPatients</span>
+                                    <span class="badge badge-light border">Citas/mes @p.MaxAppointmentsPerMonth</span>
+                                </div>
+                                <div class="mt-2">
+                                    @if (p.IncludesBillingModule) { <span class="badge badge-info">Facturación</span> }
+                                    @if (p.IncludesAutomationModule) { <span class="badge badge-info">Automatización</span> }
+                                    @if (p.IncludesReportsModule) { <span class="badge badge-info">Reportes</span> }
+                                    @if (p.IncludesPatientPortal) { <span class="badge badge-info">Portal paciente</span> }
+                                    @if (p.IncludesMultiBranch) { <span class="badge badge-info">Multi-sede</span> }
+                                    @if (p.IncludesAdvancedAnalytics) { <span class="badge badge-info">Analytics</span> }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+                @if (anyTrial)
+                {
+                    <input type="hidden" name="StartWithTrial" value="false" />
+                    <div class="custom-control custom-checkbox mb-4">
+                        <input type="checkbox" class="custom-control-input" id="tw" name="StartWithTrial" value="true" @(Model.StartWithTrial ? "checked" : "") />
+                        <label class="custom-control-label" for="tw">Iniciar con periodo de prueba (si el plan lo permite)</label>
+                    </div>
+                }
+                else
+                {
+                    <input type="hidden" name="StartWithTrial" value="false" />
+                }
+                <div class="d-flex justify-content-between align-items-center mt-2">
+                    <a asp-action="Step1" class="btn btn-outline-secondary">Atrás</a>
+                    <button type="submit" class="btn btn-primary px-4">Continuar</button>
+                </div>
+            </form>
+        }
+    </div>
+</div>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

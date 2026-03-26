@@ -1,0 +1,115 @@
+@{
+    var metrics = ViewBag.Metrics as AIInsightDashboardMetrics;
+    var todaySummary = ViewBag.TodaySummary as OperationalSummaryDto;
+    var canManage = ViewBag.CanManage as bool? ?? false;
+}
+<div class="row mb-3">
+    <div class="col-md-3">
+        <div class="small-box bg-info">
+            <div class="inner">
+                <h3>@(metrics?.TotalGenerated ?? 0)</h3>
+                <p>Insights (30 días)</p>
+            </div>
+            <div class="icon"><i class="fa fa-lightbulb-o"></i></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="small-box bg-danger">
+            <div class="inner">
+                <h3>@(metrics?.CriticalCount ?? 0)</h3>
+                <p>Críticos</p>
+            </div>
+            <div class="icon"><i class="fa fa-exclamation-triangle"></i></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="small-box bg-warning">
+            <div class="inner">
+                <h3>@(metrics?.NewCount ?? 0)</h3>
+                <p>Pendientes</p>
+            </div>
+            <div class="icon"><i class="fa fa-clock-o"></i></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="small-box bg-success">
+            <div class="inner">
+                <h3>@(metrics?.AcknowledgedCount ?? 0)</h3>
+                <p>Revisados</p>
+            </div>
+            <div class="icon"><i class="fa fa-check"></i></div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card card-outline card-primary shadow-sm">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fa fa-bolt mr-2"></i>Alertas críticas recientes</h3>
+                <div class="card-tools">
+                    <a asp-controller="Insights" asp-action="Index" asp-route-severity="2" class="btn btn-tool">Ver todas</a>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                @if (metrics?.RecentCritical != null && metrics.RecentCritical.Count > 0)
+                {
+                <ul class="list-group list-group-flush">
+                    @foreach (var i in metrics.RecentCritical)
+                    {
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="badge badge-@(i.Severity == AISeverity.Critical ? "danger" : "warning") mr-2">@i.InsightType</span>
+                            @i.Title
+                            <br /><small class="text-muted">@i.Summary</small>
+                        </div>
+                        <a asp-controller="Insights" asp-action="Details" asp-route-id="@i.Id" class="btn btn-sm btn-outline-primary">Ver</a>
+                    </li>
+                    }
+                </ul>
+                }
+                else
+                {
+                <p class="p-3 text-muted mb-0">No hay alertas críticas pendientes.</p>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-outline card-secondary shadow-sm">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fa fa-calendar mr-2"></i>Resumen del día</h3>
+            </div>
+            <div class="card-body">
+                <p class="mb-2">@(todaySummary?.Summary ?? "Sin datos")</p>
+                @if (todaySummary?.Sections != null && todaySummary.Sections.Count > 0)
+                {
+                <ul class="list-unstyled mb-0">
+                    @foreach (var s in todaySummary.Sections)
+                    {
+                    <li class="mb-1"><span class="badge badge-info">@s.Count</span> @s.Title</li>
+                    }
+                </ul>
+                }
+            </div>
+        </div>
+        <div class="card card-outline card-info shadow-sm mt-3">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fa fa-compass mr-2"></i>Acciones rápidas</h3>
+            </div>
+            <div class="card-body">
+                @if (canManage)
+                {
+                <form asp-action="ProcessNow" method="post" class="mb-2">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-block btn-warning"><i class="fa fa-refresh"></i> Procesar ahora</button>
+                </form>
+                }
+                <a asp-controller="Insights" asp-action="Index" class="btn btn-block btn-outline-primary mb-2"><i class="fa fa-list"></i> Ver insights</a>
+                <a asp-controller="Recommendations" asp-action="Index" class="btn btn-block btn-outline-success mb-2"><i class="fa fa-magic"></i> Recomendaciones</a>
+                <a asp-controller="Copilot" asp-action="Index" class="btn btn-block btn-outline-info mb-2"><i class="fa fa-comments"></i> Copiloto</a>
+                <a asp-controller="AISettings" asp-action="Index" class="btn btn-block btn-outline-secondary"><i class="fa fa-cog"></i> Configuración</a>
+            </div>
+        </div>
+    </div>
+</div>

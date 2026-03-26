@@ -1,0 +1,188 @@
+@import url('medflow-theme.css');
+
+.patient-portal {
+    font-family: var(--mf-font);
+    background: var(--mf-surface-2);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    color: var(--mf-text);
+}
+
+.portal-navbar {
+    background: var(--mf-surface) !important;
+    box-shadow: var(--mf-shadow);
+    border-bottom: 1px solid var(--mf-border) !important;
+}
+
+.portal-navbar .navbar-brand .brand-text {
+    font-weight: 600;
+    color: var(--mf-primary);
+}
+
+.portal-logo {
+    max-height: 36px;
+    width: auto;
+}
+
+.badge-portal {
+    background: var(--mf-primary);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 600;
+}
+
+.portal-navbar .nav-link {
+    color: var(--mf-text-muted) !important;
+    font-weight: 500;
+    padding: 0.5rem 1rem !important;
+    border-radius: var(--mf-radius-sm);
+}
+
+.portal-navbar .nav-link:hover {
+    color: var(--mf-primary) !important;
+    background: var(--mf-primary-soft);
+}
+
+.portal-navbar .nav-link i {
+    margin-right: 0.35rem;
+    opacity: 0.85;
+}
+
+.portal-main {
+    flex: 1;
+}
+
+.portal-footer {
+    background: var(--mf-surface);
+    border-top: 1px solid var(--mf-border);
+    padding: 1rem 0;
+    margin-top: auto;
+}
+
+.portal-footer .text-muted {
+    font-size: 0.85rem;
+}
+
+.portal-card {
+    background: var(--mf-surface);
+    border-radius: var(--mf-radius);
+    box-shadow: var(--mf-shadow);
+    border: 1px solid var(--mf-border);
+    transition: box-shadow 0.2s ease;
+}
+
+.portal-card:hover {
+    box-shadow: var(--mf-shadow-md);
+}
+
+.portal-card .card-header {
+    background: transparent;
+    border-bottom: 1px solid var(--mf-border);
+    font-weight: 600;
+    color: var(--mf-text);
+    padding: 1rem 1.25rem;
+}
+
+.portal-card .card-body {
+    padding: 1.25rem;
+}
+
+.dashboard-card {
+    background: var(--mf-surface);
+    border-radius: var(--mf-radius);
+    padding: 1.5rem;
+    height: 100%;
+    border: 1px solid var(--mf-border);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dashboard-card:hover {
+    border-color: rgba(37, 99, 235, 0.35);
+    box-shadow: var(--mf-shadow-md);
+}
+
+.dashboard-card .card-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--mf-radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+.dashboard-card .card-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--mf-text);
+}
+
+.dashboard-card .card-label {
+    font-size: 0.85rem;
+    color: var(--mf-text-muted);
+}
+
+.badge-appointment { background: var(--mf-info); }
+.badge-invoice-pending { background: var(--mf-warning); color: #1c1917; }
+.badge-invoice-paid { background: var(--mf-success); }
+.badge-invoice-cancelled { background: var(--mf-secondary); }
+
+.portal-login {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    background:
+        radial-gradient(ellipse 100% 80% at 100% 0%, rgba(37, 99, 235, 0.12) 0%, transparent 55%),
+        linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+}
+
+.portal-login-card {
+    max-width: 420px;
+    width: 100%;
+    background: var(--mf-surface);
+    border-radius: var(--mf-radius);
+    box-shadow: var(--mf-shadow-lg);
+    border: 1px solid var(--mf-border);
+}
+
+.portal-login-card .card-body {
+    padding: 2rem;
+}
+
+.portal-login-card .form-control {
+    border-radius: var(--mf-radius-sm);
+}
+
+.portal-login-card .btn-primary {
+    background: var(--mf-primary);
+    border-color: var(--mf-primary);
+    border-radius: var(--mf-radius-sm);
+    font-weight: 600;
+    padding: 0.55rem 1rem;
+}
+
+.portal-login-card .btn-primary:hover {
+    background: var(--mf-primary-hover);
+    border-color: var(--mf-primary-hover);
+}
+
+.portal-empty {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    color: var(--mf-text-muted);
+}
+
+.portal-empty i {
+    font-size: 3rem;
+    opacity: 0.35;
+    margin-bottom: 1rem;
+}
+
+@media (max-width: 991px) {
+    .portal-navbar .navbar-nav {
+        margin-top: 0.5rem;
+    }
+}

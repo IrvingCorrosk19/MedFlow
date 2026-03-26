@@ -1,0 +1,19 @@
+@model MedFlow.Web.ViewModels.DoctorViewModel
+@{
+    ViewData["Title"] = "Nuevo doctor";
+    ViewData["PageSubtitle"] = "Registro de personal médico";
+    ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a href=\"" + Url.Action("Index") + "\">Doctores</a></li><li class=\"breadcrumb-item active\">Nuevo</li>";
+}
+
+<form asp-action="Create" method="post">
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+    <partial name="_DoctorForm" model="Model" />
+    <div class="mt-3 d-flex gap-2">
+        <button type="submit" class="btn btn-primary"><i class="fa fa-save"></i> Guardar</button>
+        <a asp-action="Index" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

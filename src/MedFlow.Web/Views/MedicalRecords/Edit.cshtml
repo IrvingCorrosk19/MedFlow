@@ -1,0 +1,173 @@
+@model MedicalRecordFormViewModel
+@{
+    var patient = ViewBag.Patient as MedFlow.Domain.Entities.Patient;
+    var doctors = ViewBag.Doctors as IReadOnlyList<MedFlow.Domain.Entities.Doctor>;
+    var appointments = ViewBag.Appointments as List<MedFlow.Domain.Entities.Appointment>;
+}
+
+<form asp-action="Edit" asp-route-id="@Model.Id" method="post" novalidate>
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="PatientId" />
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card card-outline card-primary shadow-sm mb-3">
+                <div class="card-header"><h3 class="card-title mb-0">Datos de la consulta</h3></div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label asp-for="VisitDate"></label>
+                            <input asp-for="VisitDate" class="form-control" type="datetime-local" />
+                            <span asp-validation-for="VisitDate" class="text-danger small"></span>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label>Médico</label>
+                            <select asp-for="DoctorId" class="form-control" asp-items="@(new SelectList(doctors ?? Array.Empty<MedFlow.Domain.Entities.Doctor>(), "Id", "FullName"))" data-select2>
+                                <option value="">Seleccione médico…</option>
+                            </select>
+                            <span asp-validation-for="DoctorId" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Cita relacionada (opcional)</label>
+                        <select asp-for="AppointmentId" class="form-control" data-select2>
+                            <option value="">Ninguna</option>
+                            @if (appointments != null)
+                            {
+                                foreach (var a in appointments)
+                                {
+                                    <option value="@a.Id">@a.ScheduledDate.ToString("dd/MM/yyyy") @a.StartTime.ToString(@"hh\:mm") — @a.Status</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card card-outline card-info shadow-sm mb-3">
+                <div class="card-header"><h3 class="card-title mb-0">Motivo y diagnóstico</h3></div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label asp-for="ChiefComplaint"></label>
+                        <textarea asp-for="ChiefComplaint" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label asp-for="Diagnosis"></label>
+                        <textarea asp-for="Diagnosis" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card card-outline card-secondary shadow-sm mb-3">
+                <div class="card-header"><h3 class="card-title mb-0">Signos vitales</h3></div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group col-md-4 col-6">
+                            <label asp-for="HeightCm"></label>
+                            <input asp-for="HeightCm" class="form-control" />
+                        </div>
+                        <div class="form-group col-md-4 col-6">
+                            <label asp-for="WeightKg"></label>
+                            <input asp-for="WeightKg" class="form-control" />
+                        </div>
+                        <div class="form-group col-md-4 col-6">
+                            <label asp-for="BloodPressure"></label>
+                            <input asp-for="BloodPressure" class="form-control" />
+                        </div>
+                        <div class="form-group col-md-4 col-6">
+                            <label asp-for="HeartRateBpm"></label>
+                            <input asp-for="HeartRateBpm" class="form-control" />
+                        </div>
+                        <div class="form-group col-md-4 col-6">
+                            <label asp-for="TemperatureCelsius"></label>
+                            <input asp-for="TemperatureCelsius" class="form-control" step="0.1" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card card-outline card-success shadow-sm mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">Receta</h3>
+                    <button type="button" class="btn btn-xs btn-outline-primary btn-sm" id="btnAddRx"><i class="fa fa-plus"></i> Línea</button>
+                </div>
+                <div class="card-body p-0 table-responsive">
+                    <table class="table table-sm mb-0" id="rxTable">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Medicamento</th>
+                                <th>Dosis</th>
+                                <th>Frec.</th>
+                                <th>Duración</th>
+                                <th>Indicaciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rxRows">
+                            @for (var i = 0; i < Model.PrescriptionLines.Count; i++)
+                            {
+                                <tr class="rx-line">
+                                    <td><input class="form-control form-control-sm" name="PrescriptionLines[@i].MedicationName" value="@Model.PrescriptionLines[i].MedicationName" /></td>
+                                    <td><input class="form-control form-control-sm" name="PrescriptionLines[@i].Dosage" value="@Model.PrescriptionLines[i].Dosage" /></td>
+                                    <td><input class="form-control form-control-sm" name="PrescriptionLines[@i].Frequency" value="@Model.PrescriptionLines[i].Frequency" /></td>
+                                    <td><input class="form-control form-control-sm" name="PrescriptionLines[@i].Duration" value="@Model.PrescriptionLines[i].Duration" /></td>
+                                    <td><input class="form-control form-control-sm" name="PrescriptionLines[@i].Instructions" value="@Model.PrescriptionLines[i].Instructions" /></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card card-outline card-warning shadow-sm mb-3">
+                <div class="card-header"><h3 class="card-title mb-0">Notas y plan</h3></div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label asp-for="ClinicalNotes"></label>
+                        <textarea asp-for="ClinicalNotes" class="form-control" rows="4"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="TreatmentPlan"></label>
+                        <textarea asp-for="TreatmentPlan" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label asp-for="Observations"></label>
+                        <textarea asp-for="Observations" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card bg-light border-0 shadow-sm sticky-top" style="top:1rem;">
+                <div class="card-body">
+                    @if (patient != null)
+                    {
+                        <h5 class="text-dark">@patient.NombreCompleto</h5>
+                    }
+                    <button type="submit" class="btn btn-primary btn-block"><i class="fa fa-save"></i> Guardar cambios</button>
+                    <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-default btn-block">Cancelar</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            var idx = @Model.PrescriptionLines.Count;
+            $('#btnAddRx').on('click', function () {
+                var row = '<tr class="rx-line">' +
+                    '<td><input class="form-control form-control-sm" name="PrescriptionLines[' + idx + '].MedicationName" /></td>' +
+                    '<td><input class="form-control form-control-sm" name="PrescriptionLines[' + idx + '].Dosage" /></td>' +
+                    '<td><input class="form-control form-control-sm" name="PrescriptionLines[' + idx + '].Frequency" /></td>' +
+                    '<td><input class="form-control form-control-sm" name="PrescriptionLines[' + idx + '].Duration" /></td>' +
+                    '<td><input class="form-control form-control-sm" name="PrescriptionLines[' + idx + '].Instructions" /></td>' +
+                    '</tr>';
+                $('#rxRows').append(row);
+                idx++;
+            });
+        })();
+    </script>
+}

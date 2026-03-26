@@ -1,0 +1,187 @@
+@model SaasTenantDetailsDto
+@{
+    ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a href=\"" + Url.Action("Index", "Tenants") + "\">Clínicas</a></li><li class=\"breadcrumb-item active\">Detalle</li>";
+    var plans = ViewBag.Plans as IReadOnlyList<SubscriptionPlanListDto> ?? Array.Empty<SubscriptionPlanListDto>();
+}
+<div class="row">
+    <div class="col-lg-4">
+        <div class="card card-outline card-primary">
+            <div class="card-header"><h3 class="card-title mb-0">Clínica</h3></div>
+            <div class="card-body">
+                <p class="mb-1"><strong>@Model.Name</strong></p>
+                <p class="text-muted mb-1"><code>@Model.Code</code></p>
+                <p class="mb-1">@Model.Email</p>
+                <p class="mb-0">
+                    Estado tenant:
+                    <span class="badge badge-secondary">@Model.CommercialStatus</span>
+                    @if (Model.IsSuspended)
+                    {
+                        <span class="badge badge-danger">Suspendida</span>
+                    }
+                </p>
+                @if (!string.IsNullOrEmpty(Model.SuspensionReason))
+                {
+                    <p class="text-danger small mt-2 mb-0">@Model.SuspensionReason</p>
+                }
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header"><h3 class="card-title mb-0">Suscripción</h3></div>
+            <div class="card-body">
+                <p class="mb-1">Plan: <strong>@(Model.PlanName ?? "—")</strong> <span class="text-muted">(@(Model.PlanCode ?? ""))</span></p>
+                <p class="mb-1">Estado: <span class="badge badge-info">@(Model.SubscriptionStatus?.ToString() ?? "—")</span></p>
+                <p class="mb-1 small text-muted">Trial fin: @(Model.TrialEndDate?.ToString("yyyy-MM-dd") ?? "—")</p>
+                <p class="mb-1 small text-muted">Fin contrato: @(Model.EndDate?.ToString("yyyy-MM-dd") ?? "—")</p>
+                <p class="mb-0 small text-muted">Próx. cobro: @(Model.NextBillingDate?.ToString("yyyy-MM-dd") ?? "—")</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header"><h3 class="card-title mb-0">Uso vs límites del plan</h3></div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <p class="mb-1">Usuarios</p>
+                        <div class="progress">
+                            <div class="progress-bar" style="width:@(Math.Min(100, Model.Usage.UsersUsagePercent))%">@Model.Usage.Users / @Model.Usage.MaxUsers</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <p class="mb-1">Doctores</p>
+                        <div class="progress">
+                            <div class="progress-bar bg-success" style="width:@(Math.Min(100, Model.Usage.DoctorsUsagePercent))%">@Model.Usage.Doctors / @Model.Usage.MaxDoctors</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <p class="mb-1">Pacientes</p>
+                        <div class="progress">
+                            <div class="progress-bar bg-warning" style="width:@(Math.Min(100, Model.Usage.PatientsUsagePercent))%">@Model.Usage.Patients / @Model.Usage.MaxPatients</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <p class="mb-1">Citas (mes)</p>
+                        <div class="progress">
+                            <div class="progress-bar bg-info" style="width:@(Math.Min(100, Model.Usage.AppointmentsUsagePercent))%">@Model.Usage.AppointmentsThisMonth / @Model.Usage.MaxAppointmentsPerMonth</div>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Límite 0 en el plan se interpreta como ilimitado en la validación.</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3 class="card-title mb-0">Módulos del plan</h3></div>
+            <div class="card-body">
+                <span class="badge @(Model.Usage.IncludesBillingModule ? "badge-success" : "badge-secondary") mr-1 mb-1">Facturación</span>
+                <span class="badge @(Model.Usage.IncludesAutomationModule ? "badge-success" : "badge-secondary") mr-1 mb-1">Automatización</span>
+                <span class="badge @(Model.Usage.IncludesReportsModule ? "badge-success" : "badge-secondary") mr-1 mb-1">Reportes</span>
+                <span class="badge @(Model.Usage.IncludesPatientPortal ? "badge-success" : "badge-secondary") mr-1 mb-1">Portal paciente</span>
+                <span class="badge @(Model.Usage.IncludesMultiBranch ? "badge-success" : "badge-secondary") mr-1 mb-1">Multi-sucursal</span>
+                <span class="badge @(Model.Usage.IncludesAdvancedAnalytics ? "badge-success" : "badge-secondary") mr-1 mb-1">Analytics</span>
+            </div>
+        </div>
+
+        <div class="card card-outline card-secondary">
+            <div class="card-header"><h3 class="card-title mb-0">Acciones comerciales</h3></div>
+            <div class="card-body">
+                <form asp-action="Suspend" method="post" class="mb-3">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <div class="form-group">
+                        <label>Suspender clínica (motivo obligatorio)</label>
+                        <input name="reason" class="form-control" required placeholder="Motivo interno" />
+                    </div>
+                    @if (!Model.IsSuspended)
+                    {
+                        <button type="submit" class="btn btn-danger btn-sm">Suspender</button>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-danger btn-sm" disabled>Ya suspendida</button>
+                    }
+                </form>
+                <form asp-action="Activate" method="post" class="mb-3">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    @if (Model.IsSuspended)
+                    {
+                        <button type="submit" class="btn btn-success btn-sm">Reactivar</button>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-success btn-sm" disabled>Activa</button>
+                    }
+                </form>
+                <form asp-action="ChangePlan" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label>Nuevo plan</label>
+                            <select name="newPlanId" class="form-control" required>
+                                @foreach (var p in plans)
+                                {
+                                    if (Model.SubscriptionPlanId.HasValue && Model.SubscriptionPlanId.Value == p.Id)
+                                    {
+                                        <option value="@p.Id" selected>@p.Name (@p.MonthlyPrice @p.Currency)</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@p.Id">@p.Name (@p.MonthlyPrice @p.Currency)</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label>Motivo / nota</label>
+                            <input name="reason" class="form-control" placeholder="Upgrade / downgrade" />
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">Cambiar plan</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3 class="card-title mb-0">Historial de cambios</h3></div>
+            <div class="card-body table-responsive p-0">
+                <table class="table table-sm mb-0" id="histTable">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Desde plan</th>
+                            <th>A plan</th>
+                            <th>Estado</th>
+                            <th>Motivo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var h in Model.History)
+                    {
+                        <tr>
+                            <td>@h.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                            <td>@(h.PreviousPlanName ?? "—")</td>
+                            <td>@h.NewPlanName</td>
+                            <td>@h.PreviousStatus → @h.NewStatus</td>
+                            <td>@h.ChangeReason</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+            $('#histTable').DataTable({
+                language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
+                order: [[0, 'desc']],
+                pageLength: 10
+            });
+        });
+    </script>
+}

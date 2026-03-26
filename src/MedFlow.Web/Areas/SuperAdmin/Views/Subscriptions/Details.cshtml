@@ -1,0 +1,82 @@
+@model SaasSubscriptionDetailsDto
+@{
+    ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a href=\"" + Url.Action("Index", "Subscriptions") + "\">Suscripciones</a></li><li class=\"breadcrumb-item active\">Detalle</li>";
+}
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><h3 class="card-title mb-0">Suscripción</h3></div>
+            <div class="card-body">
+                <p><strong>@Model.TenantName</strong> <code>@Model.TenantCode</code></p>
+                <p>Plan: @Model.PlanName (@Model.PlanCode)</p>
+                <p>Estado: <span class="badge badge-info">@Model.Status</span></p>
+                <p class="small text-muted mb-0">External sub: @(Model.ExternalSubscriptionId ?? "—") · External plan: @(Model.ExternalPlanId ?? "—")</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><h3 class="card-title mb-0">Fechas</h3></div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li>Inicio: @Model.StartDate.ToString("yyyy-MM-dd")</li>
+                    <li>Fin: @(Model.EndDate?.ToString("yyyy-MM-dd") ?? "—")</li>
+                    <li>Trial: @(Model.TrialStartDate?.ToString("yyyy-MM-dd") ?? "—") → @(Model.TrialEndDate?.ToString("yyyy-MM-dd") ?? "—")</li>
+                    <li>Próx. cobro: @(Model.NextBillingDate?.ToString("yyyy-MM-dd") ?? "—")</li>
+                    <li>Cancelada: @(Model.CancelledAt?.ToString("yyyy-MM-dd HH:mm") ?? "—")</li>
+                    <li>Suspendida: @(Model.SuspendedAt?.ToString("yyyy-MM-dd HH:mm") ?? "—")</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="card">
+    <div class="card-header"><h3 class="card-title mb-0">Uso actual</h3></div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="info-box bg-light">
+                    <span class="info-box-icon"><i class="fa fa-users"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text">Usuarios</span>
+                        <span class="info-box-number">@Model.Usage.Users / @Model.Usage.MaxUsers</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="info-box bg-light">
+                    <span class="info-box-icon"><i class="fa fa-user-md"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text">Doctores</span>
+                        <span class="info-box-number">@Model.Usage.Doctors / @Model.Usage.MaxDoctors</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="info-box bg-light">
+                    <span class="info-box-icon"><i class="fa fa-heartbeat"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text">Pacientes</span>
+                        <span class="info-box-number">@Model.Usage.Patients / @Model.Usage.MaxPatients</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="info-box bg-light">
+                    <span class="info-box-icon"><i class="fa fa-calendar"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text">Citas (mes)</span>
+                        <span class="info-box-number">@Model.Usage.AppointmentsThisMonth / @Model.Usage.MaxAppointmentsPerMonth</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <p class="mb-0 mt-3">
+            <span class="text-muted small d-block mb-1">Módulos del plan:</span>
+            <span class="badge @(Model.Usage.IncludesBillingModule ? "badge-success" : "badge-secondary") mr-1">Facturación</span>
+            <span class="badge @(Model.Usage.IncludesAutomationModule ? "badge-success" : "badge-secondary") mr-1">Automatización</span>
+            <span class="badge @(Model.Usage.IncludesReportsModule ? "badge-success" : "badge-secondary") mr-1">Reportes</span>
+            <span class="badge @(Model.Usage.IncludesPatientPortal ? "badge-success" : "badge-secondary") mr-1">Portal</span>
+        </p>
+    </div>
+</div>

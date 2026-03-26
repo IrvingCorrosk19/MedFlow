@@ -1,0 +1,61 @@
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fa fa-comments mr-2"></i>Consultas al copiloto</h3>
+    </div>
+    <div class="card-body">
+        <p class="text-muted">Ejemplos: "¿Qué pacientes requieren seguimiento?", "¿Qué citas tienen alto riesgo?", "¿Qué facturas requieren gestión?"</p>
+        <form id="copilotForm" class="mb-3">
+            @Html.AntiForgeryToken()
+            <div class="input-group">
+                <input type="text" id="copilotQuery" class="form-control" placeholder="Escriba su consulta..." />
+                <div class="input-group-append">
+                    <button type="submit" class="btn btn-primary">Consultar</button>
+                </div>
+            </div>
+        </form>
+        <div id="copilotResult" class="border rounded p-3 bg-light" style="display:none;">
+            <h6>Respuesta</h6>
+            <p id="resultSummary"></p>
+            <div id="resultItems"></div>
+            <div id="resultSuggestions" class="mt-2"></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    $('#copilotForm').on('submit', function(e) {
+        e.preventDefault();
+        var q = $('#copilotQuery').val();
+        if (!q || !q.trim()) return;
+        $.ajax({
+            url: '@Url.Action("Query", "Copilot")',
+            type: 'POST',
+            data: { query: q, __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val() },
+            success: function(data) {
+                $('#resultSummary').text(data.summary);
+                var items = '';
+                if (data.items && data.items.length) {
+                    items = '<ul class="list-group">';
+                    data.items.forEach(function(i) {
+                        items += '<li class="list-group-item"><strong>' + i.title + '</strong><br><small>' + i.description + '</small>' +
+                            (i.actionUrl ? ' <a href="' + i.actionUrl + '" class="btn btn-xs btn-primary float-right">Ir</a>' : '') + '</li>';
+                    });
+                    items += '</ul>';
+                }
+                $('#resultItems').html(items);
+                var sug = '';
+                if (data.suggestions && data.suggestions.length) {
+                    sug = '<small>Pruebe: </small>';
+                    data.suggestions.forEach(function(s) { sug += '<button type="button" class="btn btn-xs btn-outline-secondary mr-1 copilot-suggestion">' + s + '</button>'; });
+                }
+                $('#resultSuggestions').html(sug);
+                $('#copilotResult').show();
+            }
+        });
+    });
+    $(document).on('click', '.copilot-suggestion', function() {
+        $('#copilotQuery').val($(this).text());
+    });
+</script>
+}

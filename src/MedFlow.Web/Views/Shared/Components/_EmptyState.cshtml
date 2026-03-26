@@ -1,0 +1,17 @@
+@model MedFlow.Web.Models.Ui.EmptyStateModel
+<div class="empty-state text-center py-5 px-3">
+    <div class="empty-state-icon mb-3">
+        <i class="@Model.IconClass fa-3x text-muted"></i>
+    </div>
+    <h5 class="text-secondary font-weight-normal">@Model.Title</h5>
+    @if (!string.IsNullOrEmpty(Model.Description))
+    {
+        <p class="text-muted small mb-3 mx-auto" style="max-width: 420px;">@Model.Description</p>
+    }
+    @if (!string.IsNullOrEmpty(Model.ActionUrl) && !string.IsNullOrEmpty(Model.ActionText))
+    {
+        <a href="@Model.ActionUrl" class="btn btn-primary btn-sm">
+            <i class="fa fa-plus"></i> @Model.ActionText
+        </a>
+    }
+</div>

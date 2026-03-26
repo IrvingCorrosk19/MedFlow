@@ -1,0 +1,138 @@
+@model MedFlow.Web.Controllers.TrendsViewModel
+@using System.Text.Json
+@{
+    var j = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    var chartData = new {
+        aptLabels = Model.Appointments.Select(x => x.Date.ToString("dd/MM")).ToList(),
+        aptData = Model.Appointments.Select(x => (double)x.Value).ToList(),
+        revLabels = Model.Revenue.Select(x => x.Date.ToString("dd/MM")).ToList(),
+        revData = Model.Revenue.Select(x => (double)x.Value).ToList(),
+        cancLabels = Model.Cancellations.Select(x => x.Date.ToString("dd/MM")).ToList(),
+        cancData = Model.Cancellations.Select(x => (double)x.Value).ToList(),
+        noShowLabels = Model.NoShow.Select(x => x.Date.ToString("dd/MM")).ToList(),
+        noShowData = Model.NoShow.Select(x => (double)x.Value).ToList(),
+        newPatientsLabels = Model.NewPatients.Select(x => x.Date.ToString("dd/MM")).ToList(),
+        newPatientsData = Model.NewPatients.Select(x => (int)(x.Count ?? 0)).ToList(),
+        aiLabels = Model.AIInsights.Select(x => x.Date.ToString("dd/MM")).ToList(),
+        aiData = Model.AIInsights.Select(x => (int)x.Value).ToList()
+    };
+    var chartJson = JsonSerializer.Serialize(chartData, j);
+    var aptComp = ViewBag.AptComparison as MedFlow.Application.Interfaces.PeriodComparisonVm;
+    var revComp = ViewBag.RevComparison as MedFlow.Application.Interfaces.PeriodComparisonVm;
+}
+<div class="row mb-2">
+    <div class="col-12">
+        <form method="get" class="form-inline">
+            <input type="date" name="from" value="@ViewData["From"]" class="form-control form-control-sm mr-1" />
+            <input type="date" name="to" value="@ViewData["To"]" class="form-control form-control-sm mr-1" />
+            <button type="submit" class="btn btn-primary btn-sm">Aplicar</button>
+        </form>
+    </div>
+</div>
+
+@if (aptComp != null || revComp != null)
+{
+<div class="row mb-3">
+    @if (aptComp != null)
+    {
+    <div class="col-md-6">
+        <div class="info-box @(aptComp.Direction == "up" ? "bg-success" : aptComp.Direction == "down" ? "bg-danger" : "bg-secondary")">
+            <span class="info-box-icon"><i class="fa fa-calendar-check-o"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">Citas (@aptComp.CurrentLabel vs @aptComp.PreviousLabel)</span>
+                <span class="info-box-number">@aptComp.CurrentValue.ToString("N0") vs @aptComp.PreviousValue.ToString("N0")</span>
+                <span class="progress-description">@(aptComp.PercentChange >= 0 ? "+" : "")@aptComp.PercentChange.ToString("F1")%</span>
+            </div>
+        </div>
+    </div>
+    }
+    @if (revComp != null)
+    {
+    <div class="col-md-6">
+        <div class="info-box @(revComp.Direction == "up" ? "bg-success" : revComp.Direction == "down" ? "bg-danger" : "bg-secondary")">
+            <span class="info-box-icon"><i class="fa fa-money"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">Ingresos (@revComp.CurrentLabel vs @revComp.PreviousLabel)</span>
+                <span class="info-box-number">@revComp.CurrentValue.ToString("N0") vs @revComp.PreviousValue.ToString("N0")</span>
+                <span class="progress-description">@(revComp.PercentChange >= 0 ? "+" : "")@revComp.PercentChange.ToString("F1")%</span>
+            </div>
+        </div>
+    </div>
+    }
+</div>
+}
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card card-outline card-primary shadow-sm">
+            <div class="card-header"><h3 class="card-title">Citas completadas</h3></div>
+            <div class="card-body" style="height:240px"><canvas id="chartApt"></canvas></div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card card-outline card-success shadow-sm">
+            <div class="card-header"><h3 class="card-title">Ingresos</h3></div>
+            <div class="card-body" style="height:240px"><canvas id="chartRevenue"></canvas></div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card card-outline card-warning shadow-sm">
+            <div class="card-header"><h3 class="card-title">Cancelaciones</h3></div>
+            <div class="card-body" style="height:240px"><canvas id="chartCancellations"></canvas></div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card card-outline card-danger shadow-sm">
+            <div class="card-header"><h3 class="card-title">No-show</h3></div>
+            <div class="card-body" style="height:240px"><canvas id="chartNoShow"></canvas></div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card card-outline card-info shadow-sm">
+            <div class="card-header"><h3 class="card-title">Pacientes nuevos</h3></div>
+            <div class="card-body" style="height:240px"><canvas id="chartNewPatients"></canvas></div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card card-outline card-dark shadow-sm">
+            <div class="card-header"><h3 class="card-title">Insights IA</h3></div>
+            <div class="card-body" style="height:240px"><canvas id="chartAI"></canvas></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+        $(function () {
+            try {
+                var p = @Html.Raw(chartJson);
+                if (typeof Chart === 'undefined') return;
+                function line(id, labels, data, color) {
+                    var el = document.getElementById(id);
+                    if (!el || !labels || !labels.length) return;
+                    new Chart(el, {
+                        type: 'line',
+                        data: { labels: labels, datasets: [{ label: '', data: data, fill: true, backgroundColor: (color||'rgba(0,123,255,0.1)'), borderColor: color||'#007bff', tension: 0.25 }] },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+                    });
+                }
+                function bar(id, labels, data, color) {
+                    var el = document.getElementById(id);
+                    if (!el || !labels || !labels.length) return;
+                    new Chart(el, {
+                        type: 'bar',
+                        data: { labels: labels, datasets: [{ label: '', data: data, backgroundColor: color||'rgba(255,193,7,0.6)' }] },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+                    });
+                }
+                line('chartApt', p.aptLabels, p.aptData, 'rgba(0,123,255,0.8)');
+                line('chartRevenue', p.revLabels, p.revData, 'rgba(40,167,69,0.8)');
+                line('chartCancellations', p.cancLabels, p.cancData, 'rgba(255,193,7,0.8)');
+                line('chartNoShow', p.noShowLabels, p.noShowData, 'rgba(220,53,69,0.8)');
+                bar('chartNewPatients', p.newPatientsLabels, p.newPatientsData, 'rgba(23,162,184,0.6)');
+                bar('chartAI', p.aiLabels, p.aiData, 'rgba(108,117,125,0.6)');
+            } catch (e) { console.error(e); }
+        });
+    </script>
+}

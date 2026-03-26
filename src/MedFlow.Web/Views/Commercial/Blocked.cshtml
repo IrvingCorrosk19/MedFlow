@@ -1,0 +1,27 @@
+@{
+    ViewData["Title"] = "Acceso restringido";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    var reason = ViewBag.Reason as string;
+}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card card-outline card-danger">
+            <div class="card-header">
+                <h3 class="card-title mb-0"><i class="fa fa-ban"></i> Acceso restringido</h3>
+            </div>
+            <div class="card-body">
+                <p class="lead">Su clínica no puede operar en este momento por el estado comercial de la suscripción.</p>
+                <p class="text-muted mb-2"><strong>Motivo técnico:</strong> @(reason ?? "no_disponible")</p>
+                @if (reason == "past_due_locked")
+                {
+                    <p class="text-muted">Su plan está en mora y la plataforma está configurada para bloquear operaciones hasta regularizar el pago.</p>
+                }
+                <ul class="mb-3">
+                    <li>Si la clínica fue suspendida por impago o política, contacte al administrador de la plataforma.</li>
+                    <li>Si su período de prueba finalizó, solicite un plan activo.</li>
+                </ul>
+                <a asp-controller="Dashboard" asp-action="Index" class="btn btn-default">Volver al inicio</a>
+            </div>
+        </div>
+    </div>
+</div>
