@@ -1,0 +1,9 @@
+STATUS: COMPLETE (Development QA)
+BUILD: if MedFlow.Web is running, full solution build may fail (DLL locked); stop the web process and run dotnet build
+UNIT TESTS: 112 passed (last run with solution build OK)
+EVIDENCE: qa-role-audit/01..11 + 02-login-results.json (negatives: patient on staff = 401)
+JWT STAFF: OK (5 roles)
+JWT PATIENT: OK
+MVC PERMISSIONS: OK (matrix 04)
+CRITICAL OPEN: none for scoped QA deliverable; cross-tenant IDOR second-tenant test manual
+PRODUCTION: do not copy Saas:AllowOperationsWhenPastDue bypass to production without review

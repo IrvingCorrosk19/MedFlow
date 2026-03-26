@@ -1,0 +1,7 @@
+{
+  "unitTests": "112 passed (MedFlow.UnitTests)",
+  "apiStaffJwt": "5/5 roles 200",
+  "apiPatientJwt": "200",
+  "mvcMatrix": "ver 04-role-permission-matrix.md",
+  "negatives": "401 wrong password; 401 patient on staff; 401 no bearer on patient API"
+}

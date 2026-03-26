@@ -1,0 +1,63 @@
+{
+    "staffLogins":  [
+                        {
+                            "email":  "qa.admin@medflow.local",
+                            "http":  200,
+                            "iss":  "MedFlow",
+                            "aud":  "MedFlow.Mobile",
+                            "tenant_id":  "47602bdf-4750-4796-afbc-02c8bdaf4613",
+                            "role":  "Admin"
+                        },
+                        {
+                            "email":  "qa.reception@medflow.local",
+                            "http":  200,
+                            "iss":  "MedFlow",
+                            "aud":  "MedFlow.Mobile",
+                            "tenant_id":  "47602bdf-4750-4796-afbc-02c8bdaf4613",
+                            "role":  "Reception"
+                        },
+                        {
+                            "email":  "qa.doctor@medflow.local",
+                            "http":  200,
+                            "iss":  "MedFlow",
+                            "aud":  "MedFlow.Mobile",
+                            "tenant_id":  "47602bdf-4750-4796-afbc-02c8bdaf4613",
+                            "role":  "Doctor"
+                        },
+                        {
+                            "email":  "qa.billing@medflow.local",
+                            "http":  200,
+                            "iss":  "MedFlow",
+                            "aud":  "MedFlow.Mobile",
+                            "tenant_id":  "47602bdf-4750-4796-afbc-02c8bdaf4613",
+                            "role":  "Billing"
+                        },
+                        {
+                            "email":  "qa.staff@medflow.local",
+                            "http":  200,
+                            "iss":  "MedFlow",
+                            "aud":  "MedFlow.Mobile",
+                            "tenant_id":  "47602bdf-4750-4796-afbc-02c8bdaf4613",
+                            "role":  "Staff"
+                        }
+                    ],
+    "patientMobile":  {
+                          "http":  200,
+                          "patientId":  "9cedea3d-6396-4fe9-b4bf-69b6c233eeef",
+                          "tenantId":  "47602bdf-4750-4796-afbc-02c8bdaf4613"
+                      },
+    "negatives":  [
+                      {
+                          "case":  "staff wrong password",
+                          "status":  401
+                      },
+                      {
+                          "case":  "patient on staff login",
+                          "status":  401
+                      },
+                      {
+                          "case":  "mobile patient dashboard no token",
+                          "status":  401
+                      }
+                  ]
+}

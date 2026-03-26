@@ -1,0 +1,8 @@
+{
+  "notes": "Antes de correcciones de esta sesión",
+  "items": [
+    { "test": "JWT staff para qa.admin", "result": "no existía endpoint", "severity": "critical" },
+    { "test": "mobile login qa.patient", "result": "fallo sin Patient.UserId", "severity": "critical" },
+    { "test": "MVC /AdminUsers con qa.admin", "result": "redirect Commercial/Blocked por PastDue", "severity": "high" }
+  ]
+}

@@ -1,0 +1,12 @@
+FECHA: 2026-03-26
+AMBIENTE: Development, http://localhost:5115
+CREDENCIALES QA: Development:QaRoleUsersPassword (appsettings.Development.json)
+
+LOGIN: 6/6 roles validados (5 staff + 1 portal paciente)
+MATRIZ HTTP: Admin/Reception/Doctor/Billing/Staff/Patient vs rutas clave — coherente con permisos
+NAVEGADOR: Admin dashboard + lista usuarios; Patient portal inicio + bloqueo AdminUsers tras fix (UI mínima)
+CORRECCIÓN APLICADA: AccessDenied sin menú staff para usuarios solo Patient (_AccessDeniedMinimalLayout)
+REGRESIÓN: dotnet test MedFlow.UnitTests — 112 passed
+PENDIENTE MANUAL: formularios create/edit en profundidad por módulo (datos de negocio); segundo tenant para IDOR
+
+STATUS: PASS con fix integrado
