@@ -3,14 +3,32 @@
 @{
     ViewData["PageTitle"] = "Caja";
     var day = ViewBag.Day as string;
+    var fromVal = ViewBag.From as string;
+    var toVal = ViewBag.To as string;
+    bool isRange = ViewBag.IsRange == true;
 }
 
 <div class="card card-outline card-primary shadow-sm mb-3">
     <div class="card-body">
-        <form method="get" class="form-inline">
-            <label class="mr-2 small text-muted">Día</label>
-            <input type="date" name="day" class="form-control form-control-sm mr-2" value="@day" />
-            <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-calendar"></i> Ver</button>
+        <form method="get">
+            <div class="row align-items-end gx-2">
+                <div class="col-auto">
+                    <label class="small text-muted d-block mb-1">Día exacto</label>
+                    <input type="date" name="day" class="form-control form-control-sm" value="@(isRange ? "" : day)" />
+                </div>
+                <div class="col-auto d-flex align-items-center pt-3 text-muted small px-2">ó rango</div>
+                <div class="col-auto">
+                    <label class="small text-muted d-block mb-1">Desde</label>
+                    <input type="date" name="from" class="form-control form-control-sm" value="@(isRange ? fromVal : "")" />
+                </div>
+                <div class="col-auto">
+                    <label class="small text-muted d-block mb-1">Hasta</label>
+                    <input type="date" name="to" class="form-control form-control-sm" value="@(isRange ? toVal : "")" />
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-primary btn-sm mt-3"><i class="fa fa-calendar"></i> Ver</button>
+                </div>
+            </div>
         </form>
     </div>
 </div>
@@ -38,7 +56,7 @@
         <div class="small-box bg-info">
             <div class="inner">
                 <h3>@(((decimal)ViewBag.Net).ToString("N2"))</h3>
-                <p>Neto día</p>
+                <p>Neto @(isRange ? "del período" : "día")</p>
             </div>
             <div class="icon"><i class="fa fa-balance-scale"></i></div>
         </div>
@@ -55,7 +73,10 @@
 </div>
 
 <div class="card card-outline card-secondary shadow-sm">
-    <div class="card-header"><h3 class="card-title font-weight-bold mb-0">Movimientos</h3></div>
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title font-weight-bold mb-0">Movimientos</h3>
+        <a asp-action="Create" class="btn btn-success btn-sm"><i class="fa fa-plus"></i> Nuevo movimiento</a>
+    </div>
     <div class="card-body table-responsive p-0">
         <table id="tblC" class="table table-hover mb-0">
             <thead class="thead-light">
@@ -64,6 +85,7 @@
                     <th>Tipo</th>
                     <th class="text-right">Monto</th>
                     <th>Descripción</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -75,6 +97,22 @@
                         <td><span class="badge badge-@cls">@m.MovementType</span></td>
                         <td class="text-right font-weight-medium">@m.Amount.ToString("N2")</td>
                         <td>@(m.Description ?? "—")</td>
+                        <td>
+                            @if (m.RelatedPaymentId == null)
+                            {
+                                <form asp-action="Delete" method="post" class="d-inline frm-del-mov">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@m.Id" />
+                                    <input type="hidden" name="day" value="@ViewBag.Day" />
+                                    @if (isRange)
+                                    {
+                                        <input type="hidden" name="from" value="@fromVal" />
+                                        <input type="hidden" name="to" value="@toVal" />
+                                    }
+                                    <button type="button" class="btn btn-xs btn-outline-danger btn-del-mov" title="Eliminar"><i class="fa fa-trash"></i></button>
+                                </form>
+                            }
+                        </td>
                     </tr>
                 }
             </tbody>
@@ -86,6 +124,11 @@
     <script>
         $(function () {
             $('#tblC').DataTable({ order: [[0, 'desc']], pageLength: 50, language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' } });
+            $(document).on('click', '.btn-del-mov', function () {
+                var f = $(this).closest('form');
+                Swal.fire({ title: '¿Eliminar movimiento?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Sí, eliminar', cancelButtonText: 'Cancelar' })
+                    .then(function (r) { if (r.isConfirmed) f.submit(); });
+            });
         });
     </script>
 }

@@ -36,6 +36,20 @@
         </style>
     }
     @await RenderSectionAsync("Styles", required: false)
+    <style>
+        @@media print {
+            .main-sidebar,
+            .main-header,
+            .main-footer,
+            .content-header .breadcrumb,
+            .btn, .btn-group,
+            form[method="post"],
+            .no-print { display: none !important; }
+            .content-wrapper { margin-left: 0 !important; padding-top: 0 !important; }
+            .card { box-shadow: none !important; border: 1px solid #ddd !important; }
+            body { font-size: 11px; }
+        }
+    </style>
 </head>
 <body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed medflow-skin">
     <div class="wrapper">

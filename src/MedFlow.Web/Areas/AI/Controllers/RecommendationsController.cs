@@ -30,7 +30,15 @@ public class RecommendationsController : Controller
         ViewData["PageSubtitle"] = "Acciones sugeridas por IA";
         ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a asp-controller=\"AIDashboard\" asp-action=\"Index\">IA</a></li><li class=\"breadcrumb-item active\">Recomendaciones</li>";
 
-        var recommendations = await _recommendationEngine.GenerateRecommendationsAsync(_tenant.TenantId.Value, ct);
-        return View(recommendations);
+        try
+        {
+            var recommendations = await _recommendationEngine.GenerateRecommendationsAsync(_tenant.TenantId.Value, ct);
+            return View(recommendations);
+        }
+        catch (Exception)
+        {
+            ViewData["ErrorMessage"] = "Error al generar recomendaciones.";
+            return View(Array.Empty<AIRecommendation>());
+        }
     }
 }

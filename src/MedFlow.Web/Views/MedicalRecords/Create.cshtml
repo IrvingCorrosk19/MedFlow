@@ -100,6 +100,7 @@
                                 <th>Frec.</th>
                                 <th>Duración</th>
                                 <th>Indicaciones</th>
+                                <th style="width:40px;"></th>
                             </tr>
                         </thead>
                         <tbody id="rxRows">
@@ -111,6 +112,7 @@
                                     <td><input class="form-control form-control-sm" name="PrescriptionLines[@i].Frequency" value="@Model.PrescriptionLines[i].Frequency" /></td>
                                     <td><input class="form-control form-control-sm" name="PrescriptionLines[@i].Duration" value="@Model.PrescriptionLines[i].Duration" /></td>
                                     <td><input class="form-control form-control-sm" name="PrescriptionLines[@i].Instructions" value="@Model.PrescriptionLines[i].Instructions" /></td>
+                                    <td><button type="button" class="btn btn-xs btn-outline-danger btn-remove-rx" title="Quitar"><i class="fa fa-trash"></i></button></td>
                                 </tr>
                             }
                         </tbody>
@@ -164,9 +166,25 @@
                     '<td><input class="form-control form-control-sm" name="PrescriptionLines[' + idx + '].Frequency" /></td>' +
                     '<td><input class="form-control form-control-sm" name="PrescriptionLines[' + idx + '].Duration" /></td>' +
                     '<td><input class="form-control form-control-sm" name="PrescriptionLines[' + idx + '].Instructions" /></td>' +
+                    '<td><button type="button" class="btn btn-xs btn-outline-danger btn-remove-rx" title="Quitar"><i class="fa fa-trash"></i></button></td>' +
                     '</tr>';
                 $('#rxRows').append(row);
                 idx++;
+            });
+            $(document).on('click', '.btn-remove-rx', function () {
+                var $rows = $('#rxRows .rx-line');
+                if ($rows.length <= 1) return; // Keep at least one row
+                $(this).closest('tr').remove();
+                // Re-index remaining rows
+                $('#rxRows .rx-line').each(function(i) {
+                    $(this).find('input').each(function() {
+                        var name = $(this).attr('name');
+                        if (name) {
+                            $(this).attr('name', name.replace(/\[\d+\]/, '[' + i + ']'));
+                        }
+                    });
+                });
+                idx = $('#rxRows .rx-line').length;
             });
         })();
     </script>

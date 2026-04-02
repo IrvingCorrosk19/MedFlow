@@ -18,14 +18,26 @@ public class DashboardController : Controller
         _analytics = analytics;
     }
 
-    public async Task<IActionResult> Index(CancellationToken cancellationToken)
+    public async Task<IActionResult> Index(int days = 14, CancellationToken cancellationToken = default)
     {
-        var model = await _analytics.GetExecutiveDashboardAsync(new ExecutiveDashboardFilter(14), cancellationToken);
-
         ViewData["Title"] = "Dashboard ejecutivo";
         ViewData["PageSubtitle"] = "KPIs, tendencias y operación clínica";
         ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item active\">Dashboard</li>";
 
-        return View(model);
+        var clampedDays = Math.Clamp(days, 1, 365);
+        ViewBag.Days = clampedDays;
+
+        try
+        {
+            var model = await _analytics.GetExecutiveDashboardAsync(new ExecutiveDashboardFilter(clampedDays), cancellationToken);
+            return View(model);
+        }
+        catch (Exception ex)
+        {
+            ViewData["ErrorMessage"] = "No se pudieron cargar los datos del dashboard. Intente de nuevo en unos momentos.";
+            Microsoft.Extensions.Logging.LoggerExtensions.LogError(
+                HttpContext.RequestServices.GetRequiredService<ILogger<DashboardController>>(), ex, "Error cargando dashboard");
+            return View(null as MedFlow.Application.Reporting.ExecutiveDashboardVm);
+        }
     }
 }

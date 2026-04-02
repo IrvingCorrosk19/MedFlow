@@ -57,6 +57,9 @@ public class ReportsController : Controller
         ViewData["PageSubtitle"] = "Altas y actividad";
         ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a href=\"" + Url.Action("Index", "Dashboard") + "\">Inicio</a></li><li class=\"breadcrumb-item active\">Reporte pacientes</li>";
 
+        if (from.HasValue && to.HasValue && from > to)
+            from = to.Value.AddDays(-30);
+
         var vm = await _analytics.GetPatientsReportAsync(new PatientsReportFilter(from, to, includeInactive), cancellationToken);
         ViewBag.From = from?.ToString("yyyy-MM-dd");
         ViewBag.To = to?.ToString("yyyy-MM-dd");
@@ -97,6 +100,9 @@ public class ReportsController : Controller
         ViewData["PageSubtitle"] = "Productividad por profesional";
         ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a href=\"" + Url.Action("Index", "Dashboard") + "\">Inicio</a></li><li class=\"breadcrumb-item active\">Reporte doctores</li>";
 
+        if (from.HasValue && to.HasValue && from > to)
+            from = to.Value.AddDays(-30);
+
         var vm = await _analytics.GetDoctorsReportAsync(new DoctorsReportFilter(from, to, doctorId), cancellationToken);
 
         var doctors = await _db.Doctors.AsNoTracking().Where(d => !d.IsDeleted).OrderBy(d => d.LastName).ToListAsync(cancellationToken);
@@ -106,6 +112,155 @@ public class ReportsController : Controller
         ViewBag.DoctorId = doctorId;
 
         return View(vm);
+    }
+
+    [HttpGet]
+    [RequirePermission(PermissionCodes.ReportsView)]
+    public async Task<IActionResult> ExportAppointmentsCsv(
+        DateTime? from,
+        DateTime? to,
+        Guid? doctorId,
+        string? speciality,
+        int? status,
+        CancellationToken cancellationToken)
+    {
+        var vm = await _analytics.GetAppointmentsReportAsync(
+            new AppointmentsReportFilter(from, to, doctorId, speciality, status),
+            cancellationToken);
+
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("Fecha,Hora,Paciente,Doctor,Especialidad,Estado,Motivo");
+        foreach (var r in vm.Rows)
+        {
+            sb.AppendLine(string.Join(",",
+                CsvField(r.Date.ToString("dd/MM/yyyy")),
+                CsvField(r.Start.ToString(@"hh\:mm")),
+                CsvField(r.PatientName),
+                CsvField(r.DoctorName),
+                CsvField(r.Speciality),
+                CsvField(r.StatusLabel),
+                CsvField(r.Reason ?? "")));
+        }
+
+        var bytes = System.Text.Encoding.UTF8.GetPreamble()
+            .Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString()))
+            .ToArray();
+
+        return File(bytes, "text/csv", $"citas_{DateTime.UtcNow:yyyyMMdd}.csv");
+    }
+
+    [HttpGet]
+    [RequirePermission(PermissionCodes.ReportsView)]
+    public async Task<IActionResult> ExportPatientsCsv(
+        DateTime? from,
+        DateTime? to,
+        bool includeInactive = false,
+        CancellationToken cancellationToken = default)
+    {
+        var vm = await _analytics.GetPatientsReportAsync(
+            new PatientsReportFilter(from, to, includeInactive),
+            cancellationToken);
+
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("Paciente,Registro,Estado,Nº citas");
+        foreach (var r in vm.Rows)
+        {
+            sb.AppendLine(string.Join(",",
+                CsvField(r.Name),
+                CsvField(r.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")),
+                CsvField(r.IsActive ? "Activo" : "Inactivo"),
+                CsvField(r.AppointmentCount.ToString())));
+        }
+
+        var bytes = System.Text.Encoding.UTF8.GetPreamble()
+            .Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString()))
+            .ToArray();
+
+        return File(bytes, "text/csv", $"pacientes_{DateTime.UtcNow:yyyyMMdd}.csv");
+    }
+
+    [HttpGet]
+    [RequirePermission(PermissionCodes.ReportsView)]
+    public async Task<IActionResult> ExportDoctorsCsv(
+        DateTime? from,
+        DateTime? to,
+        Guid? doctorId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var vm = await _analytics.GetDoctorsReportAsync(
+            new DoctorsReportFilter(from, to, doctorId),
+            cancellationToken);
+
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("Doctor,Especialidad,Total citas,Completadas,Canceladas,No show");
+        foreach (var r in vm.Rows)
+        {
+            sb.AppendLine(string.Join(",",
+                CsvField(r.DoctorName),
+                CsvField(r.Speciality ?? ""),
+                CsvField(r.TotalAppointments.ToString()),
+                CsvField(r.Completed.ToString()),
+                CsvField(r.Cancelled.ToString()),
+                CsvField(r.NoShow.ToString())));
+        }
+
+        var bytes = System.Text.Encoding.UTF8.GetPreamble()
+            .Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString()))
+            .ToArray();
+
+        return File(bytes, "text/csv", $"doctores_{DateTime.UtcNow:yyyyMMdd}.csv");
+    }
+
+    [HttpGet]
+    [RequirePermission(PermissionCodes.ReportsView)]
+    public async Task<IActionResult> ExportFinancialCsv(
+        DateTime? from,
+        DateTime? to,
+        Guid? patientId,
+        int? paymentMethod,
+        CancellationToken cancellationToken)
+    {
+        var vm = await _analytics.GetFinancialReportAsync(
+            new FinancialReportFilter(from, to, patientId, paymentMethod),
+            cancellationToken);
+
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("Nº Factura,Emisión,Paciente,Total,Saldo,Estado");
+        foreach (var r in vm.Invoices)
+        {
+            sb.AppendLine(string.Join(",",
+                CsvField(r.InvoiceNumber),
+                CsvField(r.IssueDate.ToLocalTime().ToString("dd/MM/yyyy")),
+                CsvField(r.PatientName),
+                CsvField(r.Total.ToString("N2")),
+                CsvField(r.Balance.ToString("N2")),
+                CsvField(r.StatusLabel)));
+        }
+
+        sb.AppendLine();
+        sb.AppendLine("Fecha Pago,Paciente,Factura,Monto,Método");
+        foreach (var r in vm.Payments)
+        {
+            sb.AppendLine(string.Join(",",
+                CsvField(r.PaymentDate.ToLocalTime().ToString("dd/MM/yyyy")),
+                CsvField(r.PatientName),
+                CsvField(r.InvoiceNumber),
+                CsvField(r.Amount.ToString("N2")),
+                CsvField(r.MethodLabel)));
+        }
+
+        var bytes = System.Text.Encoding.UTF8.GetPreamble()
+            .Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString()))
+            .ToArray();
+
+        return File(bytes, "text/csv", $"financiero_{DateTime.UtcNow:yyyyMMdd}.csv");
+    }
+
+    private static string CsvField(string value)
+    {
+        if (value.Contains(',') || value.Contains('"') || value.Contains('\n'))
+            return "\"" + value.Replace("\"", "\"\"") + "\"";
+        return value;
     }
 
     private async Task FillDoctorSpecialitySelectsAsync(Guid? doctorId, string? speciality, CancellationToken cancellationToken)

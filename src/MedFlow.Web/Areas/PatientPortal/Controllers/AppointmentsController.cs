@@ -48,6 +48,27 @@ public class AppointmentsController : Controller
         return View(appointments);
     }
 
+    [HttpGet]
+    [Route("citas/{id:guid}")]
+    public async Task<IActionResult> Details(Guid id, CancellationToken ct)
+    {
+        var patientId = GetPatientId();
+        if (!patientId.HasValue) return RedirectToAction("AccessDenied", "Auth");
+
+        var options = await _portal.GetOptionsAsync(GetTenantId(), ct);
+        if (!options.Enabled) return RedirectToAction("Login", "Auth");
+
+        var appointment = await _portal.GetAppointmentAsync(patientId.Value, id, ct);
+        if (appointment == null) return NotFound();
+
+        var unread = await _portal.GetUnreadNotificationsCountAsync(patientId.Value, ct);
+        HttpContext.Items["UnreadNotificationsCount"] = unread;
+
+        ViewData["Title"] = "Detalle de Cita";
+        ViewData["Options"] = options;
+        return View(appointment);
+    }
+
     [HttpPost]
     [Route("citas/{id:guid}/confirmar")]
     [ValidateAntiForgeryToken]

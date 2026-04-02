@@ -53,6 +53,9 @@ public sealed class OnboardingStep3Vm
     public string AdminEmail { get; set; } = "";
 
     [Required(ErrorMessage = "La contraseña es obligatoria.")]
+    [StringLength(100, MinimumLength = 6, ErrorMessage = "La contraseña debe tener al menos 6 caracteres.")]
+    [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$",
+        ErrorMessage = "La contraseña debe contener al menos una mayúscula, una minúscula y un dígito.")]
     [DataType(DataType.Password)]
     public string Password { get; set; } = "";
 

@@ -72,6 +72,13 @@
                         <td><span class="badge badge-@badge">@i.Status</span></td>
                         <td class="text-right">
                             <a asp-action="Details" asp-route-id="@i.Id" class="btn btn-sm btn-outline-primary">Ver</a>
+                            @if (i.Status != InvoiceStatus.Paid && i.Status != InvoiceStatus.Cancelled && i.BalanceDue > 0)
+                            {
+                                <a asp-controller="Payments" asp-action="Create" asp-route-billingInvoiceId="@i.Id"
+                                   class="btn btn-sm btn-outline-success ml-1" title="Registrar pago" aria-label="Registrar pago">
+                                    <i class="fa fa-money"></i>
+                                </a>
+                            }
                         </td>
                     </tr>
                 }

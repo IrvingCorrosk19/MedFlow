@@ -5,6 +5,18 @@
     ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a href=\"" + Url.Action("Index") + "\">Usuarios</a></li><li class=\"breadcrumb-item active\">Detalle</li>";
 }
 
+@if (TempData["ResetLink"] is string resetLink && !string.IsNullOrEmpty(resetLink))
+{
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+        <strong><i class="fa fa-link mr-1"></i> Enlace de restablecimiento de contraseña generado:</strong>
+        <div class="mt-2">
+            <input type="text" class="form-control form-control-sm" value="@resetLink" readonly onclick="this.select();" />
+        </div>
+        <small class="text-muted">Copia este enlace y compártelo con el usuario. Es de un solo uso.</small>
+        <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+    </div>
+}
+
 <div class="row">
     <div class="col-lg-8">
         <div class="card card-outline card-primary shadow-sm">

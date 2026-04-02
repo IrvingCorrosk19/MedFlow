@@ -33,6 +33,39 @@ public class PatientsController : Controller
         return View(patients);
     }
 
+    [HttpGet]
+    [RequirePermission(PermissionCodes.PatientsView)]
+    public async Task<IActionResult> ExportCsv(string? search, bool? estadoActivo, CancellationToken cancellationToken = default)
+    {
+        var list = await _patientService.GetAllAsync(search, estadoActivo, cancellationToken: cancellationToken);
+
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("Nombre,Correo,Teléfono,Fecha Nacimiento,Activo");
+        foreach (var p in list)
+        {
+            sb.AppendLine(string.Join(",",
+                CsvEscape(p.NombreCompleto ?? ""),
+                CsvEscape(p.Correo ?? ""),
+                CsvEscape(p.Telefono ?? ""),
+                CsvEscape(p.FechaNacimiento?.ToString("dd/MM/yyyy") ?? ""),
+                p.IsActive ? "Sí" : "No"));
+        }
+
+        var bytes = System.Text.Encoding.UTF8.GetPreamble()
+            .Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString()))
+            .ToArray();
+
+        return File(bytes, "text/csv", $"pacientes_{DateTime.UtcNow:yyyyMMdd}.csv");
+    }
+
+    private static string CsvEscape(string value)
+    {
+        if (value.Contains(',') || value.Contains('"') || value.Contains('\n'))
+            return "\"" + value.Replace("\"", "\"\"") + "\"";
+        return value;
+    }
+
+    [RequirePermission(PermissionCodes.PatientsView)]
     public async Task<IActionResult> Details(Guid id, CancellationToken cancellationToken)
     {
         var patient = await _patientService.GetByIdAsync(id, cancellationToken);
@@ -60,6 +93,14 @@ public class PatientsController : Controller
     [RequirePermission(PermissionCodes.PatientsCreate)]
     public async Task<IActionResult> Create(PatientViewModel model, CancellationToken cancellationToken)
     {
+        if (model.FechaNacimiento.HasValue)
+        {
+            if (model.FechaNacimiento.Value > DateTime.Today)
+                ModelState.AddModelError(nameof(model.FechaNacimiento), "La fecha de nacimiento no puede ser una fecha futura.");
+            else if (model.FechaNacimiento.Value < DateTime.Today.AddYears(-150))
+                ModelState.AddModelError(nameof(model.FechaNacimiento), "La fecha de nacimiento no es válida.");
+        }
+
         if (ModelState.IsValid)
         {
             var patient = MapToEntity(model);
@@ -83,6 +124,7 @@ public class PatientsController : Controller
         return View(model);
     }
 
+    [RequirePermission(PermissionCodes.PatientsEdit)]
     public async Task<IActionResult> Edit(Guid id, CancellationToken cancellationToken)
     {
         var patient = await _patientService.GetByIdAsync(id, cancellationToken);
@@ -101,6 +143,15 @@ public class PatientsController : Controller
     public async Task<IActionResult> Edit(Guid id, PatientViewModel model, CancellationToken cancellationToken)
     {
         if (id != model.Id) return NotFound();
+
+        if (model.FechaNacimiento.HasValue)
+        {
+            if (model.FechaNacimiento.Value > DateTime.Today)
+                ModelState.AddModelError(nameof(model.FechaNacimiento), "La fecha de nacimiento no puede ser una fecha futura.");
+            else if (model.FechaNacimiento.Value < DateTime.Today.AddYears(-150))
+                ModelState.AddModelError(nameof(model.FechaNacimiento), "La fecha de nacimiento no es válida.");
+        }
+
         if (ModelState.IsValid)
         {
             var patient = await _patientService.GetByIdAsync(id, cancellationToken);
@@ -123,9 +174,19 @@ public class PatientsController : Controller
     [RequirePermission(PermissionCodes.PatientsDelete)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
-        await _patientService.DeleteAsync(id, cancellationToken);
-        TempData["Success"] = "Paciente dado de baja correctamente.";
-        return RedirectToAction(nameof(Index));
+        try
+        {
+            await _patientService.DeleteAsync(id, cancellationToken);
+            TempData["Success"] = "Paciente dado de baja correctamente.";
+            return RedirectToAction(nameof(Index));
+        }
+        catch (Exception ex)
+        {
+            TempData["Error"] = ex.Message.Contains("FOREIGN KEY") || ex.Message.Contains("foreign key")
+                ? "No se puede eliminar el paciente porque tiene registros asociados (citas, expedientes o facturas)."
+                : "No se pudo eliminar el paciente: " + ex.Message;
+            return RedirectToAction(nameof(Details), new { id });
+        }
     }
 
     [HttpPost]

@@ -8,9 +8,15 @@
 <div class="card card-outline card-primary shadow-sm">
     <div class="card-header d-flex flex-wrap align-items-center justify-content-between">
         <h3 class="card-title mb-0"><i class="fa fa-users mr-2"></i>Listado de pacientes</h3>
-        <a asp-action="Create" class="btn btn-primary btn-sm mt-2 mt-sm-0">
-            <i class="fa fa-user-plus"></i> Nuevo paciente
-        </a>
+        <div class="d-flex flex-wrap gap-1 mt-2 mt-sm-0">
+            <a asp-action="ExportCsv" asp-route-search="@ViewBag.Search" asp-route-estadoActivo="@ViewBag.EstadoActivo"
+               class="btn btn-outline-success btn-sm" title="Exportar CSV">
+                <i class="fa fa-file-excel-o"></i> CSV
+            </a>
+            <a asp-action="Create" class="btn btn-primary btn-sm">
+                <i class="fa fa-user-plus"></i> Nuevo paciente
+            </a>
+        </div>
     </div>
     <div class="card-body border-bottom bg-light">
         <form method="get" class="form-row align-items-end">
@@ -59,8 +65,26 @@
                                     <span class="text-muted">—</span>
                                 }
                             </td>
-                            <td>@(p.Telefono ?? "—")</td>
-                            <td>@(p.Correo ?? "—")</td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(p.Telefono))
+                                {
+                                    <a href="tel:@p.Telefono">@p.Telefono</a>
+                                }
+                                else
+                                {
+                                    <span>—</span>
+                                }
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(p.Correo))
+                                {
+                                    <a href="mailto:@p.Correo">@p.Correo</a>
+                                }
+                                else
+                                {
+                                    <span>—</span>
+                                }
+                            </td>
                             <td class="text-center">
                                 @if (p.IsActive)
                                 {
@@ -72,11 +96,11 @@
                                 }
                             </td>
                             <td class="text-right text-nowrap">
-                                <a asp-action="Details" asp-route-id="@p.Id" class="btn btn-sm btn-info" title="Ver"><i class="fa fa-eye"></i></a>
-                                <a asp-action="Edit" asp-route-id="@p.Id" class="btn btn-sm btn-primary" title="Editar"><i class="fa fa-edit"></i></a>
+                                <a asp-action="Details" asp-route-id="@p.Id" class="btn btn-sm btn-info" title="Ver" aria-label="Ver detalle"><i class="fa fa-eye"></i></a>
+                                <a asp-action="Edit" asp-route-id="@p.Id" class="btn btn-sm btn-primary" title="Editar" aria-label="Editar"><i class="fa fa-edit"></i></a>
                                 <form asp-action="Delete" asp-route-id="@p.Id" method="post" class="d-inline" data-confirm-delete>
                                     @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="fa fa-trash"></i></button>
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar" aria-label="Eliminar"><i class="fa fa-trash"></i></button>
                                 </form>
                             </td>
                         </tr>

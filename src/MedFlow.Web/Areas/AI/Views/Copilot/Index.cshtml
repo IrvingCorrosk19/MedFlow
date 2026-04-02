@@ -9,7 +9,10 @@
             <div class="input-group">
                 <input type="text" id="copilotQuery" class="form-control" placeholder="Escriba su consulta..." />
                 <div class="input-group-append">
-                    <button type="submit" class="btn btn-primary">Consultar</button>
+                    <button type="submit" class="btn btn-primary" id="copilotSubmitBtn">
+                        <span id="copilotSpinner" class="spinner-border spinner-border-sm mr-1" role="status" aria-hidden="true" style="display:none;"></span>
+                        Consultar
+                    </button>
                 </div>
             </div>
         </form>
@@ -27,30 +30,54 @@
     $('#copilotForm').on('submit', function(e) {
         e.preventDefault();
         var q = $('#copilotQuery').val();
-        if (!q || !q.trim()) return;
+        if (!q || !q.trim() || q.trim().length > 500) { if (q.trim().length > 500) alert('La consulta no puede superar 500 caracteres.'); return; }
+        var $btn = $('#copilotSubmitBtn');
+        var $spinner = $('#copilotSpinner');
+        $btn.prop('disabled', true);
+        $spinner.show();
         $.ajax({
             url: '@Url.Action("Query", "Copilot")',
             type: 'POST',
             data: { query: q, __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val() },
             success: function(data) {
                 $('#resultSummary').text(data.summary);
-                var items = '';
+                var $items = $('#resultItems').empty();
                 if (data.items && data.items.length) {
-                    items = '<ul class="list-group">';
+                    var $ul = $('<ul class="list-group"></ul>');
                     data.items.forEach(function(i) {
-                        items += '<li class="list-group-item"><strong>' + i.title + '</strong><br><small>' + i.description + '</small>' +
-                            (i.actionUrl ? ' <a href="' + i.actionUrl + '" class="btn btn-xs btn-primary float-right">Ir</a>' : '') + '</li>';
+                        var $li = $('<li class="list-group-item"></li>');
+                        var $strong = $('<strong></strong>').text(i.title || '');
+                        var $br = $('<br>');
+                        var $small = $('<small></small>').text(i.description || '');
+                        $li.append($strong, $br, $small);
+                        if (i.actionUrl) {
+                            var $a = $('<a class="btn btn-xs btn-primary float-right">Ir</a>');
+                            $a.attr('href', i.actionUrl);
+                            $li.append(' ', $a);
+                        }
+                        $ul.append($li);
                     });
-                    items += '</ul>';
+                    $items.append($ul);
                 }
-                $('#resultItems').html(items);
-                var sug = '';
+                var $sug = $('#resultSuggestions').empty();
                 if (data.suggestions && data.suggestions.length) {
-                    sug = '<small>Pruebe: </small>';
-                    data.suggestions.forEach(function(s) { sug += '<button type="button" class="btn btn-xs btn-outline-secondary mr-1 copilot-suggestion">' + s + '</button>'; });
+                    $sug.append($('<small>Pruebe: </small>'));
+                    data.suggestions.forEach(function(s) {
+                        var $btn2 = $('<button type="button" class="btn btn-xs btn-outline-secondary mr-1 copilot-suggestion"></button>').text(s);
+                        $sug.append($btn2);
+                    });
                 }
-                $('#resultSuggestions').html(sug);
                 $('#copilotResult').show();
+                $btn.prop('disabled', false);
+                $spinner.hide();
+            },
+            error: function() {
+                $('#resultSummary').text('Error al consultar el copiloto. Intente de nuevo.');
+                $('#resultItems').empty();
+                $('#resultSuggestions').empty();
+                $('#copilotResult').show();
+                $btn.prop('disabled', false);
+                $spinner.hide();
             }
         });
     });

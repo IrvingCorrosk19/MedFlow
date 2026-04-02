@@ -276,7 +276,8 @@ public class ExecutiveAnalyticsService : IExecutiveAnalyticsService
                 "fa fa-shield text-info",
                 $"{a.Action} · {a.Module}" + (a.Description != null ? $" — {a.Description}" : ""),
                 a.CreatedAt.ToLocalTime().ToString("g"),
-                null)));
+                null,
+                a.CreatedAt)));
         }
 
         var payments = await _db.Payments.AsNoTracking()
@@ -291,7 +292,8 @@ public class ExecutiveAnalyticsService : IExecutiveAnalyticsService
                 "fa fa-money text-success",
                 $"Pago {p.Amount:N2} · {p.NombreCompleto}",
                 p.PaymentDate.ToLocalTime().ToString("g"),
-                null)));
+                null,
+                p.PaymentDate)));
         }
 
         var apts = await _db.Appointments.AsNoTracking()
@@ -306,7 +308,8 @@ public class ExecutiveAnalyticsService : IExecutiveAnalyticsService
                 "fa fa-calendar text-primary",
                 $"Cita {a.Status} · {a.NombreCompleto}",
                 a.CreatedAt.ToLocalTime().ToString("g"),
-                null)));
+                null,
+                a.CreatedAt)));
         }
 
         return merged.OrderByDescending(x => x.Utc).Take(14).Select(x => x.Item).ToList();

@@ -1,7 +1,10 @@
 using MedFlow.Application.Interfaces;
 using MedFlow.Application.PatientPortal;
+using MedFlow.Infrastructure.Identity;
 using MedFlow.Web.Areas.PatientPortal.Infrastructure;
 using MedFlow.Web.Areas.PatientPortal.Models;
+using MedFlow.Web.Areas.PatientPortal.ViewModels;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MedFlow.Web.Areas.PatientPortal.Controllers;
@@ -12,8 +15,13 @@ namespace MedFlow.Web.Areas.PatientPortal.Controllers;
 public class ProfileController : Controller
 {
     private readonly IPatientPortalService _portal;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    public ProfileController(IPatientPortalService portal) => _portal = portal;
+    public ProfileController(IPatientPortalService portal, UserManager<ApplicationUser> userManager)
+    {
+        _portal = portal;
+        _userManager = userManager;
+    }
 
     [HttpGet]
     [Route("perfil")]
@@ -67,6 +75,43 @@ public class ProfileController : Controller
 
         ViewData["AllowEdit"] = true;
         return View(profile);
+    }
+
+    [HttpGet]
+    [Route("perfil/cambiar-contrasena")]
+    public IActionResult ChangePassword()
+    {
+        ViewData["Title"] = "Cambiar contraseña";
+        ViewData["PageSubtitle"] = "Actualiza tu contraseña de acceso";
+        ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a href=\"/PatientPortal/perfil\">Mi perfil</a></li><li class=\"breadcrumb-item active\">Cambiar contraseña</li>";
+        return View(new ChangePasswordViewModel());
+    }
+
+    [HttpPost]
+    [Route("perfil/cambiar-contrasena")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            ViewData["Title"] = "Cambiar contraseña";
+            return View(model);
+        }
+
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null) return Forbid();
+
+        var result = await _userManager.ChangePasswordAsync(user, model.CurrentPassword, model.NewPassword);
+        if (!result.Succeeded)
+        {
+            foreach (var err in result.Errors)
+                ModelState.AddModelError(string.Empty, err.Description);
+            ViewData["Title"] = "Cambiar contraseña";
+            return View(model);
+        }
+
+        TempData["Success"] = "Contraseña actualizada correctamente.";
+        return RedirectToAction("Index");
     }
 
     private Guid? GetPatientId()

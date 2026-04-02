@@ -10,6 +10,7 @@
     DateTime from = ViewBag.From ?? DateTime.Today;
     DateTime to = ViewBag.To ?? DateTime.Today.AddDays(7);
     Guid? doctorId = ViewBag.DoctorId as Guid?;
+    int? statusFilter = ViewBag.Status as int?;
 }
 
 <div class="card card-outline card-primary shadow-sm">
@@ -36,6 +37,23 @@
                     @foreach (var d in doctors)
                     {
                         <option value="@d.Id" selected="@(doctorId.HasValue && doctorId.Value == d.Id)">@d.FullName</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group col-md-2 mb-2 mb-md-0">
+                <label class="small text-muted mb-0">Estado</label>
+                <select name="status" class="form-control form-control-sm">
+                    <option value="">Todos</option>
+                    @foreach (AppointmentStatus s in Enum.GetValues(typeof(AppointmentStatus)))
+                    {
+                        if (statusFilter == (int)s)
+                        {
+                            <option value="@((int)s)" selected>@s</option>
+                        }
+                        else
+                        {
+                            <option value="@((int)s)">@s</option>
+                        }
                     }
                 </select>
             </div>
@@ -68,7 +86,11 @@
                             AppointmentStatus.NoShow => "badge-warning",
                             _ => "badge-secondary"
                         };
-                        <tr>
+                        var rowClass = a.Status == AppointmentStatus.Cancelled ? "table-danger"
+                            : a.Status == AppointmentStatus.Completed ? "table-success"
+                            : a.Status == AppointmentStatus.NoShow ? "table-warning"
+                            : "";
+                        <tr class="@rowClass">
                             <td>@a.ScheduledDate.ToString("dd/MM/yyyy")</td>
                             <td>@a.StartTime.ToString(@"hh\:mm") - @a.EndTime.ToString(@"hh\:mm")</td>
                             <td>@(a.Patient?.NombreCompleto ?? "—")</td>
@@ -76,11 +98,19 @@
                             <td><span class="badge @statusClass">@a.Status</span></td>
                             <td>@(string.IsNullOrWhiteSpace(a.Reason) ? "—" : a.Reason)</td>
                             <td class="text-right text-nowrap">
-                                <a asp-action="Details" asp-route-id="@a.Id" class="btn btn-sm btn-info" title="Ver"><i class="fa fa-eye"></i></a>
-                                <a asp-action="Edit" asp-route-id="@a.Id" class="btn btn-sm btn-primary" title="Editar"><i class="fa fa-edit"></i></a>
+                                <a asp-action="Details" asp-route-id="@a.Id" class="btn btn-sm btn-info" title="Ver" aria-label="Ver detalle"><i class="fa fa-eye"></i></a>
+                                <a asp-action="Edit" asp-route-id="@a.Id" class="btn btn-sm btn-primary" title="Editar" aria-label="Editar"><i class="fa fa-edit"></i></a>
+                                @if (a.Status == AppointmentStatus.Scheduled)
+                                {
+                                    <form asp-action="Confirm" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@a.Id" />
+                                        <button type="submit" class="btn btn-sm btn-outline-success" title="Confirmar" aria-label="Confirmar"><i class="fa fa-check"></i></button>
+                                    </form>
+                                }
                                 <form asp-action="Delete" asp-route-id="@a.Id" method="post" class="d-inline" data-confirm-delete>
                                     @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="fa fa-trash"></i></button>
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar" aria-label="Eliminar"><i class="fa fa-trash"></i></button>
                                 </form>
                             </td>
                         </tr>

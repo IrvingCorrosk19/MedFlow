@@ -17,6 +17,11 @@
                     <div class="form-group">
                         <label asp-for="Amount" class="font-weight-medium"></label>
                         <input asp-for="Amount" class="form-control form-control-lg" step="0.01" min="0.01" />
+                        @if (ViewBag.BalanceDue != null)
+                        {
+                            <small class="text-muted">Saldo pendiente: <strong>@(((decimal)ViewBag.BalanceDue).ToString("N2"))</strong></small>
+                        }
+                        <span asp-validation-for="Amount" class="text-danger"></span>
                     </div>
                     <div class="form-group">
                         <label asp-for="PaymentDate"></label>

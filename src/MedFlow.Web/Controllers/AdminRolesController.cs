@@ -95,6 +95,16 @@ public class AdminRolesController : Controller
             return View(model);
         }
 
+        var existing = await _roles.GetAllAsync(cancellationToken);
+        if (existing.Any(r => r.Name.Equals(model.Name, StringComparison.OrdinalIgnoreCase)))
+        {
+            ModelState.AddModelError(nameof(model.Name), $"Ya existe un rol con el nombre '{model.Name}'.");
+            ViewData["Title"] = "Nuevo rol";
+            ViewData["PageSubtitle"] = "Definir perfil";
+            ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a href=\"" + Url.Action(nameof(Index)) + "\">Roles</a></li><li class=\"breadcrumb-item active\">Nuevo</li>";
+            return View(model);
+        }
+
         var (ok, err) = await _roles.CreateAsync(new RoleAdminCreateDto
         {
             Name = model.Name,
@@ -171,6 +181,26 @@ public class AdminRolesController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(string id, CancellationToken cancellationToken)
     {
+        // Protect system roles from deletion
+        var systemRoles = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Admin", "SuperAdmin" };
+        var role = await _roles.GetByIdAsync(id, cancellationToken);
+        if (role != null && systemRoles.Contains(role.Name))
+        {
+            TempData["Error"] = "No se puede eliminar un rol del sistema.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        // Prevent deletion of roles that still have users assigned
+        if (role != null)
+        {
+            var usersInRole = await _userManager.GetUsersInRoleAsync(role.Name);
+            if (usersInRole.Count > 0)
+            {
+                TempData["Error"] = $"No se puede eliminar el rol '{role.Name}': tiene {usersInRole.Count} usuario(s) asignado(s). Reasigne los usuarios primero.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+        }
+
         var (ok, err) = await _roles.DeleteAsync(id, cancellationToken);
         if (!ok)
         {

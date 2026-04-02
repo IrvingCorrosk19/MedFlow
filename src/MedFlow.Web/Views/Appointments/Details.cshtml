@@ -1,8 +1,10 @@
 @model MedFlow.Domain.Entities.Appointment
+@using MedFlow.Domain.Enums
 @{
     ViewData["Title"] = "Detalle de cita";
     ViewData["PageSubtitle"] = $"{Model.ScheduledDate:dd/MM/yyyy} {Model.StartTime:hh\\:mm}";
     ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a href=\"" + Url.Action("Index") + "\">Citas</a></li><li class=\"breadcrumb-item active\">Detalle</li>";
+    var canActuate = Model.Status == AppointmentStatus.Scheduled || Model.Status == AppointmentStatus.Confirmed;
 }
 
 <div class="card card-outline card-primary shadow-sm">
@@ -24,7 +26,24 @@
     </div>
 </div>
 
-<div class="mt-3 d-flex gap-2">
+<div class="mt-3 d-flex gap-2 flex-wrap">
     <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary"><i class="fa fa-edit"></i> Editar</a>
+    @if (canActuate)
+    {
+        <form asp-action="MarkCompleted" asp-route-id="@Model.Id" method="post" class="d-inline">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-success"
+                    onclick="return confirm('¿Marcar esta cita como completada?');">
+                <i class="fa fa-check"></i> Marcar como completada
+            </button>
+        </form>
+        <form asp-action="MarkNoShow" asp-route-id="@Model.Id" method="post" class="d-inline">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-warning"
+                    onclick="return confirm('¿Registrar esta cita como no-show?');">
+                <i class="fa fa-user-times"></i> Registrar No-Show
+            </button>
+        </form>
+    }
     <a asp-action="Index" class="btn btn-outline-secondary">Volver</a>
 </div>

@@ -2,13 +2,21 @@
 @{
     ViewData["Title"] = "Historial de Citas";
 }
-<h2 class="mb-4">Historial</h2>
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <h2 class="mb-0">Historial de citas</h2>
+    <a asp-action="Upcoming" class="btn btn-outline-primary btn-sm">
+        <i class="fa fa-calendar mr-1"></i>Ver próximas citas
+    </a>
+</div>
 
 @if (!Model.Any())
 {
     <div class="portal-card card">
         <div class="card-body portal-empty">
+            <i class="fa fa-history d-block" style="font-size:3rem;color:#cbd5e1;margin-bottom:1rem;"></i>
             <h5>Sin historial</h5>
+            <p class="text-muted">No se encontraron citas pasadas.</p>
         </div>
     </div>
 }
@@ -16,20 +24,55 @@ else
 {
     <div class="portal-card card">
         <div class="card-body p-0">
-            <table class="table table-hover mb-0">
-                <thead><tr><th>Fecha</th><th>Hora</th><th>Doctor</th><th>Estado</th></tr></thead>
+            <table id="tblHistorial" class="table table-hover mb-0 w-100">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Doctor</th>
+                        <th>Estado</th>
+                        <th>Motivo</th>
+                    </tr>
+                </thead>
                 <tbody>
                     @foreach (var a in Model)
                     {
                         <tr>
-                            <td>@a.ScheduledDate.ToString("dd/MM/yyyy")</td>
-                            <td>@a.StartTime.ToString(@"hh\:mm")</td>
+                            <td data-order="@a.ScheduledDate.ToString("yyyyMMdd")">
+                                @a.ScheduledDate.ToString("dd/MM/yyyy")
+                            </td>
                             <td>@a.DoctorName</td>
-                            <td><span class="badge badge-secondary">@a.Status</span></td>
+                            <td>
+                                <span class="badge @(a.Status == MedFlow.Domain.Enums.AppointmentStatus.Completed ? "badge-success" : a.Status == MedFlow.Domain.Enums.AppointmentStatus.Cancelled ? "badge-danger" : "badge-secondary")">
+                                    @a.Status
+                                </span>
+                            </td>
+                            <td>@(string.IsNullOrWhiteSpace(a.Reason) ? "—" : a.Reason)</td>
                         </tr>
                     }
                 </tbody>
             </table>
         </div>
     </div>
+}
+
+@section Scripts {
+<script>
+    $(function () {
+        if ($('#tblHistorial').length) {
+            $('#tblHistorial').DataTable({
+                order: [[0, 'desc']],
+                language: {
+                    url: '/lib/datatables/es-ES.json',
+                    search: 'Buscar:',
+                    lengthMenu: 'Mostrar _MENU_ registros',
+                    info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
+                    paginate: { first: 'Primera', last: 'Última', next: 'Siguiente', previous: 'Anterior' },
+                    zeroRecords: 'No se encontraron resultados'
+                },
+                pageLength: 25,
+                responsive: true
+            });
+        }
+    });
+</script>
 }

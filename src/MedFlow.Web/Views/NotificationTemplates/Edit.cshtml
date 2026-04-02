@@ -4,6 +4,7 @@
     <div class="card-body">
         <form asp-action="Edit" asp-route-id="@ViewContext.RouteData.Values["id"]" method="post">
             @Html.AntiForgeryToken()
+            <div asp-validation-summary="All" class="alert alert-danger" style="display:none" id="valSummary"></div>
             <div class="form-row">
                 <div class="form-group col-md-4">
                     <label>Evento</label>
@@ -11,7 +12,7 @@
                 </div>
                 <div class="form-group col-md-4">
                     <label>Canal</label>
-                    <select asp-for="Channel" class="form-control" asp-items="Html.GetEnumSelectList<NotificationChannel>()"></select>
+                    <select asp-for="Channel" id="selChannel" class="form-control" asp-items="Html.GetEnumSelectList<NotificationChannel>()"></select>
                 </div>
                 <div class="form-group col-md-4">
                     <label>Código</label>
@@ -22,38 +23,91 @@
                 <label>Nombre</label>
                 <input asp-for="Name" class="form-control" />
             </div>
-            <div class="form-row">
-                <div class="form-group col-md-6">
-                    <label>Asunto (Email)</label>
-                    <input asp-for="SubjectTemplate" class="form-control" />
-                </div>
-                <div class="form-group col-md-6">
-                    <label>From Email</label>
-                    <input asp-for="FromEmail" class="form-control" type="email" />
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Cuerpo (texto)</label>
-                <textarea asp-for="BodyTemplate" class="form-control" rows="4"></textarea>
-            </div>
-            <div class="form-group">
-                <label>Cuerpo HTML (opcional)</label>
-                <textarea asp-for="HtmlBodyTemplate" class="form-control" rows="6"></textarea>
-            </div>
-            <div class="form-row">
-                <div class="form-group col-md-6">
-                    <label>Webhook URL</label>
-                    <input asp-for="WebhookUrl" class="form-control" />
-                </div>
-                <div class="form-group col-md-6">
-                    <div class="form-check pt-4">
-                        <input asp-for="IsDefault" class="form-check-input" />
-                        <label asp-for="IsDefault" class="form-check-label">Plantilla por defecto</label>
+
+            @* Email fields *@
+            <div id="emailFields">
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label>Asunto <span class="text-danger">*</span></label>
+                        <input asp-for="SubjectTemplate" class="form-control" />
+                        <small class="text-muted">Variables: {{PatientName}}, {{AppointmentDate}}, {{DoctorName}}, {{ClinicName}}</small>
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label>From Email</label>
+                        <input asp-for="FromEmail" class="form-control" type="email" />
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label>From Nombre</label>
+                        <input asp-for="FromName" class="form-control" />
                     </div>
                 </div>
+                <div class="form-group">
+                    <label>Cuerpo (texto plano)</label>
+                    <textarea asp-for="BodyTemplate" class="form-control" rows="4"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Cuerpo HTML <span class="text-muted small">(opcional)</span></label>
+                    <textarea asp-for="HtmlBodyTemplate" class="form-control" rows="6"></textarea>
+                </div>
             </div>
-            <button type="submit" class="btn btn-primary">Guardar</button>
-            <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+
+            @* Webhook fields *@
+            <div id="webhookFields" style="display:none;">
+                <div class="form-row">
+                    <div class="form-group col-md-8">
+                        <label>URL del Webhook <span class="text-danger">*</span></label>
+                        <input asp-for="WebhookUrl" class="form-control" />
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label>Método HTTP</label>
+                        <input asp-for="WebhookMethod" class="form-control" placeholder="POST" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Cuerpo del mensaje (texto)</label>
+                    <textarea asp-for="BodyTemplate" class="form-control" rows="4"></textarea>
+                </div>
+            </div>
+
+            @* InApp fields *@
+            <div id="inAppFields" style="display:none;">
+                <div class="form-group">
+                    <label>Mensaje <span class="text-danger">*</span></label>
+                    <textarea asp-for="BodyTemplate" class="form-control" rows="3"></textarea>
+                </div>
+            </div>
+
+            <div class="form-check mb-3">
+                <input asp-for="IsDefault" class="form-check-input" />
+                <label asp-for="IsDefault" class="form-check-label">Plantilla por defecto para este evento y canal</label>
+            </div>
+            <div class="form-group">
+                <label>Descripción <span class="text-muted small">(opcional)</span></label>
+                <input asp-for="Description" class="form-control" />
+            </div>
+
+            <button type="submit" class="btn btn-primary"><i class="fa fa-save mr-1"></i>Guardar</button>
+            <a asp-action="Index" class="btn btn-secondary ml-2">Cancelar</a>
         </form>
     </div>
 </div>
+
+@section Scripts {
+<script>
+    $(function() {
+        function updateChannelFields() {
+            var ch = $('#selChannel').val().toLowerCase();
+            $('#emailFields, #webhookFields, #inAppFields').hide();
+            if (ch === 'email') {
+                $('#emailFields').show();
+            } else if (ch === 'webhook') {
+                $('#webhookFields').show();
+            } else {
+                $('#inAppFields').show();
+            }
+        }
+        $('#selChannel').on('change', updateChannelFields);
+        updateChannelFields();
+    });
+</script>
+}

@@ -223,6 +223,34 @@ public class AdminUsersController : Controller
         return RedirectToAction(nameof(Details), new { id });
     }
 
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UnlockUser(string id, CancellationToken cancellationToken)
+    {
+        var user = await _userManager.FindByIdAsync(id);
+        if (user == null) return NotFound();
+
+        await _userManager.ResetAccessFailedCountAsync(user);
+        await _userManager.SetLockoutEndDateAsync(user, null);
+
+        TempData["Success"] = "Usuario desbloqueado correctamente.";
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [RequirePermission(PermissionCodes.UsersManage)]
+    public async Task<IActionResult> SendPasswordReset(string id)
+    {
+        var user = await _userManager.FindByIdAsync(id);
+        if (user == null) return NotFound();
+        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+        var resetUrl = Url.Action("ResetPassword", "Account", new { token, email = user.Email }, Request.Scheme);
+        TempData["ResetLink"] = resetUrl;
+        TempData["Success"] = "Enlace de restablecimiento generado.";
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
     private async Task<IReadOnlyList<string>> GetRoleNameListAsync(CancellationToken cancellationToken)
     {
         var roles = await _roles.GetAllAsync(cancellationToken);

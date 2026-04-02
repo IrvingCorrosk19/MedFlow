@@ -1,0 +1,37 @@
+@{
+    var currentStep = ViewData["OnboardingStep"] as int? ?? 1;
+    var steps = new[] {
+        (1, "Datos clínica"),
+        (2, "Plan SaaS"),
+        (3, "Administrador"),
+        (4, "Configuración"),
+        (5, "Confirmación")
+    };
+}
+<div class="mb-4">
+    <div class="d-flex align-items-center justify-content-between position-relative">
+        <div class="position-absolute" style="top:50%;left:0;right:0;height:2px;background:#e2e8f0;z-index:0;transform:translateY(-50%);"></div>
+        @foreach (var (num, label) in steps)
+        {
+            var isCompleted = num < currentStep;
+            var isActive = num == currentStep;
+            <div class="d-flex flex-column align-items-center position-relative" style="z-index:1;flex:1;">
+                <div class="rounded-circle d-flex align-items-center justify-content-center font-weight-bold"
+                     style="width:36px;height:36px;font-size:.85rem;
+                            background:@(isCompleted ? "#10b981" : isActive ? "#2563eb" : "#e2e8f0");
+                            color:@(isCompleted || isActive ? "#fff" : "#94a3b8");
+                            border:2px solid @(isCompleted ? "#10b981" : isActive ? "#2563eb" : "#cbd5e1");">
+                    @if (isCompleted)
+                    {
+                        <i class="fa fa-check" style="font-size:.75rem;"></i>
+                    }
+                    else
+                    {
+                        @num
+                    }
+                </div>
+                <small class="mt-1 text-center" style="font-size:.7rem;color:@(isActive ? "#2563eb" : "#94a3b8");font-weight:@(isActive ? "600" : "400");">@label</small>
+            </div>
+        }
+    </div>
+</div>

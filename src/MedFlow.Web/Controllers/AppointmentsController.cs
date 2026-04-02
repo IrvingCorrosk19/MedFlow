@@ -24,12 +24,15 @@ public class AppointmentsController : Controller
     }
 
     [RequirePermission(PermissionCodes.AppointmentsView)]
-    public async Task<IActionResult> Index(DateTime? from, DateTime? to, Guid? doctorId, Guid? patientId, CancellationToken cancellationToken)
+    public async Task<IActionResult> Index(DateTime? from, DateTime? to, Guid? doctorId, Guid? patientId, int? status, CancellationToken cancellationToken)
     {
         var fromDate = from ?? DateTime.Today;
         var toDate = to ?? DateTime.Today.AddDays(7);
         var appointments = await _appointmentService.GetAllAsync(fromDate, toDate, doctorId, patientId, cancellationToken);
         var doctors = await _doctorService.GetAllAsync(null, true, cancellationToken: cancellationToken);
+
+        if (status.HasValue)
+            appointments = appointments.Where(a => (int)a.Status == status.Value).ToList();
 
         ViewBag.Appointments = appointments;
         ViewBag.Doctors = doctors;
@@ -37,14 +40,19 @@ public class AppointmentsController : Controller
         ViewBag.To = toDate;
         ViewBag.DoctorId = doctorId;
         ViewBag.PatientId = patientId;
+        ViewBag.Status = status;
 
         return View();
     }
 
+    [RequirePermission(PermissionCodes.AppointmentsView)]
     public async Task<IActionResult> Details(Guid id, CancellationToken cancellationToken)
     {
         var appointment = await _appointmentService.GetByIdAsync(id, cancellationToken);
         if (appointment == null) return NotFound();
+        ViewData["Title"] = $"Cita · {appointment.ScheduledDate:dd/MM/yyyy}";
+        ViewData["PageSubtitle"] = $"{appointment.Patient?.NombreCompleto ?? "—"} — {appointment.Doctor?.FullName ?? "—"}";
+        ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a href=\"" + Url.Action(nameof(Index)) + "\">Citas</a></li><li class=\"breadcrumb-item active\">Detalle</li>";
         return View(appointment);
     }
 
@@ -63,6 +71,20 @@ public class AppointmentsController : Controller
     [RequirePermission(PermissionCodes.AppointmentsCreate)]
     public async Task<IActionResult> Create(AppointmentViewModel model, CancellationToken cancellationToken)
     {
+        if (model.EndTime <= model.StartTime)
+            ModelState.AddModelError(nameof(model.EndTime), "La hora de fin debe ser posterior a la hora de inicio.");
+
+        if (model.ScheduledDate.Date < DateTime.UtcNow.Date)
+            ModelState.AddModelError(nameof(model.ScheduledDate), "No se puede crear una cita en una fecha pasada.");
+
+        var patient = await _patientService.GetByIdAsync(model.PatientId, cancellationToken);
+        if (patient == null || !patient.IsActive)
+            ModelState.AddModelError(nameof(model.PatientId), "El paciente seleccionado no está activo.");
+
+        var doctor = await _doctorService.GetByIdAsync(model.DoctorId, cancellationToken);
+        if (doctor == null || !doctor.IsActive)
+            ModelState.AddModelError(nameof(model.DoctorId), "El doctor seleccionado no está activo.");
+
         if (ModelState.IsValid)
         {
             var appointment = MapToEntity(model);
@@ -82,6 +104,7 @@ public class AppointmentsController : Controller
         return View(model);
     }
 
+    [RequirePermission(PermissionCodes.AppointmentsEdit)]
     public async Task<IActionResult> Edit(Guid id, CancellationToken cancellationToken)
     {
         var appointment = await _appointmentService.GetByIdAsync(id, cancellationToken);
@@ -101,6 +124,10 @@ public class AppointmentsController : Controller
     public async Task<IActionResult> Edit(Guid id, AppointmentViewModel model, CancellationToken cancellationToken)
     {
         if (id != model.Id) return NotFound();
+
+        if (model.EndTime <= model.StartTime)
+            ModelState.AddModelError(nameof(model.EndTime), "La hora de fin debe ser posterior a la hora de inicio.");
+
         if (ModelState.IsValid)
         {
             var appointment = await _appointmentService.GetByIdAsync(id, cancellationToken);
@@ -125,12 +152,68 @@ public class AppointmentsController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequirePermission(PermissionCodes.AppointmentsEdit)]
+    public async Task<IActionResult> Confirm(Guid id, CancellationToken cancellationToken = default)
+    {
+        var appointment = await _appointmentService.GetByIdAsync(id, cancellationToken);
+        if (appointment == null) return NotFound();
+        appointment.Status = AppointmentStatus.Confirmed;
+        var (success, error) = await _appointmentService.UpdateAsync(appointment, cancellationToken);
+        if (success)
+            TempData["Success"] = "Cita confirmada.";
+        else
+            TempData["Error"] = error ?? "No se pudo confirmar la cita.";
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [RequirePermission(PermissionCodes.AppointmentsEdit)]
+    public async Task<IActionResult> MarkCompleted(Guid id, CancellationToken cancellationToken = default)
+    {
+        var appointment = await _appointmentService.GetByIdAsync(id, cancellationToken);
+        if (appointment == null) return NotFound();
+        appointment.Status = AppointmentStatus.Completed;
+        var (success, error) = await _appointmentService.UpdateAsync(appointment, cancellationToken);
+        if (success)
+            TempData["Success"] = "Cita marcada como completada.";
+        else
+            TempData["Error"] = error ?? "No se pudo completar la cita.";
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [RequirePermission(PermissionCodes.AppointmentsEdit)]
+    public async Task<IActionResult> MarkNoShow(Guid id, CancellationToken cancellationToken = default)
+    {
+        var appointment = await _appointmentService.GetByIdAsync(id, cancellationToken);
+        if (appointment == null) return NotFound();
+        appointment.Status = AppointmentStatus.NoShow;
+        var (success, error) = await _appointmentService.UpdateAsync(appointment, cancellationToken);
+        if (success)
+            TempData["Success"] = "Cita registrada como no-show.";
+        else
+            TempData["Error"] = error ?? "No se pudo registrar el no-show.";
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
     [RequirePermission(PermissionCodes.AppointmentsCancel)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
-        await _appointmentService.DeleteAsync(id, cancellationToken);
-        TempData["Success"] = "Cita eliminada correctamente.";
-        return RedirectToAction(nameof(Index));
+        try
+        {
+            await _appointmentService.DeleteAsync(id, cancellationToken);
+            TempData["Success"] = "Cita eliminada correctamente.";
+            return RedirectToAction(nameof(Index));
+        }
+        catch
+        {
+            TempData["Error"] = "No se pudo eliminar la cita.";
+            return RedirectToAction(nameof(Index));
+        }
     }
 
     private static Appointment MapToEntity(AppointmentViewModel vm, Appointment? entity = null)

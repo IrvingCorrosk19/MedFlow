@@ -11,14 +11,14 @@
 <div class="card card-outline card-primary shadow-sm mb-3">
     <div class="card-header"><h3 class="card-title mb-0"><i class="fa fa-filter"></i> Filtros</h3></div>
     <div class="card-body">
-        <form method="get" class="form-row align-items-end">
+        <form method="get" class="form-row align-items-end" id="frmRptAptFilter">
             <div class="form-group col-md-2">
                 <label class="small text-muted">Desde</label>
-                <input type="date" name="from" value="@ViewBag.From" class="form-control form-control-sm" />
+                <input type="date" name="from" id="rptAptFrom" value="@ViewBag.From" class="form-control form-control-sm" />
             </div>
             <div class="form-group col-md-2">
                 <label class="small text-muted">Hasta</label>
-                <input type="date" name="to" value="@ViewBag.To" class="form-control form-control-sm" />
+                <input type="date" name="to" id="rptAptTo" value="@ViewBag.To" class="form-control form-control-sm" />
             </div>
             <div class="form-group col-md-3">
                 <label class="small text-muted">Doctor</label>
@@ -82,7 +82,10 @@
     <div class="card-header d-flex justify-content-between align-items-center">
         <h3 class="card-title mb-0">Resultados</h3>
         <div class="btn-group btn-group-sm">
-            <button type="button" class="btn btn-outline-secondary" disabled title="Próximamente"><i class="fa fa-file-excel-o"></i></button>
+            <a href="@Url.Action("ExportAppointmentsCsv", new { from = ViewBag.From, to = ViewBag.To, doctorId = ViewBag.DoctorId, speciality = ViewBag.Speciality, status = ViewBag.Status })"
+               class="btn btn-outline-success" title="Exportar CSV">
+                <i class="fa fa-file-excel-o"></i> CSV
+            </a>
         </div>
     </div>
     <div class="card-body p-0">
@@ -129,6 +132,16 @@
                 pageLength: 25,
                 order: [[0, 'desc']],
                 language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' }
+            });
+
+            $('#frmRptAptFilter').on('submit', function (e) {
+                var from = $('#rptAptFrom').val();
+                var to = $('#rptAptTo').val();
+                if (from && to && from > to) {
+                    e.preventDefault();
+                    alert('La fecha "Desde" no puede ser mayor que la fecha "Hasta".');
+                    $('#rptAptFrom').focus();
+                }
             });
         });
     </script>

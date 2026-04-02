@@ -36,12 +36,25 @@ public class CopilotController : Controller
         if (!_tenant.TenantId.HasValue)
             return Json(new { error = "Tenant no identificado" });
 
-        var result = await _copilot.QueryAsync(_tenant.TenantId.Value, query ?? "", ct);
-        return Json(new
+        var q = (query ?? "").Trim();
+        if (string.IsNullOrEmpty(q))
+            return Json(new { error = "La consulta no puede estar vacía." });
+        if (q.Length > 500)
+            return Json(new { error = "La consulta no puede superar los 500 caracteres." });
+
+        try
         {
-            summary = result.Summary,
-            items = result.Items.Select(i => new { i.Title, i.Description, i.EntityType, i.EntityId, i.ActionUrl }),
-            suggestions = result.Suggestions
-        });
+            var result = await _copilot.QueryAsync(_tenant.TenantId.Value, q, ct);
+            return Json(new
+            {
+                summary = result.Summary,
+                items = result.Items.Select(i => new { i.Title, i.Description, i.EntityType, i.EntityId, i.ActionUrl }),
+                suggestions = result.Suggestions
+            });
+        }
+        catch (Exception)
+        {
+            return Json(new { error = "Error procesando la consulta. Intente de nuevo." });
+        }
     }
 }

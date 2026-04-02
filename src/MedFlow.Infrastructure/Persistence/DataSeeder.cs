@@ -685,6 +685,9 @@ public class DataSeeder
                         await userManager.AddToRoleAsync(existing, roleName);
 
                     logger.LogInformation("Usuario seed reparado por rol {Role}: {Email}", roleName, seed.Email);
+
+                    if (string.Equals(roleName, "Patient", StringComparison.OrdinalIgnoreCase))
+                        await EnsurePortalPatientLinkedAsync(context, tenantId, existing, logger);
                 }
 
                 continue;
@@ -722,7 +725,35 @@ public class DataSeeder
             }
 
             logger.LogInformation("Usuario seed creado por rol {Role}: {Email}", roleName, seed.Email);
+
+            if (string.Equals(roleName, "Patient", StringComparison.OrdinalIgnoreCase))
+                await EnsurePortalPatientLinkedAsync(context, tenantId, user, logger);
         }
+    }
+
+    private static async Task EnsurePortalPatientLinkedAsync(
+        ApplicationDbContext context,
+        Guid tenantId,
+        ApplicationUser user,
+        ILogger logger)
+    {
+        var linked = await context.Patients.IgnoreQueryFilters()
+            .AnyAsync(p => p.UserId == user.Id && !p.IsDeleted);
+        if (linked)
+            return;
+
+        context.Patients.Add(new Patient
+        {
+            TenantId = tenantId,
+            PrimerNombre = user.FirstName ?? "Paciente",
+            PrimerApellido = user.LastName ?? "Portal",
+            Correo = user.Email,
+            UserId = user.Id,
+            NumeroDocumento = $"PORTAL-{DateTime.UtcNow:yyyyMMddHHmmss}",
+            TipoDocumento = "OTRO"
+        });
+        await context.SaveChangesAsync();
+        logger.LogInformation("Seed Demo: registro Patient vinculado a {Email} para portal.", user.Email);
     }
 
     /// <summary>

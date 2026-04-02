@@ -3,7 +3,15 @@
     ViewData["Title"] = "Inicio";
     var options = ViewData["Options"] as MedFlow.Application.Options.PatientPortalOptions;
 }
-<h2 class="mb-4">Hola, @Model.Profile.FullName</h2>
+<h2 class="mb-1">Hola, @Model.Profile.FullName</h2>
+@if (Model.NextAppointment != null)
+{
+    <p class="text-muted small mb-4">Próxima cita: @Model.NextAppointment.ScheduledDate.ToString("dd/MM/yyyy") a las @Model.NextAppointment.StartTime.ToString(@"hh\:mm") con @Model.NextAppointment.DoctorName</p>
+}
+else
+{
+    <p class="text-muted small mb-4">No tiene citas programadas próximamente.</p>
+}
 
 <div class="row mb-4">
     <div class="col-md-4 mb-3">

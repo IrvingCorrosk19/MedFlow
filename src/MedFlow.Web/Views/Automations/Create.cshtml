@@ -71,3 +71,47 @@
         </form>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        $(function () {
+            function validateJsonField(selector) {
+                var $ta = $(selector);
+                if (!$ta.length) return true;
+                var val = $ta.val().trim();
+                if (!val) return true; // empty is ok
+                try {
+                    JSON.parse(val);
+                    $ta.removeClass('is-invalid');
+                    $ta.next('.json-error').hide();
+                    return true;
+                } catch (e) {
+                    $ta.addClass('is-invalid');
+                    var errEl = $ta.next('.json-error');
+                    if (!errEl.length) {
+                        $ta.after('<div class="json-error text-danger small mt-1">JSON inválido: ' + e.message + '</div>');
+                    } else {
+                        errEl.text('JSON inválido: ' + e.message).show();
+                    }
+                    return false;
+                }
+            }
+
+            var jsonFields = ['#HeadersJson', '#PayloadTemplateJson', '#RetryPolicyJson'];
+
+            // Validate on blur
+            jsonFields.forEach(function (sel) {
+                $(sel).on('blur', function () { validateJsonField(sel); });
+            });
+
+            // Validate on form submit
+            $('form').on('submit', function (e) {
+                var valid = true;
+                jsonFields.forEach(function (sel) {
+                    if (!validateJsonField(sel)) valid = false;
+                });
+                if (!valid) e.preventDefault();
+            });
+        });
+    </script>
+}

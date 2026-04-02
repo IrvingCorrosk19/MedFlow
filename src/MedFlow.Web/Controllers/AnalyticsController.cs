@@ -53,6 +53,7 @@ public class AnalyticsController : Controller
 
         var toDate = to ?? DateTime.UtcNow.Date;
         var fromDate = from ?? toDate.AddDays(-Math.Clamp(days, 7, 90));
+        if (fromDate > toDate) fromDate = toDate.AddDays(-30);
         if (from.HasValue && to.HasValue)
             days = (int)(toDate - fromDate).TotalDays;
         var filter = new AdvancedAnalyticsFilter(_tenant.TenantId, fromDate, toDate, 90);
@@ -89,84 +90,111 @@ public class AnalyticsController : Controller
 
     public async Task<IActionResult> Trends(DateTime? from, DateTime? to, int days = 30, CancellationToken ct = default)
     {
-        if (!_tenant.TenantId.HasValue)
-            return NotFound();
+        try
+        {
+            if (!_tenant.TenantId.HasValue)
+                return NotFound();
 
-        var toDate = to ?? DateTime.UtcNow.Date;
-        var fromDate = from ?? toDate.AddDays(-Math.Clamp(days, 7, 90));
+            var toDate = to ?? DateTime.UtcNow.Date;
+            var fromDate = from ?? toDate.AddDays(-Math.Clamp(days, 7, 90));
+            if (fromDate > toDate) fromDate = toDate.AddDays(-30);
 
-        var apt = await _historical.GetAppointmentsByDayAsync(_tenant.TenantId.Value, fromDate, toDate, ct);
-        var rev = await _historical.GetRevenueByDayAsync(_tenant.TenantId.Value, fromDate, toDate, ct);
-        var canc = await _historical.GetCancellationsTrendAsync(_tenant.TenantId.Value, fromDate, toDate, ct);
-        var noShow = await _historical.GetNoShowTrendAsync(_tenant.TenantId.Value, fromDate, toDate, ct);
-        var newPatients = await _historical.GetNewPatientsTrendAsync(_tenant.TenantId.Value, fromDate, toDate, ct);
-        var wfSuccess = await _historical.GetWorkflowSuccessTrendAsync(_tenant.TenantId.Value, fromDate, toDate, ct);
-        var aiTrend = await _historical.GetAIInsightsTrendAsync(_tenant.TenantId.Value, fromDate, toDate, ct);
+            var apt = await _historical.GetAppointmentsByDayAsync(_tenant.TenantId.Value, fromDate, toDate, ct);
+            var rev = await _historical.GetRevenueByDayAsync(_tenant.TenantId.Value, fromDate, toDate, ct);
+            var canc = await _historical.GetCancellationsTrendAsync(_tenant.TenantId.Value, fromDate, toDate, ct);
+            var noShow = await _historical.GetNoShowTrendAsync(_tenant.TenantId.Value, fromDate, toDate, ct);
+            var newPatients = await _historical.GetNewPatientsTrendAsync(_tenant.TenantId.Value, fromDate, toDate, ct);
+            var wfSuccess = await _historical.GetWorkflowSuccessTrendAsync(_tenant.TenantId.Value, fromDate, toDate, ct);
+            var aiTrend = await _historical.GetAIInsightsTrendAsync(_tenant.TenantId.Value, fromDate, toDate, ct);
 
-        var aptComp = await _comparison.CompareAppointmentsAsync(_tenant.TenantId.Value, new PeriodComparisonRequest { Type = PeriodComparisonType.ThisWeekVsLastWeek }, ct);
-        var revComp = await _comparison.CompareRevenueAsync(_tenant.TenantId.Value, new PeriodComparisonRequest { Type = PeriodComparisonType.ThisWeekVsLastWeek }, ct);
+            var aptComp = await _comparison.CompareAppointmentsAsync(_tenant.TenantId.Value, new PeriodComparisonRequest { Type = PeriodComparisonType.ThisWeekVsLastWeek }, ct);
+            var revComp = await _comparison.CompareRevenueAsync(_tenant.TenantId.Value, new PeriodComparisonRequest { Type = PeriodComparisonType.ThisWeekVsLastWeek }, ct);
 
-        ViewData["Title"] = "Tendencias históricas";
-        ViewData["PageSubtitle"] = "Evolución operativa, financiera e IA";
-        ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a asp-controller=\"Analytics\" asp-action=\"Index\">Analítica</a></li><li class=\"breadcrumb-item active\">Tendencias</li>";
-        ViewData["From"] = fromDate.ToString("yyyy-MM-dd");
-        ViewData["To"] = toDate.ToString("yyyy-MM-dd");
-        ViewBag.AptComparison = aptComp;
-        ViewBag.RevComparison = revComp;
+            ViewData["Title"] = "Tendencias históricas";
+            ViewData["PageSubtitle"] = "Evolución operativa, financiera e IA";
+            ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a asp-controller=\"Analytics\" asp-action=\"Index\">Analítica</a></li><li class=\"breadcrumb-item active\">Tendencias</li>";
+            ViewData["From"] = fromDate.ToString("yyyy-MM-dd");
+            ViewData["To"] = toDate.ToString("yyyy-MM-dd");
+            ViewBag.AptComparison = aptComp;
+            ViewBag.RevComparison = revComp;
 
-        var model = new TrendsViewModel(apt, rev, canc, noShow, newPatients, wfSuccess, aiTrend);
-        return View(model);
+            var model = new TrendsViewModel(apt, rev, canc, noShow, newPatients, wfSuccess, aiTrend);
+            return View(model);
+        }
+        catch (Exception)
+        {
+            ViewData["ErrorMessage"] = "Error al cargar los datos.";
+            return View(null);
+        }
     }
 
     public async Task<IActionResult> Benchmarking(string? cohort, DateTime? from, DateTime? to, CancellationToken ct = default)
     {
-        if (!_tenant.TenantId.HasValue)
-            return NotFound();
+        try
+        {
+            if (!_tenant.TenantId.HasValue)
+                return NotFound();
 
-        var settings = await _analyticsSettings.GetSettingsAsync(_tenant.TenantId.Value, ct);
-        if (!settings.BenchmarkingEnabled)
-            return View("BenchmarkingDisabled");
+            var settings = await _analyticsSettings.GetSettingsAsync(_tenant.TenantId.Value, ct);
+            if (!settings.BenchmarkingEnabled)
+                return View("BenchmarkingDisabled");
 
-        var toDate = to ?? DateTime.UtcNow.Date;
-        var fromDate = from ?? toDate.AddDays(-30);
+            var toDate = to ?? DateTime.UtcNow.Date;
+            var fromDate = from ?? toDate.AddDays(-30);
+            if (fromDate > toDate) fromDate = toDate.AddDays(-30);
 
-        var benchmark = await _benchmarking.GetTenantBenchmarkAsync(_tenant.TenantId.Value, fromDate, toDate, cohort, ct);
-        var cohorts = await _benchmarking.GetCohortAveragesAsync(cohort ?? "all", fromDate, toDate, ct);
+            var benchmark = await _benchmarking.GetTenantBenchmarkAsync(_tenant.TenantId.Value, fromDate, toDate, cohort, ct);
+            var cohorts = await _benchmarking.GetCohortAveragesAsync(cohort ?? "all", fromDate, toDate, ct);
 
-        ViewData["Title"] = "Benchmarking multi-tenant";
-        ViewData["PageSubtitle"] = "Comparativa anonimizada frente a cohortes similares";
-        ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a asp-controller=\"Analytics\" asp-action=\"Index\">Analítica</a></li><li class=\"breadcrumb-item active\">Benchmarking</li>";
-        ViewData["From"] = fromDate.ToString("yyyy-MM-dd");
-        ViewData["To"] = toDate.ToString("yyyy-MM-dd");
-        ViewBag.Cohort = cohort ?? "all";
+            ViewData["Title"] = "Benchmarking multi-tenant";
+            ViewData["PageSubtitle"] = "Comparativa anonimizada frente a cohortes similares";
+            ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a asp-controller=\"Analytics\" asp-action=\"Index\">Analítica</a></li><li class=\"breadcrumb-item active\">Benchmarking</li>";
+            ViewData["From"] = fromDate.ToString("yyyy-MM-dd");
+            ViewData["To"] = toDate.ToString("yyyy-MM-dd");
+            ViewBag.Cohort = cohort ?? "all";
 
-        var model = new BenchmarkingViewModel(benchmark, cohorts.ToList());
-        return View(model);
+            var model = new BenchmarkingViewModel(benchmark, cohorts.ToList());
+            return View(model);
+        }
+        catch (Exception)
+        {
+            ViewData["ErrorMessage"] = "Error al cargar los datos.";
+            return View(null);
+        }
     }
 
     public async Task<IActionResult> Snapshots(DateTime? from, DateTime? to, int days = 14, CancellationToken ct = default)
     {
-        if (!_tenant.TenantId.HasValue)
-            return NotFound();
+        try
+        {
+            if (!_tenant.TenantId.HasValue)
+                return NotFound();
 
-        var toDate = to ?? DateTime.UtcNow.Date;
-        var fromDate = from ?? toDate.AddDays(-Math.Clamp(days, 7, 90));
+            var toDate = to ?? DateTime.UtcNow.Date;
+            var fromDate = from ?? toDate.AddDays(-Math.Clamp(days, 7, 90));
+            if (fromDate > toDate) fromDate = toDate.AddDays(-14);
 
-        var filter = new AdvancedAnalyticsFilter(_tenant.TenantId, fromDate, toDate, 90);
-        var snapshots = await _analytics.GetDailySnapshotsAsync(filter, ct);
-        var jobLogs = await _rebuild.GetRecentJobLogsAsync(_tenant.TenantId, 20, ct);
+            var filter = new AdvancedAnalyticsFilter(_tenant.TenantId, fromDate, toDate, 90);
+            var snapshots = await _analytics.GetDailySnapshotsAsync(filter, ct);
+            var jobLogs = await _rebuild.GetRecentJobLogsAsync(_tenant.TenantId, 20, ct);
 
-        ViewData["Title"] = "Snapshots diarios";
-        ViewData["PageSubtitle"] = "Histórico de agregaciones y jobs";
-        ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a asp-controller=\"Analytics\" asp-action=\"Index\">Analítica</a></li><li class=\"breadcrumb-item active\">Snapshots</li>";
-        ViewData["From"] = fromDate.ToString("yyyy-MM-dd");
-        ViewData["To"] = toDate.ToString("yyyy-MM-dd");
+            ViewData["Title"] = "Snapshots diarios";
+            ViewData["PageSubtitle"] = "Histórico de agregaciones y jobs";
+            ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a asp-controller=\"Analytics\" asp-action=\"Index\">Analítica</a></li><li class=\"breadcrumb-item active\">Snapshots</li>";
+            ViewData["From"] = fromDate.ToString("yyyy-MM-dd");
+            ViewData["To"] = toDate.ToString("yyyy-MM-dd");
 
-        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        ViewBag.CanManage = !string.IsNullOrEmpty(userId) && await _permissionChecker.UserHasPermissionAsync(userId, PermissionCodes.SettingsManage, ct);
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            ViewBag.CanManage = !string.IsNullOrEmpty(userId) && await _permissionChecker.UserHasPermissionAsync(userId, PermissionCodes.SettingsManage, ct);
 
-        var model = new SnapshotsViewModel(snapshots, jobLogs);
-        return View(model);
+            var model = new SnapshotsViewModel(snapshots, jobLogs);
+            return View(model);
+        }
+        catch (Exception)
+        {
+            ViewData["ErrorMessage"] = "Error al cargar los datos.";
+            return View(null);
+        }
     }
 
     [RequirePermission(PermissionCodes.SettingsManage)]

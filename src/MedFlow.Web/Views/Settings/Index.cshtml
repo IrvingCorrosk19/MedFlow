@@ -3,11 +3,101 @@
     ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item active\">Configuración</li>";
 }
 
-<div class="card card-outline card-secondary">
-    <div class="card-header">
-        <h3 class="card-title"><i class="fa fa-cog mr-2"></i>Configuración general</h3>
+<div class="row">
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="card card-outline card-primary shadow-sm h-100">
+            <div class="card-header">
+                <h3 class="card-title font-weight-bold mb-0"><i class="fa fa-bell-o mr-2"></i>Notificaciones</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">Plantillas de email, webhook y preferencias de envío por evento.</p>
+            </div>
+            <div class="card-footer bg-white">
+                <a asp-controller="NotificationTemplates" asp-action="Index" class="btn btn-outline-primary btn-sm btn-block">
+                    <i class="fa fa-arrow-right mr-1"></i> Gestionar
+                </a>
+            </div>
+        </div>
     </div>
-    <div class="card-body">
-        <p class="text-muted mb-0">Datos de la clínica, horarios, integraciones y preferencias del sistema.</p>
+
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="card card-outline card-info shadow-sm h-100">
+            <div class="card-header">
+                <h3 class="card-title font-weight-bold mb-0"><i class="fa fa-robot mr-2"></i>Inteligencia Artificial</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">Activar o desactivar capacidades de IA: insights, copilot, recomendaciones y análisis de riesgo.</p>
+            </div>
+            <div class="card-footer bg-white">
+                <a asp-area="AI" asp-controller="AISettings" asp-action="Index" class="btn btn-outline-info btn-sm btn-block">
+                    <i class="fa fa-arrow-right mr-1"></i> Gestionar
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="card card-outline card-success shadow-sm h-100">
+            <div class="card-header">
+                <h3 class="card-title font-weight-bold mb-0"><i class="fa fa-cogs mr-2"></i>Automatizaciones</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">Flujos de trabajo automáticos disparados por eventos del sistema (webhooks, email, notificaciones).</p>
+            </div>
+            <div class="card-footer bg-white">
+                <a asp-controller="Automations" asp-action="Index" class="btn btn-outline-success btn-sm btn-block">
+                    <i class="fa fa-arrow-right mr-1"></i> Gestionar
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="card card-outline card-warning shadow-sm h-100">
+            <div class="card-header">
+                <h3 class="card-title font-weight-bold mb-0"><i class="fa fa-bar-chart mr-2"></i>Analítica</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">Activar benchmarking, resúmenes de IA y seguimiento de uso del portal del paciente.</p>
+            </div>
+            <div class="card-footer bg-white">
+                <a asp-controller="Analytics" asp-action="Settings" class="btn btn-outline-warning btn-sm btn-block">
+                    <i class="fa fa-arrow-right mr-1"></i> Gestionar
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="card card-outline card-secondary shadow-sm h-100">
+            <div class="card-header">
+                <h3 class="card-title font-weight-bold mb-0"><i class="fa fa-users mr-2"></i>Usuarios y Roles</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">Gestión de cuentas de staff, roles y permisos de acceso al sistema.</p>
+            </div>
+            <div class="card-footer bg-white">
+                <div class="d-flex gap-2">
+                    <a asp-controller="AdminUsers" asp-action="Index" class="btn btn-outline-secondary btn-sm flex-fill">Usuarios</a>
+                    <a asp-controller="AdminRoles" asp-action="Index" class="btn btn-outline-secondary btn-sm flex-fill">Roles</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="card card-outline card-dark shadow-sm h-100">
+            <div class="card-header">
+                <h3 class="card-title font-weight-bold mb-0"><i class="fa fa-list-alt mr-2"></i>Registro de eventos</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">Historial de actividad del sistema: accesos, cambios de configuración, errores y eventos de integración.</p>
+            </div>
+            <div class="card-footer bg-white">
+                <a asp-controller="EventLogs" asp-action="Index" class="btn btn-outline-dark btn-sm btn-block">
+                    <i class="fa fa-arrow-right mr-1"></i> Ver registros
+                </a>
+            </div>
+        </div>
     </div>
 </div>

@@ -62,19 +62,24 @@ public class MedicalRecordFormViewModel
     public string? Observations { get; set; }
 
     [Display(Name = "Talla (cm)")]
+    [Range(50, 250, ErrorMessage = "La talla debe estar entre 50 y 250 cm.")]
     public decimal? HeightCm { get; set; }
 
     [Display(Name = "Peso (kg)")]
+    [Range(1, 500, ErrorMessage = "El peso debe estar entre 1 y 500 kg.")]
     public decimal? WeightKg { get; set; }
 
     [Display(Name = "Presión arterial")]
     [StringLength(20)]
+    [RegularExpression(@"^\d{2,3}/\d{2,3}$", ErrorMessage = "Formato esperado: 120/80")]
     public string? BloodPressure { get; set; }
 
     [Display(Name = "Frecuencia cardíaca (lpm)")]
+    [Range(30, 300, ErrorMessage = "La frecuencia cardíaca debe estar entre 30 y 300 lpm.")]
     public int? HeartRateBpm { get; set; }
 
     [Display(Name = "Temperatura (°C)")]
+    [Range(30.0, 45.0, ErrorMessage = "La temperatura debe estar entre 30.0 y 45.0 °C.")]
     public decimal? TemperatureCelsius { get; set; }
 
     public List<PrescriptionLineViewModel> PrescriptionLines { get; set; } = [new()];

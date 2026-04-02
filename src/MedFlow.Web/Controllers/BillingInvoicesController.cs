@@ -96,10 +96,26 @@ public class BillingInvoicesController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequirePermission(PermissionCodes.BillingCreate)]
     public async Task<IActionResult> Create(BillingInvoiceCreateViewModel model, CancellationToken cancellationToken)
     {
         if (model.Lines == null || model.Lines.Count == 0)
-            ModelState.AddModelError("Lines", "Debe agregar al menos una línea de factura.");
+        {
+            ModelState.AddModelError(string.Empty, "La factura debe tener al menos un concepto.");
+        }
+        else
+        {
+            foreach (var (line, i) in model.Lines.Select((l, i) => (l, i)))
+            {
+                if (line.Quantity <= 0)
+                    ModelState.AddModelError($"Lines[{i}].Quantity", "La cantidad debe ser mayor a cero.");
+                if (line.UnitPrice < 0)
+                    ModelState.AddModelError($"Lines[{i}].UnitPrice", "El precio no puede ser negativo.");
+            }
+        }
+
+        if (model.DueDate.HasValue && model.DueDate.Value.Date < model.IssueDate.Date)
+            ModelState.AddModelError(nameof(model.DueDate), "La fecha de vencimiento no puede ser anterior a la fecha de emisión.");
 
         if (!ModelState.IsValid)
         {
@@ -111,37 +127,53 @@ public class BillingInvoicesController : Controller
             return View(model);
         }
 
-        var invoice = new BillingInvoice
+        try
         {
-            PatientId = model.PatientId,
-            AppointmentId = model.AppointmentId,
-            DoctorId = model.DoctorId,
-            IssueDate = model.IssueDate.Kind == DateTimeKind.Unspecified
-                ? DateTime.SpecifyKind(model.IssueDate, DateTimeKind.Utc)
-                : model.IssueDate.ToUniversalTime(),
-            DueDate = model.DueDate.HasValue
-                ? (model.DueDate.Value.Kind == DateTimeKind.Unspecified
-                    ? DateTime.SpecifyKind(model.DueDate.Value, DateTimeKind.Utc)
-                    : model.DueDate.Value.ToUniversalTime())
-                : null,
-            DiscountAmount = model.DiscountAmount,
-            TaxAmount = model.TaxAmount,
-            Notes = model.Notes
-        };
+            var invoice = new BillingInvoice
+            {
+                PatientId = model.PatientId,
+                AppointmentId = model.AppointmentId,
+                DoctorId = model.DoctorId,
+                IssueDate = model.IssueDate.Kind == DateTimeKind.Unspecified
+                    ? DateTime.SpecifyKind(model.IssueDate, DateTimeKind.Utc)
+                    : model.IssueDate.ToUniversalTime(),
+                DueDate = model.DueDate.HasValue
+                    ? (model.DueDate.Value.Kind == DateTimeKind.Unspecified
+                        ? DateTime.SpecifyKind(model.DueDate.Value, DateTimeKind.Utc)
+                        : model.DueDate.Value.ToUniversalTime())
+                    : null,
+                DiscountAmount = model.DiscountAmount,
+                TaxAmount = model.TaxAmount,
+                Notes = model.Notes
+            };
 
-        var items = model.Lines!.Select(l => new BillingInvoiceItem
-        {
-            ItemType = l.ItemType,
-            Description = l.Description,
-            Quantity = l.Quantity,
-            UnitPrice = l.UnitPrice,
-            DiscountAmount = l.LineDiscount
-        }).ToList();
+            var items = model.Lines!.Select(l => new BillingInvoiceItem
+            {
+                ItemType = l.ItemType,
+                Description = l.Description,
+                Quantity = l.Quantity,
+                UnitPrice = l.UnitPrice,
+                DiscountAmount = l.LineDiscount
+            }).ToList();
 
-        var (created, err) = await _billing.CreateAsync(invoice, items, cancellationToken);
-        if (err != null)
+            var (created, err) = await _billing.CreateAsync(invoice, items, cancellationToken);
+            if (err != null)
+            {
+                ModelState.AddModelError(string.Empty, err);
+                var patients = await _patients.GetAllAsync();
+                var doctors = await _doctors.GetAllAsync();
+                ViewBag.Patients = new SelectList(patients, "Id", "NombreCompleto", model.PatientId);
+                ViewBag.Doctors = new SelectList(doctors, "Id", "FullName", model.DoctorId);
+                ViewData["Title"] = "Nueva factura";
+                return View(model);
+            }
+
+            TempData["Success"] = $"Factura {created.InvoiceNumber} creada.";
+            return RedirectToAction(nameof(Details), new { id = created.Id });
+        }
+        catch (Exception ex)
         {
-            ModelState.AddModelError(string.Empty, err);
+            ModelState.AddModelError(string.Empty, "Error al crear la factura: " + ex.Message);
             var patients = await _patients.GetAllAsync();
             var doctors = await _doctors.GetAllAsync();
             ViewBag.Patients = new SelectList(patients, "Id", "NombreCompleto", model.PatientId);
@@ -149,9 +181,6 @@ public class BillingInvoicesController : Controller
             ViewData["Title"] = "Nueva factura";
             return View(model);
         }
-
-        TempData["Success"] = $"Factura {created.InvoiceNumber} creada.";
-        return RedirectToAction(nameof(Details), new { id = created.Id });
     }
 
     [RequirePermission(PermissionCodes.BillingView)]
@@ -176,12 +205,23 @@ public class BillingInvoicesController : Controller
         return View(inv);
     }
 
+    [HttpGet]
+    [RequirePermission(PermissionCodes.BillingView)]
+    public async Task<IActionResult> Print(Guid id, CancellationToken cancellationToken = default)
+    {
+        var invoice = await _billing.GetByIdAsync(id, cancellationToken);
+        if (invoice == null) return NotFound();
+        return View(invoice);
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     [RequirePermission(PermissionCodes.BillingRegisterPayment)]
     public async Task<IActionResult> RegisterPayment(RegisterPaymentViewModel model, CancellationToken cancellationToken)
     {
         var uid = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(uid))
+            return Forbid();
         var (p, err) = await _payments.RegisterAsync(
             model.BillingInvoiceId,
             model.PatientId,
@@ -203,9 +243,12 @@ public class BillingInvoicesController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequirePermission(PermissionCodes.BillingManage)]
     public async Task<IActionResult> CancelPayment(Guid id, Guid billingInvoiceId, CancellationToken cancellationToken)
     {
         var uid = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(uid))
+            return Forbid();
         var (ok, err) = await _payments.CancelPaymentAsync(id, uid, cancellationToken);
         if (!ok)
             TempData["Error"] = err;

@@ -25,6 +25,7 @@
                             <button type="button" class="btn btn-outline-danger btn-sm btn-cancel-inv"><i class="fa fa-ban"></i> Cancelar factura</button>
                         </form>
                     }
+                    <a asp-action="Print" asp-route-id="@Model.Id" target="_blank" class="btn btn-outline-secondary btn-sm"><i class="fa fa-print"></i> Imprimir</a>
                     <a asp-action="Index" class="btn btn-default btn-sm">Volver</a>
                 </div>
             </div>

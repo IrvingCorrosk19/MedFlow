@@ -79,7 +79,7 @@
                     <th>Evento</th>
                     <th>Estado</th>
                     <th>Webhook</th>
-                    <th style="width: 180px;">Acciones</th>
+                    <th style="width: 220px;">Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -97,13 +97,14 @@
                     </td>
                     <td><small class="text-muted" style="max-width:200px; overflow:hidden; text-overflow:ellipsis; display:block;">@w.WebhookUrl</small></td>
                     <td>
+                        <a asp-controller="WorkflowExecutions" asp-action="Index" asp-route-workflowId="@w.Id"
+                           class="btn btn-xs btn-outline-info" title="Ver ejecuciones">
+                            <i class="fa fa-history"></i>
+                        </a>
                         @if (ViewBag.CanManage == true)
                         {
                         <a asp-action="Edit" asp-route-id="@w.Id" class="btn btn-xs btn-default" title="Editar">Editar</a>
-                        <form asp-action="TestWebhook" asp-route-id="@w.Id" method="post" class="d-inline">
-                            @Html.AntiForgeryToken()
-                            <button type="submit" class="btn btn-xs btn-info" title="Probar webhook">Probar</button>
-                        </form>
+                        <button type="button" class="btn btn-xs btn-info btn-test-webhook" data-id="@w.Id" title="Probar webhook"><i class="fa fa-play"></i></button>
                         @if (w.IsActive)
                         {
                         <form asp-action="ToggleActive" asp-route-id="@w.Id" asp-route-isActive="false" method="post" class="d-inline">
@@ -142,6 +143,35 @@
             order: [[0, 'asc']],
             pageLength: 25,
             language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' }
+        });
+    });
+
+    $(document).on('click', '.btn-test-webhook', function (e) {
+        e.preventDefault();
+        var btn = $(this);
+        var id = btn.data('id');
+        var token = $('input[name="__RequestVerificationToken"]').first().val();
+        btn.prop('disabled', true).text('Probando...');
+
+        $.ajax({
+            url: '@Url.Action("TestWebhook")',
+            method: 'POST',
+            data: { id: id, __RequestVerificationToken: token },
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            success: function (r) {
+                var alertClass = r.success ? 'alert-success' : 'alert-warning';
+                var $alert = $('<div class="alert ' + alertClass + ' alert-dismissible mt-2 py-1 px-2 small">' +
+                    r.message +
+                    '<button type="button" class="close py-0" data-dismiss="alert">&times;</button></div>');
+                btn.closest('td').append($alert);
+                setTimeout(function () { $alert.alert('close'); }, 8000);
+            },
+            error: function () {
+                btn.closest('td').append('<div class="alert alert-danger alert-dismissible mt-2 py-1 px-2 small">Error de conexión.<button type="button" class="close py-0" data-dismiss="alert">&times;</button></div>');
+            },
+            complete: function () {
+                btn.prop('disabled', false).html('<i class="fa fa-play"></i>');
+            }
         });
     });
 </script>

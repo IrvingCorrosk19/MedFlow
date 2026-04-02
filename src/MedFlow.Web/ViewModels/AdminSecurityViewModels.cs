@@ -16,6 +16,11 @@ public class AdminUserFormViewModel
     public string? Password { get; set; }
 
     [DataType(DataType.Password)]
+    [Compare(nameof(Password), ErrorMessage = "Las contraseñas no coinciden.")]
+    [Display(Name = "Confirmar contraseña")]
+    public string? ConfirmPassword { get; set; }
+
+    [DataType(DataType.Password)]
     public string? NewPassword { get; set; }
 
     [Required(ErrorMessage = "El nombre es obligatorio.")]

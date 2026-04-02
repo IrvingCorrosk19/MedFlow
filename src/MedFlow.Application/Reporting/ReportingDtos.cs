@@ -41,7 +41,7 @@ public record DateDecimalVm(DateTime Date, decimal Amount);
 
 public record MonthCountVm(int Year, int Month, int Count);
 
-public record ActivityItemVm(string IconClass, string Text, string WhenLabel, string? LinkUrl);
+public record ActivityItemVm(string IconClass, string Text, string WhenLabel, string? LinkUrl, DateTime? Timestamp = null);
 
 public record ExecutiveAlertVm(string Severity, string Message);
 

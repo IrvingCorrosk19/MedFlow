@@ -87,7 +87,9 @@ public class BillingController : Controller
         ViewData["BalanceDue"] = balanceDue;
         ViewData["TotalPaid"] = totalPaid;
         ViewData["Invoices"] = invoices;
-        return View();
+        ViewData["Title"] = "Estado de cuenta";
+        ViewData["PageSubtitle"] = "Resumen financiero";
+        return View("AccountStatus");
     }
 
     private Guid? GetPatientId()

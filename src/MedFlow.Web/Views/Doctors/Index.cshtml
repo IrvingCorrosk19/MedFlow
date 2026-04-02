@@ -8,9 +8,14 @@
 <div class="card card-outline card-primary shadow-sm">
     <div class="card-header d-flex flex-wrap align-items-center justify-content-between">
         <h3 class="card-title mb-0"><i class="fa fa-user-md mr-2"></i>Listado de doctores</h3>
-        <a asp-action="Create" class="btn btn-primary btn-sm mt-2 mt-sm-0">
-            <i class="fa fa-plus"></i> Nuevo doctor
-        </a>
+        <div class="d-flex flex-wrap gap-1 mt-2 mt-sm-0">
+            <a asp-action="ExportCsv" asp-route-search="@ViewBag.Search" asp-route-active="@ViewBag.IsActive" asp-route-specialty="@ViewBag.SelectedSpecialty" class="btn btn-success btn-sm">
+                <i class="fa fa-download"></i> Exportar CSV
+            </a>
+            <a asp-action="Create" class="btn btn-primary btn-sm">
+                <i class="fa fa-plus"></i> Nuevo doctor
+            </a>
+        </div>
     </div>
     <div class="card-body border-bottom bg-light">
         <form method="get" class="form-row align-items-end">
@@ -24,6 +29,16 @@
                     <option value="">Todos</option>
                     <option value="true" selected="@(ViewBag.IsActive == true)">Activos</option>
                     <option value="false" selected="@(ViewBag.IsActive == false)">Inactivos</option>
+                </select>
+            </div>
+            <div class="form-group col-md-3 col-lg-2 mb-2 mb-md-0">
+                <label class="small text-muted mb-0">Especialidad</label>
+                <select name="specialty" class="form-control form-control-sm">
+                    <option value="">Todas</option>
+                    @foreach (var s in (IEnumerable<string>)(ViewBag.SpecialtyList ?? new List<string>()))
+                    {
+                        <option value="@s" selected="@(ViewBag.SelectedSpecialty == s)">@s</option>
+                    }
                 </select>
             </div>
             <div class="form-group col-auto mb-0">
@@ -65,11 +80,11 @@
                                 }
                             </td>
                             <td class="text-right text-nowrap">
-                                <a asp-action="Details" asp-route-id="@d.Id" class="btn btn-sm btn-info" title="Ver"><i class="fa fa-eye"></i></a>
-                                <a asp-action="Edit" asp-route-id="@d.Id" class="btn btn-sm btn-primary" title="Editar"><i class="fa fa-edit"></i></a>
+                                <a asp-action="Details" asp-route-id="@d.Id" class="btn btn-sm btn-info" title="Ver" aria-label="Ver detalle"><i class="fa fa-eye"></i></a>
+                                <a asp-action="Edit" asp-route-id="@d.Id" class="btn btn-sm btn-primary" title="Editar" aria-label="Editar"><i class="fa fa-edit"></i></a>
                                 <form asp-action="Delete" asp-route-id="@d.Id" method="post" class="d-inline" data-confirm-delete>
                                     @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="fa fa-trash"></i></button>
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar" aria-label="Eliminar"><i class="fa fa-trash"></i></button>
                                 </form>
                             </td>
                         </tr>

@@ -23,6 +23,7 @@
                         <th>Roles</th>
                         <th class="text-center">Estado</th>
                         <th class="text-center">Bloqueo</th>
+                        <th>Último acceso</th>
                         <th class="text-right no-sort">Acciones</th>
                     </tr>
                 </thead>
@@ -66,9 +67,46 @@
                                     <span class="badge badge-light border">No</span>
                                 }
                             </td>
+                            <td>
+                                @if (u.LastLoginAt.HasValue)
+                                {
+                                    <span title="@u.LastLoginAt.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")">
+                                        @u.LastLoginAt.Value.ToLocalTime().ToString("dd/MM/yyyy")
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                            </td>
                             <td class="text-right text-nowrap">
-                                <a asp-action="Details" asp-route-id="@u.Id" class="btn btn-sm btn-info" title="Ver"><i class="fa fa-eye"></i></a>
-                                <a asp-action="Edit" asp-route-id="@u.Id" class="btn btn-sm btn-primary" title="Editar"><i class="fa fa-edit"></i></a>
+                                <a asp-action="Details" asp-route-id="@u.Id" class="btn btn-sm btn-info" title="Ver detalle" aria-label="Ver detalle de @(u.FullName ?? u.Email)"><i class="fa fa-eye"></i></a>
+                                <a asp-action="Edit" asp-route-id="@u.Id" class="btn btn-sm btn-primary" title="Editar" aria-label="Editar @(u.FullName ?? u.Email)"><i class="fa fa-edit"></i></a>
+                                @if (u.IsLocked)
+                                {
+                                    <form asp-action="UnlockUser" asp-route-id="@u.Id" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-warning" title="Desbloquear usuario" aria-label="Desbloquear @(u.FullName ?? u.Email)" onclick="return confirm('¿Desbloquear este usuario?')">
+                                            <i class="fa fa-unlock"></i>
+                                        </button>
+                                    </form>
+                                }
+                                <form asp-action="SendPasswordReset" asp-route-id="@u.Id" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-outline-warning" title="Generar enlace de restablecimiento de contraseña" aria-label="Reset contraseña @(u.FullName ?? u.Email)" onclick="return confirm('¿Generar enlace de restablecimiento de contraseña para este usuario?')">
+                                        <i class="fa fa-key"></i>
+                                    </button>
+                                </form>
+                                <form asp-action="SetActive" asp-route-id="@u.Id" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="active" value="@(!u.IsActive)" />
+                                    <button type="submit" class="btn btn-sm @(u.IsActive ? "btn-outline-secondary" : "btn-outline-success")"
+                                            title="@(u.IsActive ? "Desactivar" : "Activar")"
+                                            aria-label="@(u.IsActive ? "Desactivar" : "Activar") @(u.FullName ?? u.Email)"
+                                            onclick="return confirm('@(u.IsActive ? "¿Desactivar este usuario?" : "¿Activar este usuario?")')">
+                                        <i class="fa @(u.IsActive ? "fa-ban" : "fa-check")"></i>
+                                    </button>
+                                </form>
                             </td>
                         </tr>
                     }

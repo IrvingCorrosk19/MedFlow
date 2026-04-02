@@ -29,7 +29,41 @@
             <div class="card-footer">
                 <a asp-action="Index" class="btn btn-default">Volver</a>
                 <a asp-controller="BillingInvoices" asp-action="Details" asp-route-id="@Model.BillingInvoiceId" class="btn btn-outline-primary">Ver factura</a>
+                @if (Model.Status == PaymentEntryStatus.Registered)
+                {
+                    <form asp-action="Cancel" method="post" class="d-inline frm-cancel-pay">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <button type="button" class="btn btn-outline-warning btn-sm btn-cancel-pay">
+                            <i class="fa fa-ban mr-1"></i> Anular pago
+                        </button>
+                    </form>
+                }
             </div>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.btn-cancel-pay').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var form = btn.closest('.frm-cancel-pay');
+                Swal.fire({
+                    title: '¿Anular este pago?',
+                    text: 'Esta acción revertirá el cobro y actualizará el saldo de la factura.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#f39c12',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Sí, anular',
+                    cancelButtonText: 'No, cancelar'
+                }).then(function (result) {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+        });
+    </script>
+}

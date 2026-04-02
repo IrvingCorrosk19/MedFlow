@@ -41,6 +41,10 @@ public sealed class WorkflowExecutionService : IWorkflowExecutionService
             query = query.Where(e => e.Status == filter.Status.Value);
         if (!string.IsNullOrWhiteSpace(filter.EventType))
             query = query.Where(e => e.EventType == filter.EventType);
+        if (filter.From.HasValue)
+            query = query.Where(e => e.CreatedAt >= filter.From.Value);
+        if (filter.To.HasValue)
+            query = query.Where(e => e.CreatedAt <= filter.To.Value.AddDays(1).AddTicks(-1));
 
         return await query
             .OrderByDescending(e => e.CreatedAt)

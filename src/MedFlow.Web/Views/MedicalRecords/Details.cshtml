@@ -11,6 +11,9 @@
     <div class="col-md-4 text-md-right mt-2 mt-md-0">
         <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary btn-sm"><i class="fa fa-edit"></i> Editar</a>
         <a asp-action="Patient" asp-route-patientId="@Model.PatientId" class="btn btn-default btn-sm">Historial</a>
+        <a asp-controller="BillingInvoices" asp-action="Index" asp-route-patientId="@Model.PatientId" class="btn btn-outline-secondary btn-sm">
+            <i class="fa fa-file-text-o mr-1"></i> Facturas del paciente
+        </a>
         <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="d-inline" data-confirm-delete>
             @Html.AntiForgeryToken()
             <input type="hidden" name="patientId" value="@Model.PatientId" />

@@ -36,14 +36,24 @@ public class AIDashboardController : Controller
         ViewData["PageSubtitle"] = "Insights operativos y recomendaciones inteligentes";
         ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item active\">IA</li>";
 
-        var metrics = await _insightService.GetDashboardMetricsAsync(_tenant.TenantId.Value, DateTime.UtcNow.AddDays(-30), null, ct);
-        var todaySummary = await _summaryService.GenerateDailySummaryAsync(_tenant.TenantId.Value, DateTime.UtcNow.Date, ct);
+        try
+        {
+            var metrics = await _insightService.GetDashboardMetricsAsync(_tenant.TenantId.Value, DateTime.UtcNow.AddDays(-30), null, ct);
+            var todaySummary = await _summaryService.GenerateDailySummaryAsync(_tenant.TenantId.Value, DateTime.UtcNow.Date, ct);
 
-        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        ViewBag.CanManage = !string.IsNullOrEmpty(userId) && await _permissionChecker.UserHasPermissionAsync(userId, PermissionCodes.AIInsightsManage, ct);
-        ViewBag.Metrics = metrics;
-        ViewBag.TodaySummary = todaySummary;
-        return View();
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            ViewBag.CanManage = !string.IsNullOrEmpty(userId) && await _permissionChecker.UserHasPermissionAsync(userId, PermissionCodes.AIInsightsManage, ct);
+            ViewBag.Metrics = metrics;
+            ViewBag.TodaySummary = todaySummary;
+            return View();
+        }
+        catch (Exception)
+        {
+            ViewData["ErrorMessage"] = "Error al cargar los datos del dashboard de IA.";
+            ViewBag.Metrics = null;
+            ViewBag.TodaySummary = null;
+            return View();
+        }
     }
 
     [HttpPost]
@@ -53,8 +63,15 @@ public class AIDashboardController : Controller
     {
         if (!_tenant.TenantId.HasValue)
             return NotFound();
-        await _processor.ProcessTenantAsync(_tenant.TenantId.Value, ct);
-        TempData["Success"] = "Procesamiento de IA ejecutado. Los insights se actualizarán en breve.";
+        try
+        {
+            await _processor.ProcessTenantAsync(_tenant.TenantId.Value, ct);
+            TempData["Success"] = "Procesamiento de IA ejecutado. Los insights se actualizarán en breve.";
+        }
+        catch (Exception ex)
+        {
+            TempData["Error"] = "Error al procesar: " + ex.Message;
+        }
         return RedirectToAction(nameof(Index));
     }
 }

@@ -28,5 +28,14 @@
 
 <div class="mt-3 d-flex gap-2">
     <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary"><i class="fa fa-edit"></i> Editar</a>
+    <form asp-action="SetActive" method="post" class="d-inline">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" value="@Model.Id" />
+        <input type="hidden" name="active" value="@(!Model.IsActive)" />
+        <button type="submit" class="btn btn-sm @(Model.IsActive ? "btn-outline-warning" : "btn-outline-success")">
+            <i class="fa fa-@(Model.IsActive ? "ban" : "check") mr-1"></i>
+            @(Model.IsActive ? "Desactivar" : "Activar")
+        </button>
+    </form>
     <a asp-action="Index" class="btn btn-outline-secondary">Volver</a>
 </div>

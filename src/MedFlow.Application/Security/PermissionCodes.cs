@@ -20,13 +20,19 @@ public static class PermissionCodes
     public const string MedicalRecordsView = "medical_records.view";
     public const string MedicalRecordsCreate = "medical_records.create";
     public const string MedicalRecordsEdit = "medical_records.edit";
+    public const string MedicalRecordsDelete = "medical_records.delete";
 
     public const string BillingView = "billing.view";
     public const string BillingCreate = "billing.create";
     public const string BillingCancel = "billing.cancel";
     public const string BillingRegisterPayment = "billing.register_payment";
+    public const string BillingManage = "billing.manage";
+
+    public const string PaymentsCreate = "payments.create";
 
     public const string CashView = "cash.view";
+    public const string CashCreate = "cash.create";
+    public const string CashDelete = "cash.delete";
 
     public const string UsersManage = "users.manage";
     public const string RolesManage = "roles.manage";
@@ -60,11 +66,16 @@ public static class PermissionCodes
         (MedicalRecordsView, "Ver historias", "MedicalRecords"),
         (MedicalRecordsCreate, "Crear historias", "MedicalRecords"),
         (MedicalRecordsEdit, "Editar historias", "MedicalRecords"),
+        (MedicalRecordsDelete, "Eliminar historias", "MedicalRecords"),
         (BillingView, "Ver facturación", "Billing"),
         (BillingCreate, "Crear facturas", "Billing"),
         (BillingCancel, "Cancelar facturas", "Billing"),
         (BillingRegisterPayment, "Registrar pagos", "Billing"),
+        (BillingManage, "Gestionar facturación", "Billing"),
+        (PaymentsCreate, "Crear pagos", "Billing"),
         (CashView, "Ver caja", "Cash"),
+        (CashCreate, "Registrar movimientos de caja", "Cash"),
+        (CashDelete, "Eliminar movimientos de caja", "Cash"),
         (UsersManage, "Gestionar usuarios", "Security"),
         (RolesManage, "Gestionar roles", "Security"),
         (PermissionsView, "Ver permisos", "Security"),

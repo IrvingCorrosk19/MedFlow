@@ -9,9 +9,9 @@
 {
     <div class="portal-card card">
         <div class="card-body portal-empty">
-            <i class="fa fa-calendar-o d-block"></i>
+            <i class="fa fa-calendar-o d-block" style="font-size:3rem;color:#cbd5e1;margin-bottom:1rem;"></i>
             <h5>No hay citas programadas</h5>
-            <p>No tiene citas proximas.</p>
+            <p class="text-muted">No tiene citas próximas. Contacte con la clínica para agendar una.</p>
         </div>
     </div>
 }
@@ -23,28 +23,75 @@ else
             <div class="col-md-6 col-lg-4 mb-4">
                 <div class="portal-card card h-100">
                     <div class="card-body">
-                        <span class="badge badge-secondary">@a.Status</span>
-                        <small class="text-muted">@a.ScheduledDate.ToString("ddd d MMM yyyy")</small>
+                        <span class="badge @(a.Status == MedFlow.Domain.Enums.AppointmentStatus.Confirmed ? "badge-success" : a.Status == MedFlow.Domain.Enums.AppointmentStatus.Cancelled ? "badge-danger" : "badge-secondary")">@a.Status</span>
+                        <small class="text-muted d-block mt-1">@a.ScheduledDate.ToString("dddd, d 'de' MMMM yyyy", new System.Globalization.CultureInfo("es-ES"))</small>
                         <h5 class="mt-2">@a.DoctorName</h5>
-                        <p class="mb-2">@a.StartTime.ToString(@"hh\:mm")</p>
-                        @if (options?.AllowAppointmentConfirmation == true && a.Status == MedFlow.Domain.Enums.AppointmentStatus.Scheduled)
-                        {
-                            <form asp-action="Confirm" asp-route-id="@a.Id" method="post" class="d-inline">
-                                @Html.AntiForgeryToken()
-                                <button type="submit" class="btn btn-sm btn-success">Confirmar</button>
-                            </form>
-                        }
-                        @if (options?.AllowAppointmentCancellation == true)
-                        {
-                            <form asp-action="Cancel" asp-route-id="@a.Id" method="post" class="d-inline">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="motivo" value="" />
-                                <button type="submit" class="btn btn-sm btn-outline-danger">Cancelar</button>
-                            </form>
-                        }
+                        <p class="mb-3 text-muted"><i class="fa fa-clock-o mr-1"></i>@a.StartTime.ToString(@"hh\:mm")</p>
+                        <div class="d-flex flex-wrap gap-1">
+                            <a asp-area="PatientPortal" asp-action="Details" asp-controller="Appointments" asp-route-id="@a.Id" class="btn btn-sm btn-outline-info"><i class="fa fa-eye mr-1"></i>Detalles</a>
+                            @if (options?.AllowAppointmentConfirmation == true && a.Status == MedFlow.Domain.Enums.AppointmentStatus.Scheduled)
+                            {
+                                <form asp-action="Confirm" asp-route-id="@a.Id" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-success"><i class="fa fa-check mr-1"></i>Confirmar</button>
+                                </form>
+                            }
+                            @if (options?.AllowAppointmentCancellation == true && a.Status != MedFlow.Domain.Enums.AppointmentStatus.Cancelled)
+                            {
+                                <button type="button" class="btn btn-sm btn-outline-danger"
+                                    data-toggle="modal" data-target="#modalCancelar"
+                                    data-id="@a.Id"
+                                    data-doctor="@a.DoctorName"
+                                    data-fecha="@a.ScheduledDate.ToString("dd/MM/yyyy")">
+                                    <i class="fa fa-times mr-1"></i>Cancelar
+                                </button>
+                            }
+                        </div>
                     </div>
                 </div>
             </div>
         }
     </div>
+
+    <div class="modal fade" id="modalCancelar" tabindex="-1" role="dialog" aria-labelledby="modalCancelarLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalCancelarLabel">Cancelar cita</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <form id="frmCancelar" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="modal-body">
+                        <p id="cancelarDetalle" class="text-muted small mb-3"></p>
+                        <div class="form-group">
+                            <label for="motivoCancelacion">Motivo de cancelación <span class="text-muted small">(opcional)</span></label>
+                            <textarea class="form-control" id="motivoCancelacion" name="motivo" rows="3" maxlength="500" placeholder="Ingrese el motivo por el que cancela la cita..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Volver</button>
+                        <button type="submit" class="btn btn-danger"><i class="fa fa-times mr-1"></i>Confirmar cancelación</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+<script>
+    $('#modalCancelar').on('show.bs.modal', function(event) {
+        var btn = $(event.relatedTarget);
+        var id = btn.data('id');
+        var doctor = btn.data('doctor');
+        var fecha = btn.data('fecha');
+        $('#cancelarDetalle').text('Cita con ' + doctor + ' el ' + fecha + '.');
+        $('#motivoCancelacion').val('');
+        var actionUrl = '@Url.Action("Cancel", "Appointments")'.replace('__ID__', id);
+        // Build the URL properly
+        var baseUrl = '@Url.Action("Cancel", "Appointments", new { id = "PLACEHOLDER" })'.replace('PLACEHOLDER', id);
+        $('#frmCancelar').attr('action', baseUrl);
+    });
+</script>
 }

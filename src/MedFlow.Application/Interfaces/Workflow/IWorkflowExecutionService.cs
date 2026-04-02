@@ -16,7 +16,9 @@ public record WorkflowExecutionListFilter(
     WorkflowExecutionStatus? Status = null,
     string? EventType = null,
     int Page = 1,
-    int PageSize = 50);
+    int PageSize = 50,
+    DateTime? From = null,
+    DateTime? To = null);
 
 public record WorkflowMetricsFilter(
     Guid? WorkflowDefinitionId = null,

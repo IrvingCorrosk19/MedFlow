@@ -56,11 +56,15 @@ public class PaymentsController : Controller
                     Amount = inv.BalanceDue > 0 ? inv.BalanceDue : 0,
                     PaymentDate = DateTime.UtcNow
                 };
+                ViewBag.BalanceDue = inv.BalanceDue;
                 ViewData["Title"] = "Registrar pago";
                 ViewData["PageSubtitle"] = $"Factura {inv.InvoiceNumber}";
                 ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a href=\"" + Url.Action("Index", "Payments") + "\">Pagos</a></li><li class=\"breadcrumb-item active\">Registrar</li>";
                 return View(vm);
             }
+
+            TempData["Error"] = "Factura no encontrada.";
+            return RedirectToAction("Index");
         }
 
         ViewData["Title"] = "Registrar pago";
@@ -71,8 +75,18 @@ public class PaymentsController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequirePermission(PermissionCodes.PaymentsCreate)]
     public async Task<IActionResult> Create(RegisterPaymentViewModel model, CancellationToken cancellationToken = default)
     {
+        if (model.BillingInvoiceId != default)
+        {
+            var inv = await _billing.GetByIdAsync(model.BillingInvoiceId, cancellationToken);
+            if (inv != null && model.Amount > inv.BalanceDue)
+            {
+                ModelState.AddModelError(nameof(model.Amount),
+                    $"El monto ({model.Amount:N2}) supera el saldo pendiente de la factura ({inv.BalanceDue:N2}).");
+            }
+        }
         if (!ModelState.IsValid)
         {
             ViewData["Title"] = "Registrar pago";
@@ -80,6 +94,8 @@ public class PaymentsController : Controller
         }
 
         var uid = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(uid))
+            return Forbid();
         var (p, err) = await _payments.RegisterAsync(
             model.BillingInvoiceId,
             model.PatientId,
@@ -113,5 +129,19 @@ public class PaymentsController : Controller
         ViewData["PageSubtitle"] = p.ReferenceNumber ?? p.Id.ToString();
         ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a href=\"" + Url.Action("Index") + "\">Pagos</a></li><li class=\"breadcrumb-item active\">Detalle</li>";
         return View(p);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [RequirePermission(PermissionCodes.BillingRegisterPayment)]
+    public async Task<IActionResult> Cancel(Guid id, CancellationToken cancellationToken = default)
+    {
+        var uid = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var (ok, err) = await _payments.CancelPaymentAsync(id, uid, cancellationToken);
+        if (ok)
+            TempData["Success"] = "Pago anulado correctamente.";
+        else
+            TempData["Error"] = err ?? "No se pudo anular el pago.";
+        return RedirectToAction(nameof(Details), new { id });
     }
 }

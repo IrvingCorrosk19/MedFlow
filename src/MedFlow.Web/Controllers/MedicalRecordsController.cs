@@ -73,6 +73,7 @@ public class MedicalRecordsController : Controller
         return View(record);
     }
 
+    [RequirePermission(PermissionCodes.MedicalRecordsCreate)]
     public async Task<IActionResult> Create(Guid patientId, CancellationToken cancellationToken)
     {
         var patient = await _patients.GetByIdAsync(patientId, cancellationToken);
@@ -107,13 +108,35 @@ public class MedicalRecordsController : Controller
         var patient = await _patients.GetByIdAsync(model.PatientId, cancellationToken);
         if (patient == null) return NotFound();
 
+        if (model.PrescriptionLines != null)
+        {
+            for (int i = 0; i < model.PrescriptionLines.Count; i++)
+            {
+                var line = model.PrescriptionLines[i];
+                bool hasOtherFields = !string.IsNullOrWhiteSpace(line.Dosage)
+                    || !string.IsNullOrWhiteSpace(line.Frequency)
+                    || !string.IsNullOrWhiteSpace(line.Duration)
+                    || !string.IsNullOrWhiteSpace(line.Instructions);
+                if (hasOtherFields && string.IsNullOrWhiteSpace(line.MedicationName))
+                    ModelState.AddModelError($"PrescriptionLines[{i}].MedicationName",
+                        "El nombre del medicamento es obligatorio.");
+            }
+        }
+
         if (ModelState.IsValid)
         {
-            var entity = MapToEntity(model);
-            var rx = MapPrescriptions(model);
-            await _medicalRecords.CreateAsync(entity, rx, cancellationToken);
-            TempData["Success"] = "Consulta registrada correctamente.";
-            return RedirectToAction(nameof(Patient), new { patientId = model.PatientId });
+            try
+            {
+                var entity = MapToEntity(model);
+                var rx = MapPrescriptions(model);
+                await _medicalRecords.CreateAsync(entity, rx, cancellationToken);
+                TempData["Success"] = "Consulta registrada correctamente.";
+                return RedirectToAction(nameof(Patient), new { patientId = model.PatientId });
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError(string.Empty, "Error al registrar la consulta: " + ex.Message);
+            }
         }
 
         var doctors = await _doctors.GetAllAsync(null, true, cancellationToken: cancellationToken);
@@ -130,6 +153,7 @@ public class MedicalRecordsController : Controller
         return View(model);
     }
 
+    [RequirePermission(PermissionCodes.MedicalRecordsEdit)]
     public async Task<IActionResult> Edit(Guid id, CancellationToken cancellationToken)
     {
         var record = await _medicalRecords.GetByIdAsync(id, cancellationToken: cancellationToken);
@@ -164,13 +188,35 @@ public class MedicalRecordsController : Controller
         var existing = await _medicalRecords.GetByIdAsync(id, cancellationToken: cancellationToken);
         if (existing == null) return NotFound();
 
+        if (model.PrescriptionLines != null)
+        {
+            for (int i = 0; i < model.PrescriptionLines.Count; i++)
+            {
+                var line = model.PrescriptionLines[i];
+                bool hasOtherFields = !string.IsNullOrWhiteSpace(line.Dosage)
+                    || !string.IsNullOrWhiteSpace(line.Frequency)
+                    || !string.IsNullOrWhiteSpace(line.Duration)
+                    || !string.IsNullOrWhiteSpace(line.Instructions);
+                if (hasOtherFields && string.IsNullOrWhiteSpace(line.MedicationName))
+                    ModelState.AddModelError($"PrescriptionLines[{i}].MedicationName",
+                        "El nombre del medicamento es obligatorio.");
+            }
+        }
+
         if (ModelState.IsValid)
         {
-            MapToEntity(model, existing);
-            var rx = MapPrescriptions(model);
-            await _medicalRecords.UpdateAsync(existing, rx, cancellationToken);
-            TempData["Success"] = "Consulta actualizada correctamente.";
-            return RedirectToAction(nameof(Details), new { id });
+            try
+            {
+                MapToEntity(model, existing);
+                var rx = MapPrescriptions(model);
+                await _medicalRecords.UpdateAsync(existing, rx, cancellationToken);
+                TempData["Success"] = "Consulta actualizada correctamente.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError(string.Empty, "Error al actualizar la consulta: " + ex.Message);
+            }
         }
 
         var patient = await _patients.GetByIdAsync(model.PatientId, cancellationToken);
@@ -188,6 +234,7 @@ public class MedicalRecordsController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequirePermission(PermissionCodes.MedicalRecordsDelete)]
     public async Task<IActionResult> Delete(Guid id, Guid patientId, CancellationToken cancellationToken)
     {
         await _medicalRecords.DeleteAsync(id, cancellationToken);

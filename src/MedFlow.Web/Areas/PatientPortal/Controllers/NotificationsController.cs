@@ -41,7 +41,10 @@ public class NotificationsController : Controller
         if (!patientId.HasValue) return RedirectToAction("AccessDenied", "Auth");
 
         await _portal.MarkNotificationReadAsync(patientId.Value, id, ct);
-        return Redirect(returnUrl ?? Url.Action("Index") ?? "/");
+        TempData["Success"] = "Notificación marcada como leída.";
+        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            return LocalRedirect(returnUrl);
+        return RedirectToAction("Index");
     }
 
     private Guid? GetPatientId()

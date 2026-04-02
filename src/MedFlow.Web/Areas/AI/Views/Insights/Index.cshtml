@@ -51,6 +51,15 @@
 </div>
 
 <div class="card">
+    <div class="card-header d-flex align-items-center">
+        <h3 class="card-title mb-0">Listado de Insights</h3>
+        <div class="ml-auto">
+            <a href="@Url.Action("ExportCsv", new { type = ViewBag.Type, status = ViewBag.Status, severity = ViewBag.Severity, from = (ViewBag.From is DateTime df2 ? df2.ToString("yyyy-MM-dd") : null), to = (ViewBag.To is DateTime dt2 ? dt2.ToString("yyyy-MM-dd") : null), minScore = ViewBag.MinScore, minConfidence = ViewBag.MinConfidence, entityType = ViewBag.EntityType, entityId = ViewBag.EntityId })"
+               class="btn btn-outline-success btn-sm">
+                <i class="fa fa-file-excel-o"></i> CSV
+            </a>
+        </div>
+    </div>
     <div class="card-body table-responsive p-0">
         <table id="tblInsights" class="table table-sm table-hover mb-0">
             <thead class="thead-light">

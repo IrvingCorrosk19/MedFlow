@@ -1,0 +1,173 @@
+@model MedFlow.Domain.Entities.BillingInvoice
+@using MedFlow.Domain.Enums
+@{
+    Layout = null;
+    var invBadge = Model.Status == InvoiceStatus.Paid ? "#28a745"
+        : Model.Status == InvoiceStatus.Cancelled ? "#6c757d"
+        : Model.Status == InvoiceStatus.PartiallyPaid ? "#ffc107" : "#6c757d";
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Factura @Model.InvoiceNumber</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; font-size: 12px; color: #333; background: #fff; }
+        .page { max-width: 800px; margin: 0 auto; padding: 30px; }
+        .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px; }
+        .company-name { font-size: 22px; font-weight: bold; }
+        .invoice-meta { text-align: right; }
+        .invoice-number { font-size: 18px; font-weight: bold; color: #1a56a5; }
+        .status-badge { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; color: #fff; background: @invBadge; }
+        .section-title { font-size: 11px; text-transform: uppercase; color: #666; letter-spacing: 0.5px; margin-bottom: 4px; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .info-block p { margin: 2px 0; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        thead th { background: #f5f5f5; padding: 8px 10px; text-align: left; border-bottom: 2px solid #ddd; font-size: 11px; text-transform: uppercase; }
+        tbody td { padding: 7px 10px; border-bottom: 1px solid #eee; vertical-align: top; }
+        .text-right { text-align: right; }
+        .summary-table { width: 280px; margin-left: auto; }
+        .summary-table td { padding: 4px 10px; }
+        .summary-table .total-row td { font-size: 14px; font-weight: bold; border-top: 2px solid #333; }
+        .footer { margin-top: 30px; padding-top: 15px; border-top: 1px solid #ddd; font-size: 11px; color: #666; text-align: center; }
+        .no-print { }
+        @@media print {
+            .no-print { display: none !important; }
+            body { font-size: 11px; }
+            .page { padding: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <!-- Print button (hidden when printing) -->
+        <div class="no-print" style="text-align:right; margin-bottom:15px;">
+            <button onclick="window.print()" style="padding:6px 16px; background:#1a56a5; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:13px;">
+                🖨️ Imprimir
+            </button>
+            <a href="javascript:history.back()" style="margin-left:10px; padding:6px 16px; border:1px solid #ccc; border-radius:4px; text-decoration:none; color:#333; font-size:13px;">
+                ← Volver
+            </a>
+        </div>
+
+        <!-- Header -->
+        <div class="header">
+            <div>
+                <div class="company-name">MedFlow</div>
+                <div style="color:#666; margin-top:4px;">Sistema de Gestión Médica</div>
+            </div>
+            <div class="invoice-meta">
+                <div class="invoice-number">@Model.InvoiceNumber</div>
+                <div style="margin-top:4px;"><span class="status-badge">@Model.Status</span></div>
+                <div style="margin-top:6px; color:#666;">
+                    Emisión: <strong>@Model.IssueDate.ToLocalTime().ToString("dd/MM/yyyy")</strong>
+                </div>
+                @if (Model.DueDate.HasValue)
+                {
+                    <div style="color:#666;">Vence: <strong>@Model.DueDate.Value.ToLocalTime().ToString("dd/MM/yyyy")</strong></div>
+                }
+            </div>
+        </div>
+
+        <!-- Patient & Doctor Info -->
+        <div class="info-grid">
+            <div class="info-block">
+                <div class="section-title">Paciente</div>
+                <p><strong>@(Model.Patient?.NombreCompleto ?? "—")</strong></p>
+            </div>
+            <div class="info-block">
+                @if (Model.Doctor != null)
+                {
+                    <div class="section-title">Médico</div>
+                    <p><strong>@Model.Doctor.FullName</strong></p>
+                    @if (!string.IsNullOrEmpty(Model.Doctor.Speciality))
+                    {
+                        <p style="color:#666;">@Model.Doctor.Speciality</p>
+                    }
+                }
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.Notes))
+        {
+            <div style="background:#f9f9f9; border-left:3px solid #1a56a5; padding:8px 12px; margin-bottom:20px;">
+                <strong>Notas:</strong> @Model.Notes
+            </div>
+        }
+
+        <!-- Items Table -->
+        <div class="section-title" style="margin-bottom:8px;">Conceptos</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Tipo</th>
+                    <th>Descripción</th>
+                    <th class="text-right">Cant.</th>
+                    <th class="text-right">P. Unit.</th>
+                    <th class="text-right">Desc.</th>
+                    <th class="text-right">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var line in Model.Items)
+                {
+                    <tr>
+                        <td>@line.ItemType</td>
+                        <td>@line.Description</td>
+                        <td class="text-right">@line.Quantity</td>
+                        <td class="text-right">@line.UnitPrice.ToString("N2")</td>
+                        <td class="text-right">@line.DiscountAmount.ToString("N2")</td>
+                        <td class="text-right"><strong>@line.TotalLineAmount.ToString("N2")</strong></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <!-- Summary -->
+        <table class="summary-table">
+            <tbody>
+                <tr>
+                    <td>Subtotal</td>
+                    <td class="text-right">@Model.Subtotal.ToString("N2")</td>
+                </tr>
+                @if (Model.DiscountAmount > 0)
+                {
+                    <tr>
+                        <td>Descuento</td>
+                        <td class="text-right" style="color:#dc3545;">-@Model.DiscountAmount.ToString("N2")</td>
+                    </tr>
+                }
+                @if (Model.TaxAmount > 0)
+                {
+                    <tr>
+                        <td>Impuestos</td>
+                        <td class="text-right">@Model.TaxAmount.ToString("N2")</td>
+                    </tr>
+                }
+                <tr class="total-row">
+                    <td>TOTAL</td>
+                    <td class="text-right">@Model.TotalAmount.ToString("N2")</td>
+                </tr>
+                @if (Model.AmountPaid > 0)
+                {
+                    <tr>
+                        <td style="color:#28a745;">Pagado</td>
+                        <td class="text-right" style="color:#28a745;">@Model.AmountPaid.ToString("N2")</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Saldo pendiente</strong></td>
+                        <td class="text-right"><strong style="color:#1a56a5;">@Model.BalanceDue.ToString("N2")</strong></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>Documento generado por MedFlow — @DateTime.Now.ToString("dd/MM/yyyy HH:mm")</p>
+        </div>
+    </div>
+</body>
+</html>

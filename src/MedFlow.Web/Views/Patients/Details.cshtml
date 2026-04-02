@@ -125,6 +125,15 @@
     </div>
 </div>
 
+<div class="mt-3 d-flex gap-2 flex-wrap">
+    <a asp-controller="BillingInvoices" asp-action="Index" asp-route-patientId="@Model.Id" class="btn btn-outline-secondary btn-sm">
+        <i class="fa fa-file-text-o mr-1"></i> Facturas
+    </a>
+    <a asp-controller="Appointments" asp-action="Index" asp-route-patientId="@Model.Id" class="btn btn-outline-primary btn-sm">
+        <i class="fa fa-calendar mr-1"></i> Citas
+    </a>
+</div>
+
 <div class="text-muted small mt-3">
     <i class="fa fa-clock-o"></i> Creado: @Model.CreatedAt.ToLocalTime().ToString("g")
     @if (Model.UpdatedAt.HasValue)

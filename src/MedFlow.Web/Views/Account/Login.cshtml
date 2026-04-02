@@ -73,9 +73,12 @@
                         </div>
                         <span asp-validation-for="Password" class="text-danger small d-block mt-1"></span>
                     </div>
-                    <div class="form-group form-check mb-4">
+                    <div class="form-group form-check mb-2">
                         <input asp-for="RememberMe" class="form-check-input" id="remember" />
                         <label class="form-check-label small" for="remember">Recordarme en este equipo</label>
+                    </div>
+                    <div class="text-right mb-4">
+                        <a asp-action="ForgotPassword" class="small text-muted">¿Olvidaste tu contraseña?</a>
                     </div>
                     <button type="submit" class="btn btn-primary btn-block" id="loginSubmit">
                         <span class="mf-btn-label">Entrar</span>

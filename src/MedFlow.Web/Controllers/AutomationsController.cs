@@ -69,6 +69,30 @@ public class AutomationsController : Controller
             return View(model);
         }
 
+        if (!Uri.TryCreate(model.WebhookUrl, UriKind.Absolute, out _))
+        {
+            ModelState.AddModelError(nameof(model.WebhookUrl), "La URL del webhook no tiene un formato válido.");
+            return View(model);
+        }
+
+        if (!string.IsNullOrWhiteSpace(model.HeadersJson) && !IsValidJson(model.HeadersJson))
+        {
+            ModelState.AddModelError(nameof(model.HeadersJson), "El JSON de cabeceras no es válido.");
+            return View(model);
+        }
+
+        if (!string.IsNullOrWhiteSpace(model.PayloadTemplateJson) && !IsValidJson(model.PayloadTemplateJson))
+        {
+            ModelState.AddModelError(nameof(model.PayloadTemplateJson), "El template de payload no es JSON válido.");
+            return View(model);
+        }
+
+        if (!string.IsNullOrWhiteSpace(model.RetryPolicyJson) && !IsValidJson(model.RetryPolicyJson))
+        {
+            ModelState.AddModelError(nameof(model.RetryPolicyJson), "La política de reintentos no es JSON válido.");
+            return View(model);
+        }
+
         try
         {
             await _workflows.CreateAsync(new CreateWorkflowDefinitionCommand(
@@ -128,6 +152,30 @@ public class AutomationsController : Controller
         if (model.Id == Guid.Empty || string.IsNullOrWhiteSpace(model.Name) || string.IsNullOrWhiteSpace(model.WebhookUrl))
         {
             ModelState.AddModelError(string.Empty, "Datos incompletos.");
+            return View(model);
+        }
+
+        if (!Uri.TryCreate(model.WebhookUrl, UriKind.Absolute, out _))
+        {
+            ModelState.AddModelError(nameof(model.WebhookUrl), "La URL del webhook no tiene un formato válido.");
+            return View(model);
+        }
+
+        if (!string.IsNullOrWhiteSpace(model.HeadersJson) && !IsValidJson(model.HeadersJson))
+        {
+            ModelState.AddModelError(nameof(model.HeadersJson), "El JSON de cabeceras no es válido.");
+            return View(model);
+        }
+
+        if (!string.IsNullOrWhiteSpace(model.PayloadTemplateJson) && !IsValidJson(model.PayloadTemplateJson))
+        {
+            ModelState.AddModelError(nameof(model.PayloadTemplateJson), "El template de payload no es JSON válido.");
+            return View(model);
+        }
+
+        if (!string.IsNullOrWhiteSpace(model.RetryPolicyJson) && !IsValidJson(model.RetryPolicyJson))
+        {
+            ModelState.AddModelError(nameof(model.RetryPolicyJson), "La política de reintentos no es JSON válido.");
             return View(model);
         }
 
@@ -195,19 +243,40 @@ public class AutomationsController : Controller
     [RequirePermission(PermissionCodes.AutomationsManage)]
     public async Task<IActionResult> TestWebhook(Guid id, CancellationToken ct)
     {
+        bool isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
         try
         {
             var testSvc = HttpContext.RequestServices.GetRequiredService<IWorkflowTestService>();
             var result = await testSvc.TestWebhookAsync(id, ct);
+            if (isAjax)
+            {
+                return result.Success
+                    ? Json(new { success = true, message = $"Webhook respondió OK ({result.StatusCode})." })
+                    : Json(new { success = false, message = $"Error: {result.ErrorMessage}" });
+            }
             TempData[result.Success ? "Success" : "Error"] = result.Success
                 ? $"Webhook respondió OK ({result.StatusCode})."
                 : $"Error: {result.ErrorMessage}";
         }
         catch (Exception ex)
         {
+            if (isAjax)
+                return Json(new { success = false, message = ex.Message });
             TempData["Error"] = ex.Message;
         }
         return RedirectToAction(nameof(Index));
+    }
+    private static bool IsValidJson(string json)
+    {
+        try
+        {
+            System.Text.Json.JsonDocument.Parse(json);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 }
 
