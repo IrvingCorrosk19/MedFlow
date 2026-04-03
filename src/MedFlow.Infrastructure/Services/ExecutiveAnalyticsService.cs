@@ -369,15 +369,22 @@ public class ExecutiveAnalyticsService : IExecutiveAnalyticsService
         if (!filter.IncludeInactive)
             q = q.Where(p => p.IsActive);
 
-        var rows = await q
-            .Select(p => new PatientsReportRowVm(
+        // Proyectar a anónimo para que EF pueda traducir el OrderByDescending sobre AppointmentCount
+        var rawRows = await q
+            .Select(p => new
+            {
                 p.Id,
                 p.NombreCompleto,
                 p.CreatedAt,
                 p.IsActive,
-                _db.Appointments.Count(a => a.PatientId == p.Id && !a.IsDeleted)))
+                AppointmentCount = _db.Appointments.Count(a => a.PatientId == p.Id && !a.IsDeleted)
+            })
             .OrderByDescending(p => p.AppointmentCount)
             .ToListAsync(cancellationToken);
+
+        var rows = rawRows
+            .Select(p => new PatientsReportRowVm(p.Id, p.NombreCompleto, p.CreatedAt, p.IsActive, p.AppointmentCount))
+            .ToList();
 
         var newInPeriod = await _db.Patients.AsNoTracking()
             .CountAsync(p => !p.IsDeleted && p.CreatedAt >= fromUtc && p.CreatedAt < toEndUtc, cancellationToken);
