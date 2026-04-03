@@ -467,18 +467,25 @@ public class ExecutiveAnalyticsService : IExecutiveAnalyticsService
         if (filter.DoctorId.HasValue)
             q = q.Where(a => a.DoctorId == filter.DoctorId.Value);
 
-        var grouped = await q
+        // Proyectar a anónimo para que EF pueda traducir el OrderByDescending sobre TotalAppointments
+        var rawGrouped = await q
             .GroupBy(a => new { a.DoctorId, a.Doctor!.FirstName, a.Doctor.LastName, a.Doctor.Speciality })
-            .Select(g => new DoctorsReportRowVm(
+            .Select(g => new
+            {
                 g.Key.DoctorId,
-                g.Key.FirstName + " " + g.Key.LastName,
+                DoctorName = g.Key.FirstName + " " + g.Key.LastName,
                 g.Key.Speciality,
-                g.Count(),
-                g.Count(x => x.Status == AppointmentStatus.Completed),
-                g.Count(x => x.Status == AppointmentStatus.Cancelled),
-                g.Count(x => x.Status == AppointmentStatus.NoShow)))
+                TotalAppointments = g.Count(),
+                Completed = g.Count(x => x.Status == AppointmentStatus.Completed),
+                Cancelled = g.Count(x => x.Status == AppointmentStatus.Cancelled),
+                NoShow = g.Count(x => x.Status == AppointmentStatus.NoShow)
+            })
             .OrderByDescending(r => r.TotalAppointments)
             .ToListAsync(cancellationToken);
+
+        var grouped = rawGrouped
+            .Select(r => new DoctorsReportRowVm(r.DoctorId, r.DoctorName, r.Speciality, r.TotalAppointments, r.Completed, r.Cancelled, r.NoShow))
+            .ToList();
 
         var avg = grouped.Count == 0 ? 0 : Math.Round((decimal)grouped.Sum(x => x.TotalAppointments) / grouped.Count, 1);
 
