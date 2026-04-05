@@ -1,0 +1,30 @@
+{
+  "name": "medflow",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "playwright test --headed",
+    "test:e2e": "playwright test --headed",
+    "test:e2e:ci": "playwright test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/IrvingCorrosk19/MedFlow.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/IrvingCorrosk19/MedFlow/issues"
+  },
+  "homepage": "https://github.com/IrvingCorrosk19/MedFlow#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.58.2"
+  }
+}

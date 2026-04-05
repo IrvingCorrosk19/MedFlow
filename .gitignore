@@ -12,6 +12,9 @@ TestResults/
 playwright-report/
 test-results/
 
+# Node (Playwright E2E)
+node_modules/
+
 # Playwright binaries
 **/playwright/.local-chromium/
 **/playwright/.local-firefox/

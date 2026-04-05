@@ -681,6 +681,14 @@ public class DataSeeder
                     await userManager.SetLockoutEndDateAsync(existing, null);
                     await userManager.ResetAccessFailedCountAsync(existing);
 
+                    // Enforce exactly one role: remove any extra roles, add the correct one
+                    var currentRoles = await userManager.GetRolesAsync(existing);
+                    var rolesToRemove = currentRoles.Where(r => !string.Equals(r, roleName, StringComparison.OrdinalIgnoreCase)).ToList();
+                    if (rolesToRemove.Count > 0)
+                    {
+                        await userManager.RemoveFromRolesAsync(existing, rolesToRemove);
+                        logger.LogWarning("Removed extra roles {Roles} from seed user {Email}", string.Join(", ", rolesToRemove), seed.Email);
+                    }
                     if (!await userManager.IsInRoleAsync(existing, roleName))
                         await userManager.AddToRoleAsync(existing, roleName);
 
