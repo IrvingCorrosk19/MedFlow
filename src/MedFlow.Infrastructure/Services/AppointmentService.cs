@@ -2,6 +2,7 @@ using MedFlow.Application.Interfaces;
 using MedFlow.Domain.Entities;
 using MedFlow.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
 
 namespace MedFlow.Infrastructure.Services;
 
@@ -80,12 +81,26 @@ public class AppointmentService : IAppointmentService
             return (false, msg);
         }
 
-        var conflict = await HasConflictAsync(appointment.DoctorId, appointment.ScheduledDate, appointment.StartTime, appointment.EndTime, null, cancellationToken);
-        if (conflict)
+        // Use execution strategy + serializable transaction to prevent double-booking race condition
+        var strategy = _context.Database.CreateExecutionStrategy();
+        bool conflictInTx = false;
+        await strategy.ExecuteAsync(async () =>
+        {
+            await using var tx = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+            conflictInTx = await HasConflictAsync(appointment.DoctorId, appointment.ScheduledDate, appointment.StartTime, appointment.EndTime, null, cancellationToken);
+            if (!conflictInTx)
+            {
+                await _context.Appointments.AddAsync(appointment, cancellationToken);
+                await _context.SaveChangesAsync(cancellationToken);
+                await tx.CommitAsync(cancellationToken);
+            }
+            else
+            {
+                await tx.RollbackAsync(cancellationToken);
+            }
+        });
+        if (conflictInTx)
             return (false, "Ya existe una cita en ese horario para el doctor seleccionado.");
-
-        await _context.Appointments.AddAsync(appointment, cancellationToken);
-        await _context.SaveChangesAsync(cancellationToken);
 
         await _eventLog.EnqueueAsync("AppointmentCreated", new
         {

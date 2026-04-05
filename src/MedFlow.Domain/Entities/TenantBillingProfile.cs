@@ -21,5 +21,5 @@ public class TenantBillingProfile : BaseEntity, ITenantScopedEntity
     public BillingProvider BillingProvider { get; set; } = BillingProvider.None;
     public string? ExternalCustomerId { get; set; }
     public string? PreferredCurrency { get; set; } = "USD";
-    public bool IsActive { get; set; } = true;
+    public new bool IsActive { get; set; } = true;
 }
