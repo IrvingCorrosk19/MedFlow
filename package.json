@@ -10,7 +10,8 @@
   "scripts": {
     "test": "playwright test --headed",
     "test:e2e": "playwright test --headed",
-    "test:e2e:ci": "playwright test"
+    "test:e2e:ci": "playwright test",
+    "test:e2e:scenarios": "playwright test tests-e2e/scenarios_extended.spec.ts"
   },
   "repository": {
     "type": "git",
