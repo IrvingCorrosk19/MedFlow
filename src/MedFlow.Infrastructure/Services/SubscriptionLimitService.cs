@@ -1,7 +1,6 @@
 using MedFlow.Application.Interfaces;
 using MedFlow.Application.Saas;
 using MedFlow.Domain.Entities;
-using MedFlow.Domain.Enums;
 using MedFlow.Infrastructure.Identity;
 using MedFlow.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -127,19 +126,8 @@ public sealed class SubscriptionLimitService : ISubscriptionLimitService
         };
     }
 
-    private async Task<SubscriptionPlan?> GetPlanAsync(Guid tenantId, CancellationToken cancellationToken)
-    {
-        var sub = await _db.TenantSubscriptions
-            .AsNoTracking()
-            .IgnoreQueryFilters()
-            .Include(s => s.SubscriptionPlan)
-            .Where(s => s.TenantId == tenantId && !s.IsDeleted)
-            .Where(s => s.Status == SubscriptionStatus.Trial || s.Status == SubscriptionStatus.Active || s.Status == SubscriptionStatus.PastDue)
-            .OrderByDescending(s => s.StartDate)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        return sub?.SubscriptionPlan;
-    }
+    private Task<SubscriptionPlan?> GetPlanAsync(Guid tenantId, CancellationToken cancellationToken) =>
+        TenantSubscriptionPlanHelper.GetEffectivePlanAsync(_db, tenantId, cancellationToken);
 
     private Task<int> CountUsersAsync(Guid tenantId, CancellationToken cancellationToken) =>
         _db.Set<ApplicationUser>().IgnoreQueryFilters()
