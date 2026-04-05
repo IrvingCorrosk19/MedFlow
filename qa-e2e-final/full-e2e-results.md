@@ -4,7 +4,7 @@
 **Total:** 21/21 PASSED
 **Duration:** ~38s per run
 **Framework:** Playwright .NET (xUnit)
-**App URL:** http://localhost:5115
+**App URL:** http://localhost:5116
 
 ---
 

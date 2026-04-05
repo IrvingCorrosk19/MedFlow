@@ -22,7 +22,7 @@ public sealed class RoleE2ETests : IClassFixture<RoleE2ETests.PlaywrightFixture>
     }
 
     private readonly PlaywrightFixture _fx;
-    private const string BaseUrl = "http://localhost:5115";
+    private const string BaseUrl = "http://localhost:5116";
     private const string QaPassword = "Medflow2026!Aa"; // Development:QaRoleUsersPassword
 
     public RoleE2ETests(PlaywrightFixture fx) => _fx = fx;

@@ -10,7 +10,7 @@ export default defineConfig({
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
     browserName: 'chromium',
-    baseURL: 'http://localhost:5115',
+    baseURL: 'http://localhost:5116',
     headless: false,
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',

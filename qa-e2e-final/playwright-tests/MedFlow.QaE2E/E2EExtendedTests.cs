@@ -9,7 +9,7 @@ namespace MedFlow.QaE2E;
 
 internal static class E2EConst
 {
-    public const string BaseUrl      = "http://localhost:5115";
+    public const string BaseUrl      = "http://localhost:5116";
     public const string QaPassword   = "Medflow2026!Aa";
     public const string AdminEmail   = "qa.admin@medflow.local";
     public const string ReceptionEmail = "qa.reception@medflow.local";

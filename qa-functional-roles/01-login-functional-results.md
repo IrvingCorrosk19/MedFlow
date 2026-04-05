@@ -1,6 +1,6 @@
 # Fase 1 — Login funcional (QA)
 
-**Base URL:** `http://localhost:5115`  
+**Base URL:** `http://localhost:5116`  
 **Contraseña:** `Development:QaRoleUsersPassword` → `Medflow2026!Aa` (appsettings.Development.json)
 
 | Usuario | Flujo | Resultado esperado | Resultado real | Notas |
