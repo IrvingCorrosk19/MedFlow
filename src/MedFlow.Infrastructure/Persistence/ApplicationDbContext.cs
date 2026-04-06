@@ -62,6 +62,15 @@ public class ApplicationDbContext : IdentityDbContext<
     public DbSet<PushDeviceToken> PushDeviceTokens => Set<PushDeviceToken>();
     public DbSet<WorkerHeartbeat> WorkerHeartbeats => Set<WorkerHeartbeat>();
 
+    // Contabilidad
+    public DbSet<Account> Accounts => Set<Account>();
+    public DbSet<FiscalPeriod> FiscalPeriods => Set<FiscalPeriod>();
+    public DbSet<JournalEntry> JournalEntries => Set<JournalEntry>();
+    public DbSet<JournalEntryLine> JournalEntryLines => Set<JournalEntryLine>();
+    public DbSet<TaxRate> TaxRates => Set<TaxRate>();
+    public DbSet<BankAccount> BankAccounts => Set<BankAccount>();
+    public DbSet<BankTransaction> BankTransactions => Set<BankTransaction>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -152,6 +161,20 @@ public class ApplicationDbContext : IdentityDbContext<
 
         builder.Entity<ApplicationUser>().HasQueryFilter(u =>
             _tenant.IgnoreTenantFilter || (_tenant.TenantId.HasValue && u.TenantId == _tenant.TenantId));
+
+        // Contabilidad
+        builder.Entity<Account>().HasQueryFilter(a =>
+            !a.IsDeleted && (_tenant.IgnoreTenantFilter || (_tenant.TenantId.HasValue && a.TenantId == _tenant.TenantId)));
+        builder.Entity<FiscalPeriod>().HasQueryFilter(f =>
+            !f.IsDeleted && (_tenant.IgnoreTenantFilter || (_tenant.TenantId.HasValue && f.TenantId == _tenant.TenantId)));
+        builder.Entity<JournalEntry>().HasQueryFilter(j =>
+            !j.IsDeleted && (_tenant.IgnoreTenantFilter || (_tenant.TenantId.HasValue && j.TenantId == _tenant.TenantId)));
+        builder.Entity<TaxRate>().HasQueryFilter(t =>
+            !t.IsDeleted && (_tenant.IgnoreTenantFilter || (_tenant.TenantId.HasValue && t.TenantId == _tenant.TenantId)));
+        builder.Entity<BankAccount>().HasQueryFilter(b =>
+            !b.IsDeleted && (_tenant.IgnoreTenantFilter || (_tenant.TenantId.HasValue && b.TenantId == _tenant.TenantId)));
+        builder.Entity<BankTransaction>().HasQueryFilter(b =>
+            !b.IsDeleted && (_tenant.IgnoreTenantFilter || (_tenant.TenantId.HasValue && b.TenantId == _tenant.TenantId)));
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

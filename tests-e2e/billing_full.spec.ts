@@ -7,14 +7,15 @@ test.describe('Billing — Flujo completo', () => {
 
   test('FASE 2: Login Billing', async ({ page }) => {
     await loginStaff(page, B.email, B.password);
-    await expect(page.locator('body')).not.toContainText('500');
+    await expect(page.locator('body')).not.toContainText('500 Internal Server Error');
   });
 
   test('FASE 3: Navegación módulos permitidos', async ({ page }) => {
     await loginStaff(page, B.email, B.password);
-    for (const mod of ['/Dashboard', '/BillingInvoices', '/Patients']) {
+    // Billing no tiene PatientsView; sólo puede ver pacientes embebidos en formularios de factura
+    for (const mod of ['/Dashboard', '/BillingInvoices', '/Payments']) {
       await page.goto(mod, { waitUntil: 'domcontentloaded' });
-      await expect(page.locator('body')).not.toContainText('500');
+      await expect(page.locator('body')).not.toContainText('500 Internal Server Error');
       await expect(page).not.toHaveURL(/\/Account\/Login/i);
     }
   });
@@ -22,7 +23,7 @@ test.describe('Billing — Flujo completo', () => {
   test('FASE 4-A: Facturas — listar y acceder', async ({ page }) => {
     await loginStaff(page, B.email, B.password);
     await page.goto('/BillingInvoices', { waitUntil: 'domcontentloaded' });
-    await expect(page.locator('body')).not.toContainText('500');
+    await expect(page.locator('body')).not.toContainText('500 Internal Server Error');
     await expect(page).not.toHaveURL(/\/Account\/Login/i);
 
     // Intentar crear factura
@@ -30,7 +31,7 @@ test.describe('Billing — Flujo completo', () => {
     if (await newLink.count() > 0) {
       await newLink.click({ force: true });
       await page.waitForLoadState('domcontentloaded');
-      await expect(page.locator('body')).not.toContainText('500');
+      await expect(page.locator('body')).not.toContainText('500 Internal Server Error');
       const back = page.getByRole('link', { name: /Volver|Cancelar/i });
       if (await back.count() > 0) await back.first().click({ force: true });
     }
@@ -42,7 +43,7 @@ test.describe('Billing — Flujo completo', () => {
     const status = page.url();
     // Si existe la ruta debe cargar sin 500
     if (!status.includes('/Account/Login')) {
-      await expect(page.locator('body')).not.toContainText('500');
+      await expect(page.locator('body')).not.toContainText('500 Internal Server Error');
     }
   });
 

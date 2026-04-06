@@ -1,0 +1,109 @@
+@using MedFlow.Application.Accounting
+@using MedFlow.Domain.Enums
+@model JournalEntryDetailDto
+@{
+    ViewData["PageTitle"] = $"Asiento {Model.EntryNumber}";
+    var stColor = Model.Status switch {
+        JournalEntryStatus.Draft => "warning",
+        JournalEntryStatus.Posted => "success",
+        JournalEntryStatus.Voided => "danger",
+        _ => "secondary"
+    };
+    var stLabel = Model.Status switch {
+        JournalEntryStatus.Draft => "Borrador",
+        JournalEntryStatus.Posted => "Contabilizado",
+        JournalEntryStatus.Voided => "Anulado",
+        _ => Model.Status.ToString()
+    };
+}
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card card-outline card-primary shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="card-title font-weight-bold mb-0">
+                    <code>@Model.EntryNumber</code>
+                    <span class="badge badge-@stColor ml-2">@stLabel</span>
+                </h3>
+                <div>
+                    <a asp-action="Index" class="btn btn-sm btn-outline-secondary mr-1"><i class="fa fa-arrow-left"></i> Volver</a>
+                    <button onclick="window.print()" class="btn btn-sm btn-outline-secondary"><i class="fa fa-print"></i></button>
+                </div>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-3">
+                    <dt class="col-sm-4">Fecha</dt><dd class="col-sm-8">@Model.EntryDate.ToString("dd/MM/yyyy")</dd>
+                    <dt class="col-sm-4">Período</dt><dd class="col-sm-8">@Model.FiscalPeriodName</dd>
+                    <dt class="col-sm-4">Descripción</dt><dd class="col-sm-8">@Model.Description</dd>
+                    @if (!string.IsNullOrEmpty(Model.Reference))
+                    {
+                        <dt class="col-sm-4">Referencia</dt><dd class="col-sm-8"><code>@Model.Reference</code></dd>
+                    }
+                    <dt class="col-sm-4">Origen</dt><dd class="col-sm-8">@Model.Origin</dd>
+                    <dt class="col-sm-4">Creado por</dt><dd class="col-sm-8">@Model.CreatedByUserName</dd>
+                    @if (Model.PostedAt.HasValue)
+                    {
+                        <dt class="col-sm-4">Contabilizado</dt><dd class="col-sm-8">@Model.PostedAt.Value.ToString("dd/MM/yyyy HH:mm")</dd>
+                    }
+                </dl>
+
+                <table class="table table-sm table-bordered">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Cuenta</th>
+                            <th>Descripción</th>
+                            <th class="text-right">Débito</th>
+                            <th class="text-right">Crédito</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var l in Model.Lines)
+                        {
+                            <tr>
+                                <td><code>@l.AccountCode</code> @l.AccountName</td>
+                                <td>@(l.Description ?? "—")</td>
+                                <td class="text-right">@(l.Debit > 0 ? l.Debit.ToString("N2") : "—")</td>
+                                <td class="text-right">@(l.Credit > 0 ? l.Credit.ToString("N2") : "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot class="font-weight-bold">
+                        <tr class="table-active">
+                            <td colspan="2" class="text-right">TOTALES</td>
+                            <td class="text-right">@Model.TotalDebit.ToString("N2")</td>
+                            <td class="text-right">@Model.TotalCredit.ToString("N2")</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            @if (Model.Status == JournalEntryStatus.Draft)
+            {
+                <div class="card-footer d-flex gap-2">
+                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning btn-sm">
+                        <i class="fa fa-edit mr-1"></i>Editar
+                    </a>
+                    <form asp-action="Post" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('¿Contabilizar este asiento?')">
+                            <i class="fa fa-check mr-1"></i>Contabilizar
+                        </button>
+                    </form>
+                </div>
+            }
+            @if (Model.Status == JournalEntryStatus.Posted && Model.Origin == JournalEntryOrigin.Manual)
+            {
+                <div class="card-footer">
+                    <form asp-action="Void" method="post" class="d-inline" id="voidForm">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <input type="text" name="reason" class="form-control form-control-sm d-inline-block" style="width:300px" placeholder="Motivo de anulación" required />
+                        <button type="submit" class="btn btn-danger btn-sm ml-2" onclick="return confirm('¿Anular este asiento?')">
+                            <i class="fa fa-ban mr-1"></i>Anular
+                        </button>
+                    </form>
+                </div>
+            }
+        </div>
+    </div>
+</div>

@@ -1,0 +1,145 @@
+@using MedFlow.Domain.Entities
+@model MedicalRecord
+@{
+    ViewData["Title"] = $"Consulta del {Model.VisitDate:dd/MM/yyyy}";
+}
+
+<div class="d-flex align-items-center mb-4">
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm mr-3">
+        <i class="fa fa-arrow-left mr-1"></i>Mi historial
+    </a>
+    <h2 class="mb-0">Detalle de consulta</h2>
+</div>
+
+<div class="row">
+    @* ── Datos de la consulta ── *@
+    <div class="col-lg-6 mb-4">
+        <div class="portal-card card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fa fa-stethoscope mr-2"></i>Datos de la consulta</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5">Fecha</dt>
+                    <dd class="col-sm-7">@Model.VisitDate.ToString("dd/MM/yyyy")</dd>
+
+                    <dt class="col-sm-5">Doctor</dt>
+                    <dd class="col-sm-7">@(Model.Doctor?.FullName ?? "—")</dd>
+
+                    @if (!string.IsNullOrWhiteSpace(Model.ChiefComplaint))
+                    {
+                        <dt class="col-sm-5">Motivo de consulta</dt>
+                        <dd class="col-sm-7">@Model.ChiefComplaint</dd>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model.Diagnosis))
+                    {
+                        <dt class="col-sm-5">Diagnóstico</dt>
+                        <dd class="col-sm-7">@Model.Diagnosis</dd>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model.TreatmentPlan))
+                    {
+                        <dt class="col-sm-5">Plan de tratamiento</dt>
+                        <dd class="col-sm-7">@Model.TreatmentPlan</dd>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model.ClinicalNotes))
+                    {
+                        <dt class="col-sm-5">Notas clínicas</dt>
+                        <dd class="col-sm-7">@Model.ClinicalNotes</dd>
+                    }
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    @* ── Signos vitales ── *@
+    @if (Model.HeightCm.HasValue || Model.WeightKg.HasValue || !string.IsNullOrWhiteSpace(Model.BloodPressure) || Model.HeartRateBpm.HasValue || Model.TemperatureCelsius.HasValue)
+    {
+        <div class="col-lg-6 mb-4">
+            <div class="portal-card card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fa fa-heartbeat mr-2"></i>Signos vitales</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        @if (Model.HeightCm.HasValue)
+                        {
+                            <dt class="col-sm-6">Talla</dt>
+                            <dd class="col-sm-6">@Model.HeightCm cm</dd>
+                        }
+                        @if (Model.WeightKg.HasValue)
+                        {
+                            <dt class="col-sm-6">Peso</dt>
+                            <dd class="col-sm-6">@Model.WeightKg kg</dd>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Model.BloodPressure))
+                        {
+                            <dt class="col-sm-6">Presión arterial</dt>
+                            <dd class="col-sm-6">@Model.BloodPressure</dd>
+                        }
+                        @if (Model.HeartRateBpm.HasValue)
+                        {
+                            <dt class="col-sm-6">Frecuencia cardíaca</dt>
+                            <dd class="col-sm-6">@Model.HeartRateBpm bpm</dd>
+                        }
+                        @if (Model.TemperatureCelsius.HasValue)
+                        {
+                            <dt class="col-sm-6">Temperatura</dt>
+                            <dd class="col-sm-6">@Model.TemperatureCelsius °C</dd>
+                        }
+                    </dl>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@* ── Recetas ── *@
+@if (Model.Prescriptions.Any())
+{
+    <div class="portal-card card mb-4">
+        <div class="card-header d-flex align-items-center justify-content-between">
+            <h5 class="mb-0"><i class="fa fa-pills mr-2"></i>Recetas médicas</h5>
+            <span class="badge badge-success">@Model.Prescriptions.Count medicamento@(Model.Prescriptions.Count != 1 ? "s" : "")</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Medicamento</th>
+                            <th>Dosis</th>
+                            <th>Frecuencia</th>
+                            <th>Duración</th>
+                            <th>Instrucciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in Model.Prescriptions)
+                        {
+                            <tr>
+                                <td class="font-weight-bold">@p.MedicationName</td>
+                                <td>@(p.Dosage ?? "—")</td>
+                                <td>@(p.Frequency ?? "—")</td>
+                                <td>@(p.Duration ?? "—")</td>
+                                <td class="text-muted small">@(p.Instructions ?? "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="alert alert-light border text-muted small">
+        <i class="fa fa-info-circle mr-1"></i>Esta consulta no tiene recetas registradas.
+    </div>
+}
+
+@* Print button *@
+<div class="mt-2">
+    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.print();">
+        <i class="fa fa-print mr-1"></i>Imprimir / Guardar PDF
+    </button>
+</div>

@@ -46,6 +46,27 @@ public class AppointmentsController : Controller
     }
 
     [RequirePermission(PermissionCodes.AppointmentsView)]
+    public async Task<IActionResult> Today(Guid? doctorId, int? status, CancellationToken cancellationToken)
+    {
+        var today = DateTime.Today;
+        var appointments = await _appointmentService.GetAllAsync(today, today, doctorId, null, cancellationToken);
+        var doctors = await _doctorService.GetAllAsync(null, true, cancellationToken: cancellationToken);
+
+        if (status.HasValue)
+            appointments = appointments.Where(a => (int)a.Status == status.Value).ToList();
+
+        ViewBag.Appointments = appointments;
+        ViewBag.Doctors = doctors;
+        ViewBag.DoctorId = doctorId;
+        ViewBag.Status = status;
+        ViewData["Title"] = "Citas de hoy";
+        ViewData["PageSubtitle"] = today.ToString("dddd, d 'de' MMMM yyyy",
+            new System.Globalization.CultureInfo("es-ES"));
+        ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a href=\"" + Url.Action(nameof(Index)) + "\">Citas</a></li><li class=\"breadcrumb-item active\">Hoy</li>";
+        return View();
+    }
+
+    [RequirePermission(PermissionCodes.AppointmentsView)]
     public async Task<IActionResult> Details(Guid id, CancellationToken cancellationToken)
     {
         var appointment = await _appointmentService.GetByIdAsync(id, cancellationToken);

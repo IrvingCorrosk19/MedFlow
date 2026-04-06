@@ -6,4 +6,7 @@ public sealed class ObservabilityOptions
     public string CorrelationIdHeader { get; set; } = "X-Correlation-ID";
     public bool IncludeTraceInErrorResponse { get; set; } = false;
     public bool LogRequestBody { get; set; } = false;
+    public string ServiceName { get; set; } = "MedFlow";
+    public string? OtlpEndpoint { get; set; }
+    public bool EnableConsoleExporter { get; set; } = false;
 }

@@ -1,0 +1,87 @@
+@using MedFlow.Application.Accounting
+@using MedFlow.Domain.Enums
+@model IReadOnlyList<AccountListItemDto>
+@{
+    ViewData["PageTitle"] = "Plan de Cuentas";
+}
+
+<div class="card card-outline card-primary shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title font-weight-bold mb-0"><i class="fa fa-list-ol mr-2"></i>Plan de Cuentas</h3>
+        <a asp-action="Create" class="btn btn-success btn-sm"><i class="fa fa-plus"></i> Nueva Cuenta</a>
+    </div>
+    <div class="card-body table-responsive p-0">
+        <table id="tblAccounts" class="table table-hover mb-0">
+            <thead class="thead-light">
+                <tr>
+                    <th>Código</th>
+                    <th>Nombre</th>
+                    <th>Tipo</th>
+                    <th>Cuenta Padre</th>
+                    <th class="text-right">Saldo Actual</th>
+                    <th>Posting</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var a in Model)
+                {
+                    var indent = string.Concat(Enumerable.Repeat("&nbsp;&nbsp;&nbsp;", a.Level));
+                    var typeColor = a.Type switch {
+                        AccountType.Asset => "info",
+                        AccountType.Liability => "danger",
+                        AccountType.Equity => "purple",
+                        AccountType.Revenue => "success",
+                        AccountType.Expense => "warning",
+                        AccountType.Cost => "secondary",
+                        _ => "light"
+                    };
+                    <tr>
+                        <td><code>@a.Code</code></td>
+                        <td>@Html.Raw(indent)<strong>@a.Name</strong></td>
+                        <td><span class="badge badge-@typeColor">@a.TypeLabel</span></td>
+                        <td>@(a.ParentCode ?? "—")</td>
+                        <td class="text-right @(a.CurrentBalance < 0 ? "text-danger" : "")">
+                            @a.CurrentBalance.ToString("N2")
+                        </td>
+                        <td>
+                            @if (a.AllowsDirectPosting)
+                            {
+                                <span class="badge badge-success"><i class="fa fa-check"></i></span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-secondary"><i class="fa fa-minus"></i></span>
+                            }
+                        </td>
+                        <td class="text-right">
+                            <a asp-action="Edit" asp-route-id="@a.Id" class="btn btn-xs btn-outline-primary mr-1" title="Editar"><i class="fa fa-pencil"></i></a>
+                            <form asp-action="Delete" method="post" class="d-inline frm-del">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@a.Id" />
+                                <button type="button" class="btn btn-xs btn-outline-danger btn-del" title="Eliminar"><i class="fa fa-trash"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+$(function () {
+    $('#tblAccounts').DataTable({
+        order: [[0, 'asc']], pageLength: 50,
+        language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' }
+    });
+    $(document).on('click', '.btn-del', function () {
+        var f = $(this).closest('form');
+        Swal.fire({ title: '¿Eliminar cuenta?', text: 'Esta acción no se puede deshacer.', icon: 'warning',
+            showCancelButton: true, confirmButtonText: 'Sí, eliminar', cancelButtonText: 'Cancelar' })
+            .then(function (r) { if (r.isConfirmed) f.submit(); });
+    });
+});
+</script>
+}

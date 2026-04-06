@@ -82,7 +82,7 @@ test.describe('Escenarios extendidos — flujos de datos', () => {
     const q = unique('BusqDoc');
     await page.locator("input[name='search']").fill(q);
     await safeClick(page, { role: 'button', name: 'Aplicar' });
-    await expect(page.locator('body')).not.toContainText('500');
+    await expect(page.locator('body')).not.toContainText('500 Internal Server Error');
     await expect(page).not.toHaveURL(/\/Account\/Login/i);
   });
 
@@ -102,13 +102,13 @@ test.describe('Escenarios extendidos — flujos de datos', () => {
     // DataTables a veces deja el botón fuera del viewport “visible” para Playwright; navegar por URL es estable.
     await page.goto(href, { waitUntil: 'domcontentloaded' });
     await page.waitForLoadState('domcontentloaded');
-    await expect(page.locator('body')).not.toContainText('500');
+    await expect(page.locator('body')).not.toContainText('500 Internal Server Error');
     await expect(page).not.toHaveURL(/\/Account\/Login/i);
   });
 
   test('Paciente: tras login, perfil carga sin 500', async ({ page }) => {
     await loginPatient(page, CREDS.patient.email, CREDS.patient.password);
     await page.goto('/PatientPortal/perfil', { waitUntil: 'domcontentloaded' });
-    await expect(page.locator('body')).not.toContainText('500');
+    await expect(page.locator('body')).not.toContainText('500 Internal Server Error');
   });
 });

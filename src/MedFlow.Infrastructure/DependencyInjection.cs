@@ -14,6 +14,9 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using System.Linq;
 
 namespace MedFlow.Infrastructure;
@@ -72,6 +75,16 @@ public static class DependencyInjection
         services.AddScoped<IWorkflowTestService, WorkflowTestService>();
         services.AddHostedService<WorkflowProcessorService>();
 
+        services.AddScoped<IClinicSettingsService, Services.ClinicSettingsService>();
+
+        // Contabilidad
+        services.AddScoped<IAccountService, Services.AccountService>();
+        services.AddScoped<IFiscalPeriodService, Services.FiscalPeriodService>();
+        services.AddScoped<IAccountingExportService, Services.AccountingExportService>();
+        services.AddScoped<IJournalEntryService, Services.JournalEntryService>();
+        services.AddScoped<ILedgerService, Services.LedgerService>();
+        services.AddScoped<ITaxRateService, Services.TaxRateService>();
+        services.AddScoped<IBankAccountService, Services.BankAccountService>();
         services.AddScoped<IAISettingsService, AISettingsService>();
         services.AddScoped<INoShowRiskService, NoShowRiskService>();
         services.AddScoped<IPaymentRiskService, PaymentRiskService>();
@@ -160,6 +173,37 @@ public static class DependencyInjection
         services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>, MedFlowUserClaimsPrincipalFactory>();
 
         services.AddScoped<SignInManager<ApplicationUser>, MedFlowSignInManager>();
+
+        // OpenTelemetry
+        var obsOptions = configuration.GetSection("Observability").Get<ObservabilityOptions>() ?? new();
+        services.AddOpenTelemetry()
+            .WithTracing(builder =>
+            {
+                builder
+                    .SetResourceBuilder(
+                        ResourceBuilder.CreateDefault()
+                            .AddService(obsOptions.ServiceName))
+                    .AddAspNetCoreInstrumentation(o => { o.RecordException = true; })
+                    .AddHttpClientInstrumentation()
+                    .AddSource("MedFlow.Infrastructure");
+                if (!string.IsNullOrWhiteSpace(obsOptions.OtlpEndpoint))
+                    builder.AddOtlpExporter(o => o.Endpoint = new Uri(obsOptions.OtlpEndpoint));
+                if (obsOptions.EnableConsoleExporter)
+                    builder.AddConsoleExporter();
+            })
+            .WithMetrics(builder =>
+            {
+                builder
+                    .SetResourceBuilder(
+                        ResourceBuilder.CreateDefault()
+                            .AddService(obsOptions.ServiceName))
+                    .AddAspNetCoreInstrumentation()
+                    .AddMeter("MedFlow.Infrastructure");
+                if (!string.IsNullOrWhiteSpace(obsOptions.OtlpEndpoint))
+                    builder.AddOtlpExporter(o => o.Endpoint = new Uri(obsOptions.OtlpEndpoint));
+                if (obsOptions.EnableConsoleExporter)
+                    builder.AddConsoleExporter();
+            });
 
         return services;
     }

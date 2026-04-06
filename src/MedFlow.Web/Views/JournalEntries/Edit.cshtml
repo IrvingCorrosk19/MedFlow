@@ -1,0 +1,160 @@
+@using MedFlow.Application.Accounting
+@model JournalEntryFormDto
+@{
+    ViewData["PageTitle"] = ViewData["Title"]?.ToString() ?? "Editar Asiento Contable";
+}
+
+<div class="card card-outline card-warning shadow-sm">
+    <div class="card-header">
+        <h3 class="card-title font-weight-bold"><i class="fa fa-edit mr-2"></i>@ViewData["Title"]</h3>
+    </div>
+    <div class="card-body">
+        <form asp-action="Edit" asp-route-id="@Model.Id" method="post" id="formJE">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="Id" value="@Model.Id" />
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label>Fecha</label>
+                        <input type="date" name="EntryDate" value="@Model.EntryDate.ToString("yyyy-MM-dd")" class="form-control" required />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label>Período Fiscal</label>
+                        <select name="FiscalPeriodId" class="form-control custom-select" required>
+                            <option value="">— Seleccione —</option>
+                            @foreach (var item in (Microsoft.AspNetCore.Mvc.Rendering.SelectList)ViewBag.FiscalPeriods)
+                            {
+                                <option value="@item.Value" selected="@(item.Value == Model.FiscalPeriodId.ToString())">@item.Text</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label>Referencia (opcional)</label>
+                        <input type="text" name="Reference" class="form-control" value="@Model.Reference" placeholder="Ej: FAC-001, CHEQ-123" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Descripción</label>
+                <input type="text" name="Description" class="form-control" value="@Model.Description" required placeholder="Descripción del asiento" />
+            </div>
+
+            <h5 class="mt-3 mb-2">Líneas del Asiento</h5>
+            <div class="alert alert-info p-2 small">Cada asiento debe balancear: Total Débito = Total Crédito</div>
+
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered" id="linesTable">
+                    <thead class="thead-light">
+                        <tr>
+                            <th style="width:40%">Cuenta</th>
+                            <th>Descripción</th>
+                            <th class="text-right" style="width:140px">Débito</th>
+                            <th class="text-right" style="width:140px">Crédito</th>
+                            <th style="width:40px"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="linesBody">
+                        @for (int i = 0; i < Model.Lines.Count; i++)
+                        {
+                            var line = Model.Lines[i];
+                            <tr class="line-row">
+                                <td>
+                                    <select name="Lines[@i].AccountId" class="form-control form-control-sm account-sel" required>
+                                        <option value="">— Cuenta —</option>
+                                        @foreach (var item in (Microsoft.AspNetCore.Mvc.Rendering.SelectList)ViewBag.Accounts)
+                                        {
+                                            <option value="@item.Value" selected="@(item.Value == line.AccountId.ToString())">@item.Text</option>
+                                        }
+                                    </select>
+                                </td>
+                                <td><input type="text" name="Lines[@i].Description" class="form-control form-control-sm" value="@line.Description" /></td>
+                                <td><input type="number" name="Lines[@i].Debit" step="0.01" min="0" value="@line.Debit" class="form-control form-control-sm text-right amount-input" /></td>
+                                <td><input type="number" name="Lines[@i].Credit" step="0.01" min="0" value="@line.Credit" class="form-control form-control-sm text-right amount-input" /></td>
+                                <td>
+                                    @if (i > 0)
+                                    {
+                                        <button type="button" class="btn btn-xs btn-outline-danger btn-remove-line"><i class="fa fa-times"></i></button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="2">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnAddLine"><i class="fa fa-plus mr-1"></i>Agregar línea</button>
+                            </td>
+                            <td class="text-right font-weight-bold" id="totalDebit">0.00</td>
+                            <td class="text-right font-weight-bold" id="totalCredit">0.00</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div id="balanceAlert" class="alert alert-warning d-none">
+                <i class="fa fa-exclamation-triangle mr-1"></i> El asiento no está balanceado.
+            </div>
+
+            <div class="d-flex justify-content-end mt-3">
+                <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-secondary mr-2">Cancelar</a>
+                <button type="submit" class="btn btn-warning"><i class="fa fa-save mr-1"></i>Guardar cambios</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+var accountsHtml = `@Html.Raw(string.Join("", ((Microsoft.AspNetCore.Mvc.Rendering.SelectList)ViewBag.Accounts).Select(i => $"<option value=\"{i.Value}\">{i.Text}</option>")))`;
+
+function updateTotals() {
+    var totalD = 0, totalC = 0;
+    $('.line-row').each(function(i, row) {
+        totalD += parseFloat($(row).find('[name$=".Debit"]').val()) || 0;
+        totalC += parseFloat($(row).find('[name$=".Credit"]').val()) || 0;
+    });
+    $('#totalDebit').text(totalD.toFixed(2));
+    $('#totalCredit').text(totalC.toFixed(2));
+    var balanced = Math.abs(totalD - totalC) < 0.01 && (totalD > 0 || totalC > 0);
+    $('#balanceAlert').toggleClass('d-none', balanced);
+}
+
+function reindexLines() {
+    $('.line-row').each(function(i, row) {
+        $(row).find('[name]').each(function() {
+            var n = $(this).attr('name').replace(/Lines\[\d+\]/, 'Lines[' + i + ']');
+            $(this).attr('name', n);
+        });
+    });
+}
+
+$(function() {
+    $(document).on('input', '.amount-input', updateTotals);
+    $(document).on('click', '.btn-remove-line', function() {
+        if ($('.line-row').length <= 2) { alert('El asiento requiere mínimo 2 líneas.'); return; }
+        $(this).closest('tr').remove();
+        reindexLines();
+        updateTotals();
+    });
+    $('#btnAddLine').click(function() {
+        var idx = $('.line-row').length;
+        var tr = '<tr class="line-row"><td><select name="Lines['+idx+'].AccountId" class="form-control form-control-sm account-sel" required><option value="">— Cuenta —</option>' + accountsHtml + '</select></td>' +
+            '<td><input type="text" name="Lines['+idx+'].Description" class="form-control form-control-sm" /></td>' +
+            '<td><input type="number" name="Lines['+idx+'].Debit" step="0.01" min="0" value="0" class="form-control form-control-sm text-right amount-input" /></td>' +
+            '<td><input type="number" name="Lines['+idx+'].Credit" step="0.01" min="0" value="0" class="form-control form-control-sm text-right amount-input" /></td>' +
+            '<td><button type="button" class="btn btn-xs btn-outline-danger btn-remove-line"><i class="fa fa-times"></i></button></td></tr>';
+        $('#linesBody').append(tr);
+        updateTotals();
+    });
+    updateTotals();
+});
+</script>
+}

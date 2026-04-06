@@ -18,6 +18,45 @@ public class DashboardController : Controller
         _analytics = analytics;
     }
 
+    public async Task<IActionResult> ExportCsv(int days = 14, CancellationToken cancellationToken = default)
+    {
+        var clampedDays = Math.Clamp(days, 1, 365);
+        var model = await _analytics.GetExecutiveDashboardAsync(new ExecutiveDashboardFilter(clampedDays), cancellationToken);
+        if (model == null) return NotFound();
+
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("Sección,Indicador,Valor");
+        sb.AppendLine($"Citas,Total hoy,{model.AppointmentKpis.TotalToday}");
+        sb.AppendLine($"Citas,Pendientes hoy,{model.AppointmentKpis.PendingToday}");
+        sb.AppendLine($"Citas,Confirmadas hoy,{model.AppointmentKpis.ConfirmedToday}");
+        sb.AppendLine($"Citas,Completadas hoy,{model.AppointmentKpis.CompletedToday}");
+        sb.AppendLine($"Citas,Canceladas hoy,{model.AppointmentKpis.CancelledToday}");
+        sb.AppendLine($"Citas,No-show hoy,{model.AppointmentKpis.NoShowToday}");
+        sb.AppendLine($"Citas,Tasa cancelación período (%),{model.CancellationRatePeriod}");
+        sb.AppendLine($"Citas,Tasa completitud período (%),{model.CompletionRatePeriod}");
+        sb.AppendLine($"Pacientes,Total registrados,{model.PatientKpis.TotalRegistered}");
+        sb.AppendLine($"Pacientes,Nuevos este mes,{model.PatientKpis.NewThisMonth}");
+        sb.AppendLine($"Pacientes,Atendidos hoy,{model.PatientKpis.DistinctAttendedToday}");
+        sb.AppendLine($"Finanzas,Facturado hoy,{model.FinanceKpis.BillingToday}");
+        sb.AppendLine($"Finanzas,Cobrado hoy,{model.FinanceKpis.PaymentsToday}");
+        sb.AppendLine($"Finanzas,Facturado mes,{model.FinanceKpis.BillingMonth}");
+        sb.AppendLine($"Finanzas,Saldo pendiente,{model.FinanceKpis.TotalOutstanding}");
+        sb.AppendLine();
+        sb.AppendLine("Citas por día (período)");
+        sb.AppendLine("Fecha,Citas");
+        foreach (var r in model.AppointmentsByDay)
+            sb.AppendLine($"{r.Date:dd/MM/yyyy},{r.Count}");
+        sb.AppendLine();
+        sb.AppendLine("Ingresos por día (período)");
+        sb.AppendLine("Fecha,Monto");
+        foreach (var r in model.RevenueByDay)
+            sb.AppendLine($"{r.Date:dd/MM/yyyy},{r.Amount}");
+
+        var bytes = System.Text.Encoding.UTF8.GetPreamble().Concat(
+            System.Text.Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
+        return File(bytes, "text/csv", $"dashboard_{DateTime.Today:yyyyMMdd}_{clampedDays}d.csv");
+    }
+
     public async Task<IActionResult> Index(int days = 14, CancellationToken cancellationToken = default)
     {
         ViewData["Title"] = "Dashboard ejecutivo";

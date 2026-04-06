@@ -134,6 +134,8 @@ public sealed class RateLimitingMiddleware
         if (path.Contains("/Onboarding", StringComparison.OrdinalIgnoreCase) ||
             path.StartsWith("/Identity", StringComparison.OrdinalIgnoreCase))
             return $"onboarding:{ip}";
+        if (path.Contains("/Account/Login", StringComparison.OrdinalIgnoreCase))
+            return $"mvc:login:{ip}";
         return null;
     }
 
@@ -152,6 +154,8 @@ public sealed class RateLimitingMiddleware
         if (path.Contains("/Onboarding", StringComparison.OrdinalIgnoreCase) ||
             path.StartsWith("/Identity", StringComparison.OrdinalIgnoreCase))
             return (_options.OnboardingPerMinute, 60);
+        if (path.Contains("/Account/Login", StringComparison.OrdinalIgnoreCase))
+            return (_options.LoginPerMinute, 60);
         return (100, 60);
     }
 }

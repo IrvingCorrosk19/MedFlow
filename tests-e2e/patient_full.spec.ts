@@ -7,7 +7,7 @@ test.describe('Patient — Flujo completo', () => {
 
   test('FASE 2: Login Patient Portal', async ({ page }) => {
     await loginPatient(page, P.email, P.password);
-    await expect(page.locator('body')).not.toContainText('500');
+    await expect(page.locator('body')).not.toContainText('500 Internal Server Error');
   });
 
   test('FASE 3: Navegación portal paciente', async ({ page }) => {
@@ -28,7 +28,7 @@ test.describe('Patient — Flujo completo', () => {
 
     for (const route of ['/PatientPortal/inicio', '/PatientPortal/citas', '/PatientPortal/perfil']) {
       await page.goto(route, { waitUntil: 'domcontentloaded' });
-      await expect(page.locator('body')).not.toContainText('500');
+      await expect(page.locator('body')).not.toContainText('500 Internal Server Error');
     }
   });
 

@@ -1,0 +1,117 @@
+@using MedFlow.Application.Accounting
+@using MedFlow.Domain.Enums
+@model IReadOnlyList<JournalEntryListItemDto>
+@{
+    ViewData["PageTitle"] = "Asientos Contables";
+}
+
+<div class="card card-outline card-secondary shadow-sm mb-3">
+    <div class="card-body">
+        <form method="get" class="row gx-2 align-items-end">
+            <div class="col-auto">
+                <label class="small text-muted d-block mb-1">Desde</label>
+                <input type="date" name="from" class="form-control form-control-sm" value="@ViewBag.From" />
+            </div>
+            <div class="col-auto">
+                <label class="small text-muted d-block mb-1">Hasta</label>
+                <input type="date" name="to" class="form-control form-control-sm" value="@ViewBag.To" />
+            </div>
+            <div class="col-auto">
+                <label class="small text-muted d-block mb-1">Estado</label>
+                <select name="status" class="form-control form-control-sm custom-select">
+                    <option value="">— Todos —</option>
+                    <option value="0" selected="@(ViewBag.Status?.ToString() == "0")">Borrador</option>
+                    <option value="1" selected="@(ViewBag.Status?.ToString() == "1")">Contabilizado</option>
+                    <option value="2" selected="@(ViewBag.Status?.ToString() == "2")">Anulado</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <label class="small text-muted d-block mb-1">Origen</label>
+                <select name="origin" class="form-control form-control-sm custom-select">
+                    <option value="">— Todos —</option>
+                    <option value="0">Manual</option>
+                    <option value="1">Factura</option>
+                    <option value="2">Pago</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <label class="small text-muted d-block mb-1">Referencia</label>
+                <input type="text" name="reference" class="form-control form-control-sm" value="@ViewBag.Reference" placeholder="Buscar..." />
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-search"></i></button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card card-outline card-primary shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title font-weight-bold mb-0"><i class="fa fa-book mr-2"></i>Asientos (@Model.Count)</h3>
+        <a asp-action="Create" class="btn btn-success btn-sm"><i class="fa fa-plus"></i> Nuevo Asiento</a>
+    </div>
+    <div class="card-body table-responsive p-0">
+        <table id="tblJE" class="table table-hover mb-0">
+            <thead class="thead-light">
+                <tr>
+                    <th>Número</th>
+                    <th>Fecha</th>
+                    <th>Período</th>
+                    <th>Descripción</th>
+                    <th>Origen</th>
+                    <th class="text-right">Débito</th>
+                    <th class="text-right">Crédito</th>
+                    <th>Estado</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var j in Model)
+                {
+                    var stColor = j.Status switch {
+                        JournalEntryStatus.Draft => "warning",
+                        JournalEntryStatus.Posted => "success",
+                        JournalEntryStatus.Voided => "danger",
+                        _ => "secondary"
+                    };
+                    var stLabel = j.Status switch {
+                        JournalEntryStatus.Draft => "Borrador",
+                        JournalEntryStatus.Posted => "Contabilizado",
+                        JournalEntryStatus.Voided => "Anulado",
+                        _ => j.Status.ToString()
+                    };
+                    var originLabel = j.Origin switch {
+                        JournalEntryOrigin.Manual => "Manual",
+                        JournalEntryOrigin.Invoice => "Factura",
+                        JournalEntryOrigin.Payment => "Pago",
+                        _ => j.Origin.ToString()
+                    };
+                    <tr>
+                        <td><a asp-action="Details" asp-route-id="@j.Id"><code>@j.EntryNumber</code></a></td>
+                        <td>@j.EntryDate.ToString("dd/MM/yyyy")</td>
+                        <td>@j.FiscalPeriodName</td>
+                        <td>@j.Description</td>
+                        <td><span class="badge badge-secondary">@originLabel</span></td>
+                        <td class="text-right">@j.TotalDebit.ToString("N2")</td>
+                        <td class="text-right">@j.TotalCredit.ToString("N2")</td>
+                        <td><span class="badge badge-@stColor">@stLabel</span></td>
+                        <td>
+                            <a asp-action="Details" asp-route-id="@j.Id" class="btn btn-xs btn-outline-info" title="Ver"><i class="fa fa-eye"></i></a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+$(function () {
+    $('#tblJE').DataTable({
+        order: [[1, 'desc']], pageLength: 50,
+        language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' }
+    });
+});
+</script>
+}

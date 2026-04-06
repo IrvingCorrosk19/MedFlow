@@ -1,0 +1,75 @@
+@using MedFlow.Application.Accounting
+@model IReadOnlyList<TaxRateDto>
+@{
+    ViewData["PageTitle"] = "Tasas de Impuesto";
+}
+
+<div class="card card-outline card-primary shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title font-weight-bold mb-0"><i class="fa fa-percent mr-2"></i>Tasas de Impuesto</h3>
+        <a asp-action="Create" class="btn btn-success btn-sm"><i class="fa fa-plus"></i> Nueva Tasa</a>
+    </div>
+    <div class="card-body table-responsive p-0">
+        <table class="table table-hover mb-0">
+            <thead class="thead-light">
+                <tr>
+                    <th>Nombre</th>
+                    <th>Código</th>
+                    <th class="text-right">Tasa (%)</th>
+                    <th>Cuenta Contable</th>
+                    <th>Predeterminado</th>
+                    <th>Estado</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var t in Model)
+                {
+                    <tr>
+                        <td class="font-weight-bold">@t.Name</td>
+                        <td><code>@t.Code</code></td>
+                        <td class="text-right">@t.Rate.ToString("N2")%</td>
+                        <td>@(t.TaxAccountName ?? "—")</td>
+                        <td>
+                            @if (t.IsDefault)
+                            {
+                                <span class="badge badge-primary"><i class="fa fa-star mr-1"></i>Predeterminado</span>
+                            }
+                        </td>
+                        <td>
+                            @if (t.IsActive)
+                            {
+                                <span class="badge badge-success">Activo</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-secondary">Inactivo</span>
+                            }
+                        </td>
+                        <td class="text-right">
+                            <a asp-action="Edit" asp-route-id="@t.Id" class="btn btn-xs btn-outline-primary mr-1"><i class="fa fa-pencil"></i></a>
+                            <form asp-action="Delete" method="post" class="d-inline frm-del">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@t.Id" />
+                                <button type="button" class="btn btn-xs btn-outline-danger btn-del"><i class="fa fa-trash"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+$(function() {
+    $(document).on('click', '.btn-del', function() {
+        var f = $(this).closest('form');
+        Swal.fire({ title: '¿Eliminar tasa?', icon: 'warning', showCancelButton: true,
+            confirmButtonText: 'Sí, eliminar', cancelButtonText: 'Cancelar' })
+            .then(function(r) { if (r.isConfirmed) f.submit(); });
+    });
+});
+</script>
+}

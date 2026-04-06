@@ -1,0 +1,157 @@
+@using MedFlow.Application.Accounting
+@using MedFlow.Domain.Enums
+@model IReadOnlyList<BankTransactionDto>
+@{
+    var bank = ViewBag.BankAccount as MedFlow.Domain.Entities.BankAccount;
+    ViewData["PageTitle"] = $"Movimientos - {bank?.Name}";
+}
+
+<div class="row mb-3">
+    <div class="col-md-8">
+        <div class="card card-outline card-secondary shadow-sm">
+            <div class="card-body">
+                <form method="get" class="row gx-2 align-items-end">
+                    <input type="hidden" name="id" value="@bank?.Id" />
+                    <div class="col-auto">
+                        <label class="small text-muted d-block mb-1">Desde</label>
+                        <input type="date" name="from" class="form-control form-control-sm" value="@ViewBag.From" />
+                    </div>
+                    <div class="col-auto">
+                        <label class="small text-muted d-block mb-1">Hasta</label>
+                        <input type="date" name="to" class="form-control form-control-sm" value="@ViewBag.To" />
+                    </div>
+                    <div class="col-auto">
+                        <label class="small text-muted d-block mb-1">Conciliado</label>
+                        <select name="reconciled" class="form-control form-control-sm custom-select">
+                            <option value="">Todos</option>
+                            <option value="true" selected="@(ViewBag.Reconciled?.ToString() == "True")">Conciliados</option>
+                            <option value="false" selected="@(ViewBag.Reconciled?.ToString() == "False")">Pendientes</option>
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-filter"></i></button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-outline card-info shadow-sm">
+            <div class="card-body text-center">
+                <h5 class="text-muted mb-0">@bank?.Name</h5>
+                <h3 class="mb-0">@Model.Where(t => t.Type == BankTransactionType.Credit).Sum(t => t.Amount).ToString("N2")</h3>
+                <small class="text-muted">créditos / @Model.Where(t => t.Type == BankTransactionType.Debit).Sum(t => t.Amount).ToString("N2") débitos</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card card-outline card-primary shadow-sm">
+            <div class="card-header d-flex justify-content-between">
+                <h3 class="card-title font-weight-bold mb-0">Transacciones (@Model.Count)</h3>
+                <button class="btn btn-sm btn-outline-success" data-toggle="collapse" data-target="#addTxForm">
+                    <i class="fa fa-plus"></i> Registrar
+                </button>
+            </div>
+            <div id="addTxForm" class="collapse border-bottom">
+                <div class="p-3 bg-light">
+                    <form asp-action="AddTransaction" method="post" class="row gx-2 align-items-end">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="bankAccountId" value="@bank?.Id" />
+                        <div class="col-md-3">
+                            <label class="small text-muted d-block mb-1">Fecha</label>
+                            <input type="date" name="tx.TransactionDate" class="form-control form-control-sm" value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="small text-muted d-block mb-1">Tipo</label>
+                            <select name="tx.Type" class="form-control form-control-sm custom-select" required>
+                                <option value="0">Crédito</option>
+                                <option value="1">Débito</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="small text-muted d-block mb-1">Monto</label>
+                            <input type="number" name="tx.Amount" step="0.01" min="0.01" class="form-control form-control-sm" required />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="small text-muted d-block mb-1">Descripción</label>
+                            <input type="text" name="tx.Description" class="form-control form-control-sm" />
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-success btn-sm"><i class="fa fa-save"></i> Guardar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="card-body table-responsive p-0">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Tipo</th>
+                            <th class="text-right">Monto</th>
+                            <th>Descripción</th>
+                            <th>Referencia</th>
+                            <th>Conciliado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var t in Model)
+                        {
+                            <tr>
+                                <td>@t.TransactionDate.ToString("dd/MM/yyyy")</td>
+                                <td>
+                                    @if (t.Type == BankTransactionType.Credit)
+                                    {
+                                        <span class="badge badge-success">Crédito</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-danger">Débito</span>
+                                    }
+                                </td>
+                                <td class="text-right">@t.Amount.ToString("N2")</td>
+                                <td>@(t.Description ?? "—")</td>
+                                <td>@(t.Reference ?? "—")</td>
+                                <td>
+                                    @if (t.IsReconciled)
+                                    {
+                                        <span class="badge badge-success" title="@t.JournalEntryNumber">
+                                            <i class="fa fa-check"></i> @t.JournalEntryNumber
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <form asp-action="Reconcile" method="post" class="d-inline-flex align-items-center gap-1">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="transactionId" value="@t.Id" />
+                                            <input type="hidden" name="bankAccountId" value="@((ViewBag.BankAccount as MedFlow.Domain.Entities.BankAccount)?.Id)" />
+                                            <select name="journalEntryId" class="form-control form-control-sm" style="width:auto;min-width:180px" required>
+                                                <option value="">— Asiento —</option>
+                                                @foreach (var je in ViewBag.PostedEntries as IEnumerable<MedFlow.Application.Accounting.JournalEntryListItemDto> ?? [])
+                                                {
+                                                    <option value="@je.Id">@je.EntryNumber (@je.TotalDebit.ToString("N2"))</option>
+                                                }
+                                            </select>
+                                            <button type="submit" class="btn btn-xs btn-outline-success" title="Conciliar">
+                                                <i class="fa fa-link"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm mb-2"><i class="fa fa-arrow-left mr-1"></i> Cuentas</a>
+        <a asp-controller="JournalEntries" asp-action="Index" class="btn btn-outline-info btn-sm mb-2 ml-1">
+            <i class="fa fa-book mr-1"></i> Asientos
+        </a>
+    </div>
+</div>

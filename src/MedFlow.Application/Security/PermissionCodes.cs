@@ -49,6 +49,12 @@ public static class PermissionCodes
     public const string AIInsightsView = "ai.insights.view";
     public const string AIInsightsManage = "ai.insights.manage";
 
+    // Contabilidad
+    public const string AccountingView   = "accounting.view";
+    public const string AccountingManage = "accounting.manage";
+    public const string AccountingPost   = "accounting.post";
+    public const string AccountingClose  = "accounting.close";
+
     public static IReadOnlyList<(string Code, string Name, string Module)> All =>
     [
         (PatientsView, "Ver pacientes", "Patients"),
@@ -88,5 +94,9 @@ public static class PermissionCodes
         (EventLogsView, "Eventos del sistema", "Core"),
         (AIInsightsView, "Ver insights de IA", "AI"),
         (AIInsightsManage, "Gestionar insights de IA", "AI"),
+        (AccountingView,   "Ver contabilidad", "Accounting"),
+        (AccountingManage, "Gestionar contabilidad (cuentas, asientos)", "Accounting"),
+        (AccountingPost,   "Publicar asientos contables", "Accounting"),
+        (AccountingClose,  "Cerrar períodos fiscales", "Accounting"),
     ];
 }

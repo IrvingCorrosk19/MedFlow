@@ -42,8 +42,8 @@
             <span class="badge badge-light border text-muted mb-1">Completitud: <strong>@Model.CompletionRatePeriod %</strong></span>
         </div>
         <div class="btn-group btn-group-sm">
-            <button type="button" class="btn btn-outline-secondary" disabled title="Próximamente"><i class="fa fa-file-excel-o"></i> Excel</button>
-            <button type="button" class="btn btn-outline-secondary" disabled title="Próximamente"><i class="fa fa-file-pdf-o"></i> PDF</button>
+            <a asp-action="ExportCsv" asp-route-days="@ViewBag.Days" class="btn btn-outline-success" title="Exportar CSV"><i class="fa fa-file-excel-o"></i> CSV</a>
+            <button type="button" class="btn btn-outline-danger" onclick="window.print();" title="Imprimir / Guardar como PDF"><i class="fa fa-file-pdf-o"></i> PDF</button>
             <button type="button" class="btn btn-outline-primary" onclick="window.print();"><i class="fa fa-print"></i> Imprimir</button>
         </div>
     </div>

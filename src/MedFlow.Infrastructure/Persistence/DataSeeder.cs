@@ -32,6 +32,12 @@ public class DataSeeder
         // Asegura datos clínicos mínimos para que flujos UI E2E (citas/consultas) no fallen
         // por ausencia de doctores activos en el tenant demo.
         await SeedDemoActiveDoctorsAsync(context, logger);
+
+        // Siembra el catálogo de cuentas contables en tenants que aún no lo tienen.
+        await SeedDefaultChartOfAccountsForExistingTenantsAsync(context, logger);
+
+        // Asegura que cada tenant tenga al menos el período fiscal del mes actual.
+        await SeedCurrentFiscalPeriodForExistingTenantsAsync(context, logger);
     }
 
     private static async Task SeedExampleWorkflowsAsync(ApplicationDbContext context, ILogger logger)
@@ -267,7 +273,7 @@ public class DataSeeder
 
         await AssignSubset("Reception", c => c.StartsWith("patients.", StringComparison.Ordinal) || c.StartsWith("appointments.", StringComparison.Ordinal) || c == PermissionCodes.DashboardView || c == PermissionCodes.ReportsView);
 
-        await AssignSubset("Billing", c => c.StartsWith("billing.", StringComparison.Ordinal) || c.StartsWith("cash.", StringComparison.Ordinal) || c == PermissionCodes.DashboardView || c == PermissionCodes.ReportsView);
+        await AssignSubset("Billing", c => c.StartsWith("billing.", StringComparison.Ordinal) || c.StartsWith("cash.", StringComparison.Ordinal) || c.StartsWith("accounting.", StringComparison.Ordinal) || c == PermissionCodes.DashboardView || c == PermissionCodes.ReportsView);
 
         await AssignSubset("Staff", c =>
             c == PermissionCodes.DashboardView
@@ -353,7 +359,7 @@ public class DataSeeder
 
         await Sync("Doctor", c => c.StartsWith("patients.", StringComparison.Ordinal) || c.StartsWith("appointments.", StringComparison.Ordinal) || c.StartsWith("medical_records.", StringComparison.Ordinal) || c.StartsWith("doctors.", StringComparison.Ordinal) || c == PermissionCodes.DashboardView || c == PermissionCodes.ReportsView);
         await Sync("Reception", c => c.StartsWith("patients.", StringComparison.Ordinal) || c.StartsWith("appointments.", StringComparison.Ordinal) || c == PermissionCodes.DashboardView || c == PermissionCodes.ReportsView);
-        await Sync("Billing", c => c.StartsWith("billing.", StringComparison.Ordinal) || c.StartsWith("cash.", StringComparison.Ordinal) || c == PermissionCodes.DashboardView || c == PermissionCodes.ReportsView);
+        await Sync("Billing", c => c.StartsWith("billing.", StringComparison.Ordinal) || c.StartsWith("cash.", StringComparison.Ordinal) || c.StartsWith("accounting.", StringComparison.Ordinal) || c == PermissionCodes.DashboardView || c == PermissionCodes.ReportsView);
         await Sync("Staff", c =>
             c == PermissionCodes.DashboardView
             || c == PermissionCodes.PatientsView
@@ -942,6 +948,118 @@ public class DataSeeder
 
         await context.SaveChangesAsync();
         logger.LogInformation("Seed Demo: doctor activo creado para flujos E2E.");
+    }
+
+    /// <summary>
+    /// Para cada tenant que no tenga ninguna cuenta contable, siembra el catálogo por defecto.
+    /// Idempotente: si ya hay cuentas, no hace nada.
+    /// </summary>
+    private static async Task SeedDefaultChartOfAccountsForExistingTenantsAsync(
+        ApplicationDbContext context, ILogger logger)
+    {
+        var tenantIds = await context.Tenants.IgnoreQueryFilters()
+            .Where(t => !t.IsDeleted)
+            .Select(t => t.Id)
+            .ToListAsync();
+
+        foreach (var tenantId in tenantIds)
+        {
+            var hasAccounts = await context.Accounts.IgnoreQueryFilters()
+                .AnyAsync(a => a.TenantId == tenantId && !a.IsDeleted);
+            if (hasAccounts) continue;
+
+            var root = new List<(string Code, string Name, AccountType Type)>
+            {
+                ("1000", "ACTIVOS",            AccountType.Asset),
+                ("2000", "PASIVOS",            AccountType.Liability),
+                ("3000", "PATRIMONIO",         AccountType.Equity),
+                ("4000", "INGRESOS",           AccountType.Revenue),
+                ("5000", "GASTOS OPERATIVOS",  AccountType.Expense),
+                ("6000", "COSTOS DE VENTAS",   AccountType.Cost),
+            };
+
+            var parents = new Dictionary<string, Account>();
+            foreach (var (code, name, type) in root)
+            {
+                var acct = new Account { TenantId = tenantId, Code = code, Name = name, Type = type, AllowsDirectPosting = false };
+                context.Accounts.Add(acct);
+                parents[code] = acct;
+            }
+            await context.SaveChangesAsync();
+
+            var children = new List<(string Code, string Name, AccountType Type, string Parent)>
+            {
+                ("1100", "Caja y Efectivo",           AccountType.Asset,     "1000"),
+                ("1200", "Cuentas por Cobrar",        AccountType.Asset,     "1000"),
+                ("1300", "Inventario",                AccountType.Asset,     "1000"),
+                ("1400", "Otros Activos Corrientes",  AccountType.Asset,     "1000"),
+                ("1500", "Activos Fijos",             AccountType.Asset,     "1000"),
+                ("2100", "Cuentas por Pagar",         AccountType.Liability, "2000"),
+                ("2200", "Préstamos por Pagar",       AccountType.Liability, "2000"),
+                ("2300", "Impuestos por Pagar",       AccountType.Liability, "2000"),
+                ("2400", "Otros Pasivos",             AccountType.Liability, "2000"),
+                ("3100", "Capital Social",            AccountType.Equity,    "3000"),
+                ("3200", "Utilidades Retenidas",      AccountType.Equity,    "3000"),
+                ("4100", "Ingresos por Servicios",    AccountType.Revenue,   "4000"),
+                ("4200", "Otros Ingresos",            AccountType.Revenue,   "4000"),
+                ("5100", "Gastos de Personal",        AccountType.Expense,   "5000"),
+                ("5200", "Gastos de Alquiler",        AccountType.Expense,   "5000"),
+                ("5300", "Gastos de Suministros",     AccountType.Expense,   "5000"),
+                ("5400", "Gastos Administrativos",    AccountType.Expense,   "5000"),
+                ("5500", "Gastos de Marketing",       AccountType.Expense,   "5000"),
+                ("6100", "Costo de Medicamentos",     AccountType.Cost,      "6000"),
+                ("6200", "Costo de Materiales",       AccountType.Cost,      "6000"),
+            };
+
+            foreach (var (code, name, type, parentCode) in children)
+            {
+                context.Accounts.Add(new Account
+                {
+                    TenantId = tenantId,
+                    Code = code,
+                    Name = name,
+                    Type = type,
+                    AllowsDirectPosting = true,
+                    ParentId = parents[parentCode].Id
+                });
+            }
+            await context.SaveChangesAsync();
+            logger.LogInformation("Catálogo de cuentas sembrado para tenant {TenantId}", tenantId);
+        }
+    }
+
+    private static async Task SeedCurrentFiscalPeriodForExistingTenantsAsync(
+        ApplicationDbContext context, ILogger logger)
+    {
+        var tenantIds = await context.Tenants.IgnoreQueryFilters()
+            .Where(t => !t.IsDeleted)
+            .Select(t => t.Id)
+            .ToListAsync();
+
+        var now = DateTime.UtcNow;
+        foreach (var tenantId in tenantIds)
+        {
+            var exists = await context.FiscalPeriods.IgnoreQueryFilters()
+                .AnyAsync(f => f.TenantId == tenantId && f.Year == now.Year && f.Month == now.Month && !f.IsDeleted);
+            if (exists) continue;
+
+            var start = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+            var end = start.AddMonths(1).AddSeconds(-1);
+            var monthName = new System.Globalization.CultureInfo("es-ES").DateTimeFormat.GetMonthName(now.Month);
+
+            context.FiscalPeriods.Add(new FiscalPeriod
+            {
+                TenantId = tenantId,
+                Year = now.Year,
+                Month = now.Month,
+                Name = $"{char.ToUpper(monthName[0])}{monthName[1..]} {now.Year}",
+                StartDate = start,
+                EndDate = end,
+                Status = FiscalPeriodStatus.Open
+            });
+            logger.LogInformation("Período fiscal {Month}/{Year} sembrado para tenant {TenantId}", now.Month, now.Year, tenantId);
+        }
+        await context.SaveChangesAsync();
     }
 
     /// <summary>

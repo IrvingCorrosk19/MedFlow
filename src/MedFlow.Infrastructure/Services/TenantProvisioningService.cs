@@ -148,6 +148,9 @@ public sealed class TenantProvisioningService : ITenantProvisioningService
 
                     await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
+                    // ── Catálogo de cuentas predeterminado ───────────────────
+                    await SeedDefaultChartOfAccountsAsync(tenant.Id, cancellationToken).ConfigureAwait(false);
+
                     var adminEmail = request.AdminEmail.Trim();
                     var user = new ApplicationUser
                     {
@@ -428,6 +431,71 @@ public sealed class TenantProvisioningService : ITenantProvisioningService
         "Otorrinolaringología",
         "Nutrición"
     ];
+
+    private async Task SeedDefaultChartOfAccountsAsync(Guid tenantId, CancellationToken ct)
+    {
+        // Parent accounts (no direct posting)
+        var root = new List<(string Code, string Name, MedFlow.Domain.Enums.AccountType Type, bool Posting)>
+        {
+            ("1000", "ACTIVOS",                     MedFlow.Domain.Enums.AccountType.Asset,     false),
+            ("2000", "PASIVOS",                     MedFlow.Domain.Enums.AccountType.Liability,  false),
+            ("3000", "PATRIMONIO",                  MedFlow.Domain.Enums.AccountType.Equity,     false),
+            ("4000", "INGRESOS",                    MedFlow.Domain.Enums.AccountType.Revenue,    false),
+            ("5000", "GASTOS OPERATIVOS",           MedFlow.Domain.Enums.AccountType.Expense,    false),
+            ("6000", "COSTOS DE VENTAS",            MedFlow.Domain.Enums.AccountType.Cost,       false),
+        };
+
+        var parents = new Dictionary<string, MedFlow.Domain.Entities.Account>();
+        foreach (var (code, name, type, posting) in root)
+        {
+            var acct = new MedFlow.Domain.Entities.Account
+            {
+                TenantId = tenantId, Code = code, Name = name, Type = type, AllowsDirectPosting = posting
+            };
+            _db.Accounts.Add(acct);
+            parents[code] = acct;
+        }
+        await _db.SaveChangesAsync(ct).ConfigureAwait(false);
+
+        // Child accounts
+        var children = new List<(string Code, string Name, MedFlow.Domain.Enums.AccountType Type, string ParentCode)>
+        {
+            ("1100", "Caja y Efectivo",            MedFlow.Domain.Enums.AccountType.Asset,     "1000"),
+            ("1200", "Cuentas por Cobrar",         MedFlow.Domain.Enums.AccountType.Asset,     "1000"),
+            ("1300", "Inventario",                 MedFlow.Domain.Enums.AccountType.Asset,     "1000"),
+            ("1400", "Otros Activos Corrientes",   MedFlow.Domain.Enums.AccountType.Asset,     "1000"),
+            ("1500", "Activos Fijos",              MedFlow.Domain.Enums.AccountType.Asset,     "1000"),
+            ("2100", "Cuentas por Pagar",          MedFlow.Domain.Enums.AccountType.Liability,  "2000"),
+            ("2200", "Préstamos por Pagar",        MedFlow.Domain.Enums.AccountType.Liability,  "2000"),
+            ("2300", "Impuestos por Pagar",        MedFlow.Domain.Enums.AccountType.Liability,  "2000"),
+            ("2400", "Otros Pasivos",              MedFlow.Domain.Enums.AccountType.Liability,  "2000"),
+            ("3100", "Capital Social",             MedFlow.Domain.Enums.AccountType.Equity,     "3000"),
+            ("3200", "Utilidades Retenidas",       MedFlow.Domain.Enums.AccountType.Equity,     "3000"),
+            ("4100", "Ingresos por Servicios",     MedFlow.Domain.Enums.AccountType.Revenue,    "4000"),
+            ("4200", "Otros Ingresos",             MedFlow.Domain.Enums.AccountType.Revenue,    "4000"),
+            ("5100", "Gastos de Personal",         MedFlow.Domain.Enums.AccountType.Expense,    "5000"),
+            ("5200", "Gastos de Alquiler",         MedFlow.Domain.Enums.AccountType.Expense,    "5000"),
+            ("5300", "Gastos de Suministros",      MedFlow.Domain.Enums.AccountType.Expense,    "5000"),
+            ("5400", "Gastos Administrativos",     MedFlow.Domain.Enums.AccountType.Expense,    "5000"),
+            ("5500", "Gastos de Marketing",        MedFlow.Domain.Enums.AccountType.Expense,    "5000"),
+            ("6100", "Costo de Medicamentos",      MedFlow.Domain.Enums.AccountType.Cost,       "6000"),
+            ("6200", "Costo de Materiales",        MedFlow.Domain.Enums.AccountType.Cost,       "6000"),
+        };
+
+        foreach (var (code, name, type, parentCode) in children)
+        {
+            _db.Accounts.Add(new MedFlow.Domain.Entities.Account
+            {
+                TenantId = tenantId,
+                Code = code,
+                Name = name,
+                Type = type,
+                AllowsDirectPosting = true,
+                ParentId = parents[parentCode].Id
+            });
+        }
+        await _db.SaveChangesAsync(ct).ConfigureAwait(false);
+    }
 
     private static bool IsValidCode(string code)
     {

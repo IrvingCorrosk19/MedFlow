@@ -1,0 +1,201 @@
+@model MedFlow.Web.ViewModels.ClinicSettingsViewModel
+@{
+    ViewData["Title"] = "Configuración de la clínica";
+    ViewData["PageSubtitle"] = "Datos generales, identidad visual y horario";
+    ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a href=\"" + Url.Action("Index") + "\">Configuración</a></li><li class=\"breadcrumb-item active\">Clínica</li>";
+}
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+        <i class="fa fa-check-circle mr-2"></i>@TempData["Success"]
+    </div>
+}
+
+<form asp-action="Clinic" method="post">
+    @Html.AntiForgeryToken()
+    <div asp-validation-summary="All" class="alert alert-danger" style="display:none"></div>
+
+    @* ── Identidad ─────────────────────────────────────────────── *@
+    <div class="card card-outline card-primary shadow-sm mb-4">
+        <div class="card-header">
+            <h3 class="card-title"><i class="fa fa-hospital-o mr-2"></i>Identidad de la clínica</h3>
+        </div>
+        <div class="card-body">
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label asp-for="Name"></label>
+                    <input asp-for="Name" class="form-control" placeholder="Clínica Demo S.A." />
+                    <span asp-validation-for="Name" class="text-danger small"></span>
+                </div>
+                <div class="form-group col-md-6">
+                    <label asp-for="LegalName"></label>
+                    <input asp-for="LegalName" class="form-control" placeholder="Clínica Demo Sociedad Anónima" />
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label asp-for="TaxId"></label>
+                    <input asp-for="TaxId" class="form-control" placeholder="20123456789" />
+                </div>
+                <div class="form-group col-md-4">
+                    <label asp-for="Email"></label>
+                    <input asp-for="Email" type="email" class="form-control" placeholder="contacto@clinica.com" />
+                    <span asp-validation-for="Email" class="text-danger small"></span>
+                </div>
+                <div class="form-group col-md-4">
+                    <label asp-for="Phone"></label>
+                    <input asp-for="Phone" class="form-control" placeholder="+51 1 234 5678" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label asp-for="Address"></label>
+                <input asp-for="Address" class="form-control" placeholder="Av. Principal 123, Lima, Perú" />
+            </div>
+        </div>
+    </div>
+
+    @* ── Identidad visual ─────────────────────────────────────── *@
+    <div class="card card-outline card-info shadow-sm mb-4">
+        <div class="card-header">
+            <h3 class="card-title"><i class="fa fa-paint-brush mr-2"></i>Identidad visual</h3>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <label asp-for="LogoUrl"></label>
+                <input asp-for="LogoUrl" class="form-control" placeholder="https://mi-clinica.com/logo.png" id="logoUrlInput" />
+                <small class="text-muted">URL pública de la imagen. Se mostrará en el menú lateral y en el portal del paciente.</small>
+            </div>
+            <div class="form-row align-items-end">
+                <div class="form-group col-md-3">
+                    <label asp-for="PrimaryColor"></label>
+                    <div class="input-group">
+                        <input asp-for="PrimaryColor" type="color" class="form-control form-control-color p-1" id="primaryColorPicker" style="width:50px;cursor:pointer;" />
+                        <input type="text" id="primaryColorText" class="form-control form-control-sm"
+                               value="@(Model.PrimaryColor ?? "#1a5f7a")" placeholder="#1a5f7a"
+                               oninput="document.getElementById('primaryColorPicker').value=this.value;this.form.elements['PrimaryColor'].value=this.value;" />
+                    </div>
+                </div>
+                <div class="form-group col-md-3">
+                    <label asp-for="SecondaryColor"></label>
+                    <div class="input-group">
+                        <input asp-for="SecondaryColor" type="color" class="form-control form-control-color p-1" id="secondaryColorPicker" style="width:50px;cursor:pointer;" />
+                        <input type="text" id="secondaryColorText" class="form-control form-control-sm"
+                               value="@(Model.SecondaryColor ?? "#0d9488")" placeholder="#0d9488"
+                               oninput="document.getElementById('secondaryColorPicker').value=this.value;this.form.elements['SecondaryColor'].value=this.value;" />
+                    </div>
+                </div>
+                <div class="form-group col-md-6">
+                    <label class="d-block">Vista previa</label>
+                    <div id="previewBar" class="rounded p-2 d-flex align-items-center" style="background:@(Model.PrimaryColor ?? "#1a5f7a");">
+                        @if (!string.IsNullOrEmpty(Model.LogoUrl))
+                        {
+                            <img src="@Model.LogoUrl" alt="Logo" style="height:32px;margin-right:8px;border-radius:50%;object-fit:cover;" />
+                        }
+                        else
+                        {
+                            <i class="fa fa-hospital-o mr-2 text-white"></i>
+                        }
+                        <span class="text-white font-weight-bold">@Model.Name</span>
+                        <span class="badge ml-2 text-white" style="background:@(Model.SecondaryColor ?? "#0d9488");">MedFlow AI</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ── Operación ────────────────────────────────────────────── *@
+    <div class="card card-outline card-success shadow-sm mb-4">
+        <div class="card-header">
+            <h3 class="card-title"><i class="fa fa-clock-o mr-2"></i>Operación</h3>
+        </div>
+        <div class="card-body">
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label asp-for="Timezone"></label>
+                    <select asp-for="Timezone" class="form-control">
+                        <option value="">-- Seleccionar --</option>
+                        <option value="America/Lima">America/Lima (UTC-5)</option>
+                        <option value="America/Bogota">America/Bogota (UTC-5)</option>
+                        <option value="America/Caracas">America/Caracas (UTC-4)</option>
+                        <option value="America/Santiago">America/Santiago (UTC-3/-4)</option>
+                        <option value="America/Buenos_Aires">America/Buenos_Aires (UTC-3)</option>
+                        <option value="America/Sao_Paulo">America/Sao_Paulo (UTC-3)</option>
+                        <option value="America/Mexico_City">America/Mexico_City (UTC-6)</option>
+                        <option value="America/New_York">America/New_York (UTC-5/-4)</option>
+                        <option value="America/Chicago">America/Chicago (UTC-6/-5)</option>
+                        <option value="America/Los_Angeles">America/Los_Angeles (UTC-8/-7)</option>
+                        <option value="Europe/Madrid">Europe/Madrid (UTC+1/+2)</option>
+                        <option value="UTC">UTC</option>
+                    </select>
+                </div>
+                <div class="form-group col-md-2">
+                    <label asp-for="Currency"></label>
+                    <select asp-for="Currency" class="form-control">
+                        <option value="USD">USD — Dólar</option>
+                        <option value="PEN">PEN — Sol peruano</option>
+                        <option value="COP">COP — Peso colombiano</option>
+                        <option value="MXN">MXN — Peso mexicano</option>
+                        <option value="ARS">ARS — Peso argentino</option>
+                        <option value="CLP">CLP — Peso chileno</option>
+                        <option value="BRL">BRL — Real brasileño</option>
+                        <option value="EUR">EUR — Euro</option>
+                    </select>
+                </div>
+                <div class="form-group col-md-3">
+                    <label asp-for="BusinessHoursStart"></label>
+                    <input asp-for="BusinessHoursStart" type="time" class="form-control" />
+                </div>
+                <div class="form-group col-md-3">
+                    <label asp-for="BusinessHoursEnd"></label>
+                    <input asp-for="BusinessHoursEnd" type="time" class="form-control" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary"><i class="fa fa-save mr-1"></i>Guardar cambios</button>
+        <a asp-action="Index" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+</form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        // Sync color pickers ↔ text inputs ↔ preview bar
+        const primaryPicker = document.getElementById('primaryColorPicker');
+        const secondaryPicker = document.getElementById('secondaryColorPicker');
+        const bar = document.getElementById('previewBar');
+        const primaryText = document.getElementById('primaryColorText');
+        const secondaryText = document.getElementById('secondaryColorText');
+
+        primaryPicker.addEventListener('input', function () {
+            primaryText.value = this.value;
+            document.querySelector('[name="PrimaryColor"]').value = this.value;
+            bar.style.background = this.value;
+        });
+        secondaryPicker.addEventListener('input', function () {
+            secondaryText.value = this.value;
+            document.querySelector('[name="SecondaryColor"]').value = this.value;
+            const badge = bar.querySelector('.badge');
+            if (badge) badge.style.background = this.value;
+        });
+
+        // Logo URL preview
+        document.getElementById('logoUrlInput').addEventListener('input', function () {
+            let img = bar.querySelector('img');
+            if (this.value) {
+                if (!img) {
+                    img = document.createElement('img');
+                    img.style = 'height:32px;margin-right:8px;border-radius:50%;object-fit:cover;';
+                    bar.insertBefore(img, bar.firstChild);
+                }
+                img.src = this.value;
+            } else if (img) {
+                img.remove();
+            }
+        });
+    </script>
+}

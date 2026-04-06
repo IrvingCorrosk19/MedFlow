@@ -43,5 +43,14 @@ public interface IApplicationDbContext
     DbSet<PushDeviceToken> PushDeviceTokens { get; }
     DbSet<WorkerHeartbeat> WorkerHeartbeats { get; }
 
+    // Contabilidad
+    DbSet<Account> Accounts { get; }
+    DbSet<FiscalPeriod> FiscalPeriods { get; }
+    DbSet<JournalEntry> JournalEntries { get; }
+    DbSet<JournalEntryLine> JournalEntryLines { get; }
+    DbSet<TaxRate> TaxRates { get; }
+    DbSet<BankAccount> BankAccounts { get; }
+    DbSet<BankTransaction> BankTransactions { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

@@ -1,0 +1,214 @@
+@using MedFlow.Domain.Entities
+@using MedFlow.Domain.Enums
+@{
+    var appointments = ViewBag.Appointments as IReadOnlyList<Appointment> ?? Array.Empty<Appointment>();
+    var doctors      = ViewBag.Doctors as IReadOnlyList<Doctor> ?? Array.Empty<Doctor>();
+    Guid? doctorId   = ViewBag.DoctorId as Guid?;
+    int? statusFilter = ViewBag.Status as int?;
+
+    var scheduled  = appointments.Count(a => a.Status == AppointmentStatus.Scheduled);
+    var confirmed  = appointments.Count(a => a.Status == AppointmentStatus.Confirmed);
+    var completed  = appointments.Count(a => a.Status == AppointmentStatus.Completed);
+    var cancelled  = appointments.Count(a => a.Status == AppointmentStatus.Cancelled);
+    var noShow     = appointments.Count(a => a.Status == AppointmentStatus.NoShow);
+}
+
+@* Resumen del día *@
+<div class="row mb-3">
+    <div class="col-6 col-sm-4 col-md-2 mb-2">
+        <div class="info-box bg-info mb-0 shadow-sm">
+            <span class="info-box-icon"><i class="fa fa-calendar"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text small">Total</span>
+                <span class="info-box-number">@appointments.Count</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-sm-4 col-md-2 mb-2">
+        <div class="info-box bg-secondary mb-0 shadow-sm">
+            <span class="info-box-icon"><i class="fa fa-clock-o"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text small">Agendadas</span>
+                <span class="info-box-number">@scheduled</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-sm-4 col-md-2 mb-2">
+        <div class="info-box bg-primary mb-0 shadow-sm">
+            <span class="info-box-icon"><i class="fa fa-check-circle"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text small">Confirmadas</span>
+                <span class="info-box-number">@confirmed</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-sm-4 col-md-2 mb-2">
+        <div class="info-box bg-success mb-0 shadow-sm">
+            <span class="info-box-icon"><i class="fa fa-check"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text small">Completadas</span>
+                <span class="info-box-number">@completed</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-sm-4 col-md-2 mb-2">
+        <div class="info-box bg-danger mb-0 shadow-sm">
+            <span class="info-box-icon"><i class="fa fa-ban"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text small">Canceladas</span>
+                <span class="info-box-number">@cancelled</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-sm-4 col-md-2 mb-2">
+        <div class="info-box bg-warning mb-0 shadow-sm">
+            <span class="info-box-icon"><i class="fa fa-user-times"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text small">No-show</span>
+                <span class="info-box-number">@noShow</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card card-outline card-primary shadow-sm">
+    <div class="card-header d-flex flex-wrap align-items-center justify-content-between">
+        <h3 class="card-title mb-0">
+            <i class="fa fa-calendar-check-o mr-2"></i>Agenda del día
+            <span class="badge badge-primary ml-2">@appointments.Count citas</span>
+        </h3>
+        <div class="d-flex gap-2">
+            <a asp-action="Create" class="btn btn-primary btn-sm">
+                <i class="fa fa-plus"></i> Nueva cita
+            </a>
+            <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+                <i class="fa fa-calendar"></i> Ver semana
+            </a>
+            <button type="button" class="btn btn-outline-info btn-sm" onclick="window.print();" title="Imprimir agenda del día">
+                <i class="fa fa-print"></i>
+            </button>
+        </div>
+    </div>
+    @* Filtro por doctor y estado *@
+    <div class="card-body border-bottom bg-light py-2">
+        <form method="get" class="form-row align-items-end">
+            <div class="form-group col-md-5 col-lg-4 mb-1 mb-md-0">
+                <label class="small text-muted mb-0">Doctor</label>
+                <select name="doctorId" class="form-control form-control-sm">
+                    <option value="">Todos los doctores</option>
+                    @foreach (var d in doctors)
+                    {
+                        <option value="@d.Id" selected="@(doctorId.HasValue && doctorId.Value == d.Id)">@d.FullName</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group col-md-3 col-lg-2 mb-1 mb-md-0">
+                <label class="small text-muted mb-0">Estado</label>
+                <select name="status" class="form-control form-control-sm">
+                    <option value="">Todos</option>
+                    @foreach (AppointmentStatus s in Enum.GetValues(typeof(AppointmentStatus)))
+                    {
+                        var isSel = statusFilter.HasValue && statusFilter.Value == (int)s;
+                        <option value="@((int)s)" selected="@isSel">@s</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group col-auto mb-0">
+                <button type="submit" class="btn btn-default btn-sm"><i class="fa fa-filter"></i> Filtrar</button>
+            </div>
+        </form>
+    </div>
+    <div class="card-body p-0">
+        @if (!appointments.Any())
+        {
+            <div class="text-center py-5 text-muted">
+                <i class="fa fa-calendar-o fa-3x mb-3 d-block"></i>
+                <p class="mb-0">No hay citas programadas para hoy.</p>
+                <a asp-action="Create" class="btn btn-primary btn-sm mt-3">
+                    <i class="fa fa-plus mr-1"></i>Agendar cita
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table id="tblToday" class="table table-hover table-striped mb-0">
+                    <thead class="thead-light">
+                        <tr>
+                            <th style="width:90px">Hora</th>
+                            <th>Paciente</th>
+                            <th>Doctor</th>
+                            <th>Estado</th>
+                            <th>Motivo</th>
+                            <th class="text-right no-sort">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var a in appointments.OrderBy(x => x.StartTime))
+                        {
+                            var badgeClass = a.Status switch
+                            {
+                                AppointmentStatus.Completed => "badge-success",
+                                AppointmentStatus.Confirmed => "badge-primary",
+                                AppointmentStatus.Cancelled => "badge-danger",
+                                AppointmentStatus.NoShow    => "badge-warning",
+                                _                           => "badge-secondary"
+                            };
+                            var rowClass = a.Status == AppointmentStatus.Cancelled ? "table-danger"
+                                : a.Status == AppointmentStatus.Completed ? "table-success"
+                                : a.Status == AppointmentStatus.NoShow    ? "table-warning"
+                                : "";
+                            <tr class="@rowClass">
+                                <td class="font-weight-bold">@a.StartTime.ToString(@"hh\:mm")</td>
+                                <td>@(a.Patient?.NombreCompleto ?? "—")</td>
+                                <td>@(a.Doctor?.FullName ?? "—")</td>
+                                <td><span class="badge @badgeClass">@a.Status</span></td>
+                                <td class="text-truncate" style="max-width:180px;">@(a.Reason ?? "—")</td>
+                                <td class="text-right text-nowrap">
+                                    <a asp-action="Details" asp-route-id="@a.Id" class="btn btn-sm btn-info" title="Ver detalle"><i class="fa fa-eye"></i></a>
+                                    @if (a.Status == AppointmentStatus.Scheduled)
+                                    {
+                                        <form asp-action="Confirm" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@a.Id" />
+                                            <button type="submit" class="btn btn-sm btn-outline-success" title="Confirmar"><i class="fa fa-check"></i></button>
+                                        </form>
+                                    }
+                                    @if (a.Status is AppointmentStatus.Scheduled or AppointmentStatus.Confirmed)
+                                    {
+                                        <form asp-action="MarkCompleted" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@a.Id" />
+                                            <button type="submit" class="btn btn-sm btn-outline-primary" title="Marcar completada"><i class="fa fa-check-square-o"></i></button>
+                                        </form>
+                                        <form asp-action="MarkNoShow" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@a.Id" />
+                                            <button type="submit" class="btn btn-sm btn-outline-warning" title="No-show"><i class="fa fa-user-times"></i></button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+            if ($('#tblToday').length) {
+                $('#tblToday').DataTable({
+                    responsive: true,
+                    pageLength: 50,
+                    order: [[0, 'asc']],
+                    language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
+                    columnDefs: [{ orderable: false, targets: 'no-sort' }]
+                });
+            }
+        });
+    </script>
+}

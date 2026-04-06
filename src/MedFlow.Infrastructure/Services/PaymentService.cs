@@ -2,7 +2,9 @@ using MedFlow.Application.Interfaces;
 using MedFlow.Domain.Entities;
 using MedFlow.Domain.Enums;
 using MedFlow.Infrastructure.Persistence;
+using MedFlow.Infrastructure.Telemetry;
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics;
 
 namespace MedFlow.Infrastructure.Services;
 
@@ -11,12 +13,15 @@ public class PaymentService : IPaymentService
     private readonly ApplicationDbContext _db;
     private readonly IEventLogService _events;
     private readonly IAuditLogService _audit;
+    private readonly IJournalEntryService? _journalEntries;
 
-    public PaymentService(ApplicationDbContext db, IEventLogService events, IAuditLogService audit)
+    public PaymentService(ApplicationDbContext db, IEventLogService events, IAuditLogService audit,
+        IJournalEntryService? journalEntries = null)
     {
         _db = db;
         _events = events;
         _audit = audit;
+        _journalEntries = journalEntries;
     }
 
     private IApplicationDbContext Ctx => _db;
@@ -67,6 +72,10 @@ public class PaymentService : IPaymentService
             return (null, "El monto del pago debe ser mayor que cero.");
 
         amount = Money.Round(amount);
+
+        using var activity = MedFlowTelemetry.ActivitySource.StartActivity("Payment.Register");
+        activity?.SetTag("invoice.id", billingInvoiceId.ToString());
+        activity?.SetTag("amount", amount.ToString());
 
         Payment? payment = null;
         string? error = null;
@@ -169,6 +178,21 @@ public class PaymentService : IPaymentService
 
         await _audit.LogAsync(new AuditLogWriteDto("RegisterPayment", "Billing", nameof(Payment), payment.Id.ToString(),
             $"Pago {payment.Amount:N2}"), cancellationToken);
+
+        // Auto-journal: silently create accounting entry if module is configured
+        if (_journalEntries != null && payment.TenantId != Guid.Empty)
+        {
+            try
+            {
+                await _journalEntries.CreateFromPaymentAsync(payment.TenantId, payment, receivedByUserId ?? "system", cancellationToken);
+            }
+            catch { /* Contabilidad no configurada aún – ignorar */ }
+        }
+
+        MedFlowTelemetry.PaymentsRegistered.Add(1,
+            new("method", method.ToString()),
+            new("tenant.id", payment!.TenantId.ToString()));
+        activity?.SetStatus(ActivityStatusCode.Ok);
 
         return (payment, null);
     }

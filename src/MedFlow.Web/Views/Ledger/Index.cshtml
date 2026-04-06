@@ -1,0 +1,88 @@
+@using MedFlow.Application.Accounting
+@model LedgerAccountDto?
+@{
+    ViewData["PageTitle"] = "Libro Mayor";
+    var accountId = ViewBag.AccountId as Guid?;
+}
+
+<div class="card card-outline card-secondary shadow-sm mb-3">
+    <div class="card-body">
+        <form method="get" class="row gx-2 align-items-end">
+            <div class="col-md-4">
+                <label class="small text-muted d-block mb-1">Cuenta</label>
+                <select name="accountId" class="form-control form-control-sm custom-select">
+                    <option value="">— Seleccione una cuenta —</option>
+                    @foreach (var item in (Microsoft.AspNetCore.Mvc.Rendering.SelectList)ViewBag.Accounts)
+                    {
+                        <option value="@item.Value" selected="@item.Selected">@item.Text</option>
+                    }
+                </select>
+            </div>
+            <div class="col-auto">
+                <label class="small text-muted d-block mb-1">Desde</label>
+                <input type="date" name="from" class="form-control form-control-sm" value="@ViewBag.From" />
+            </div>
+            <div class="col-auto">
+                <label class="small text-muted d-block mb-1">Hasta</label>
+                <input type="date" name="to" class="form-control form-control-sm" value="@ViewBag.To" />
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-search mr-1"></i>Ver Mayor</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (Model is not null)
+{
+    <div class="card card-outline card-primary shadow-sm">
+        <div class="card-header d-flex justify-content-between">
+            <h3 class="card-title font-weight-bold mb-0">
+                <code>@Model.AccountCode</code> — @Model.AccountName
+                <span class="badge badge-secondary ml-2">@Model.AccountType</span>
+            </h3>
+            <button onclick="window.print()" class="btn btn-sm btn-outline-secondary"><i class="fa fa-print"></i></button>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-sm table-bordered mb-0">
+                <thead class="thead-light">
+                    <tr>
+                        <th>Asiento</th>
+                        <th>Fecha</th>
+                        <th>Descripción</th>
+                        <th class="text-right">Débito</th>
+                        <th class="text-right">Crédito</th>
+                        <th class="text-right">Saldo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="table-secondary font-weight-bold">
+                        <td colspan="5">Saldo inicial</td>
+                        <td class="text-right">@Model.OpeningBalance.ToString("N2")</td>
+                    </tr>
+                    @foreach (var l in Model.Lines)
+                    {
+                        <tr>
+                            <td><a asp-controller="JournalEntries" asp-action="Details" asp-route-id="@l.JournalEntryId"><code>@l.EntryNumber</code></a></td>
+                            <td>@l.EntryDate.ToString("dd/MM/yy")</td>
+                            <td>@l.Description</td>
+                            <td class="text-right">@(l.Debit > 0 ? l.Debit.ToString("N2") : "—")</td>
+                            <td class="text-right">@(l.Credit > 0 ? l.Credit.ToString("N2") : "—")</td>
+                            <td class="text-right @(l.RunningBalance < 0 ? "text-danger" : "")">@l.RunningBalance.ToString("N2")</td>
+                        </tr>
+                    }
+                    <tr class="table-active font-weight-bold">
+                        <td colspan="3">Saldo final</td>
+                        <td class="text-right">@Model.Lines.Sum(l => l.Debit).ToString("N2")</td>
+                        <td class="text-right">@Model.Lines.Sum(l => l.Credit).ToString("N2")</td>
+                        <td class="text-right @(Model.ClosingBalance < 0 ? "text-danger" : "")">@Model.ClosingBalance.ToString("N2")</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+else if (accountId.HasValue)
+{
+    <div class="alert alert-warning">No se encontró información para la cuenta seleccionada.</div>
+}

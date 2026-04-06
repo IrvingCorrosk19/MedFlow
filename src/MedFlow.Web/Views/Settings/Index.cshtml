@@ -5,6 +5,21 @@
 
 <div class="row">
     <div class="col-lg-4 col-md-6 mb-3">
+        <div class="card card-outline card-danger shadow-sm h-100">
+            <div class="card-header">
+                <h3 class="card-title font-weight-bold mb-0"><i class="fa fa-hospital-o mr-2"></i>Datos de la clínica</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">Nombre, logo, colores, contacto, zona horaria y horario de atención.</p>
+            </div>
+            <div class="card-footer bg-white">
+                <a asp-controller="Settings" asp-action="Clinic" class="btn btn-outline-danger btn-sm btn-block">
+                    <i class="fa fa-arrow-right mr-1"></i> Configurar
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 col-md-6 mb-3">
         <div class="card card-outline card-primary shadow-sm h-100">
             <div class="card-header">
                 <h3 class="card-title font-weight-bold mb-0"><i class="fa fa-bell-o mr-2"></i>Notificaciones</h3>

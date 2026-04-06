@@ -1,0 +1,61 @@
+@using MedFlow.Domain.Enums
+@model MedFlow.Web.Models.Accounting.AccountFormViewModel
+@{
+    ViewData["PageTitle"] = ViewData["Title"]?.ToString() ?? "Nueva Cuenta";
+}
+
+<div class="card card-outline card-success shadow-sm" style="max-width:640px">
+    <div class="card-header">
+        <h3 class="card-title font-weight-bold"><i class="fa fa-plus-circle mr-2"></i>@ViewData["Title"]</h3>
+    </div>
+    <div class="card-body">
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+            <div class="form-group">
+                <label asp-for="Code">Código</label>
+                <input asp-for="Code" class="form-control" placeholder="Ej: 1100, 4100.01" />
+                <span asp-validation-for="Code" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Name">Nombre</label>
+                <input asp-for="Name" class="form-control" placeholder="Nombre de la cuenta" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Description">Descripción</label>
+                <textarea asp-for="Description" class="form-control" rows="2"></textarea>
+            </div>
+            <div class="form-group">
+                <label asp-for="Type">Tipo</label>
+                <select asp-for="Type" class="form-control custom-select"
+                    asp-items="@Html.GetEnumSelectList<AccountType>()"></select>
+            </div>
+            <div class="form-group">
+                <label>Cuenta Padre (opcional)</label>
+                <select name="ParentId" class="form-control custom-select">
+                    <option value="">— Sin padre (cuenta raíz) —</option>
+                    @foreach (var item in (Microsoft.AspNetCore.Mvc.Rendering.SelectList)ViewBag.ParentAccounts)
+                    {
+                        <option value="@item.Value">@item.Text</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group">
+                <div class="custom-control custom-switch">
+                    <input type="checkbox" asp-for="AllowsDirectPosting" class="custom-control-input" id="allowsPosting" />
+                    <label class="custom-control-label" for="allowsPosting">Permite movimientos directos</label>
+                </div>
+                <small class="text-muted">Desactivar si es cuenta de agrupación/resumen.</small>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <a asp-action="Index" class="btn btn-secondary mr-2">Cancelar</a>
+                <button type="submit" class="btn btn-success"><i class="fa fa-save mr-1"></i>Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts { @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); } }

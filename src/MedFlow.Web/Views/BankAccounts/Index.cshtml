@@ -1,0 +1,58 @@
+@using MedFlow.Application.Accounting
+@model IReadOnlyList<BankAccountDto>
+@{
+    ViewData["PageTitle"] = "Cuentas Bancarias";
+}
+
+<div class="card card-outline card-primary shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title font-weight-bold mb-0"><i class="fa fa-bank mr-2"></i>Cuentas Bancarias</h3>
+        <a asp-action="Create" class="btn btn-success btn-sm"><i class="fa fa-plus"></i> Nueva Cuenta</a>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            @foreach (var b in Model)
+            {
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card card-@(b.IsActive ? "outline card-info" : "secondary") shadow-sm h-100">
+                        <div class="card-body">
+                            <h5 class="font-weight-bold mb-1">@b.Name</h5>
+                            <p class="text-muted mb-1 small">@b.BankName</p>
+                            @if (!string.IsNullOrEmpty(b.AccountNumber))
+                            {
+                                <p class="text-muted mb-2 small"><i class="fa fa-credit-card mr-1"></i>@b.AccountNumber</p>
+                            }
+                            <div class="row text-center mt-2">
+                                <div class="col-6 border-right">
+                                    <p class="text-muted small mb-0">Saldo inicial</p>
+                                    <p class="font-weight-bold mb-0">@b.OpeningBalance.ToString("N2")</p>
+                                </div>
+                                <div class="col-6">
+                                    <p class="text-muted small mb-0">Saldo actual</p>
+                                    <p class="font-weight-bold mb-0 @(b.CurrentBalance < 0 ? "text-danger" : "text-success")">@b.CurrentBalance.ToString("N2")</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer d-flex justify-content-between">
+                            <div>
+                                <span class="badge badge-light">@(b.Currency ?? "USD")</span>
+                                @if (b.AccountCode is not null)
+                                {
+                                    <code class="ml-1">@b.AccountCode</code>
+                                }
+                            </div>
+                            <div>
+                                <a asp-action="Transactions" asp-route-id="@b.Id" class="btn btn-xs btn-outline-primary mr-1" title="Ver movimientos">
+                                    <i class="fa fa-list"></i> Movimientos
+                                </a>
+                                <a asp-action="Edit" asp-route-id="@b.Id" class="btn btn-xs btn-outline-secondary" title="Editar">
+                                    <i class="fa fa-pencil"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

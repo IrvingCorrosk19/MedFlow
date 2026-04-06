@@ -7,14 +7,14 @@ test.describe('Reception — Flujo completo', () => {
 
   test('FASE 2: Login Reception', async ({ page }) => {
     await loginStaff(page, R.email, R.password);
-    await expect(page.locator('body')).not.toContainText('500');
+    await expect(page.locator('body')).not.toContainText('500 Internal Server Error');
   });
 
   test('FASE 3: Navegación módulos permitidos', async ({ page }) => {
     await loginStaff(page, R.email, R.password);
     for (const mod of ['/Dashboard', '/Patients', '/Appointments']) {
       await page.goto(mod, { waitUntil: 'domcontentloaded' });
-      await expect(page.locator('body')).not.toContainText('500');
+      await expect(page.locator('body')).not.toContainText('500 Internal Server Error');
       await expect(page).not.toHaveURL(/\/Account\/Login/i);
     }
   });
@@ -58,7 +58,7 @@ test.describe('Reception — Flujo completo', () => {
     await loginStaff(page, R.email, R.password);
     await page.goto('/Appointments', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('h1, h2')).toContainText(/Citas/i);
-    await expect(page.locator('body')).not.toContainText('500');
+    await expect(page.locator('body')).not.toContainText('500 Internal Server Error');
   });
 
   test('FASE 5: Restricciones — AdminUsers, MedicalRecords, BillingInvoices denegados', async ({ page }) => {

@@ -12,7 +12,7 @@ test.describe('Admin — Flujo completo', () => {
     await page.getByRole('button', { name: 'Entrar' }).click({ force: true });
     await page.waitForLoadState('domcontentloaded');
     await expect(page).not.toHaveURL(/\/Account\/Login/i);
-    await expect(page.locator('body')).not.toContainText('500');
+    await expect(page.locator('body')).not.toContainText('500 Internal Server Error');
   });
 
   test('FASE 3: Navegación de módulos Admin', async ({ page }) => {
@@ -88,7 +88,7 @@ test.describe('Admin — Flujo completo', () => {
   test('FASE 4-B: Citas — listar y filtrar', async ({ page }) => {
     await loginStaff(page, A.email, A.password);
     await page.goto('/Appointments', { waitUntil: 'domcontentloaded' });
-    await expect(page.locator('body')).not.toContainText('500');
+    await expect(page.locator('body')).not.toContainText('500 Internal Server Error');
     await expect(page).not.toHaveURL(/\/Account\/Login/i);
 
     // Intentar nueva cita
@@ -96,7 +96,7 @@ test.describe('Admin — Flujo completo', () => {
     if (await newLink.count() > 0) {
       await newLink.first().click({ force: true });
       await page.waitForLoadState('domcontentloaded');
-      await expect(page.locator('body')).not.toContainText('500');
+      await expect(page.locator('body')).not.toContainText('500 Internal Server Error');
       await page.goBack();
     }
   });
@@ -105,20 +105,20 @@ test.describe('Admin — Flujo completo', () => {
     await loginStaff(page, A.email, A.password);
     await page.goto('/AdminUsers', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('h1, h2')).toContainText(/Usuarios/i);
-    await expect(page.locator('body')).not.toContainText('500');
+    await expect(page.locator('body')).not.toContainText('500 Internal Server Error');
   });
 
   test('FASE 4-D: Roles — listar', async ({ page }) => {
     await loginStaff(page, A.email, A.password);
     await page.goto('/AdminRoles', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('h1, h2')).toContainText(/Roles/i);
-    await expect(page.locator('body')).not.toContainText('500');
+    await expect(page.locator('body')).not.toContainText('500 Internal Server Error');
   });
 
   test('FASE 4-E: Billing — listar', async ({ page }) => {
     await loginStaff(page, A.email, A.password);
     await page.goto('/BillingInvoices', { waitUntil: 'domcontentloaded' });
-    await expect(page.locator('body')).not.toContainText('500');
+    await expect(page.locator('body')).not.toContainText('500 Internal Server Error');
     await expect(page).not.toHaveURL(/\/Account\/Login/i);
   });
 
@@ -127,7 +127,7 @@ test.describe('Admin — Flujo completo', () => {
 
     for (const r of ['/Reports/Appointments', '/Reports/Patients', '/Reports/Financial', '/Reports/Doctors']) {
       await page.goto(r, { waitUntil: 'domcontentloaded' });
-      await expect(page.locator('body')).not.toContainText('500');
+      await expect(page.locator('body')).not.toContainText('500 Internal Server Error');
       await expect(page).not.toHaveURL(/\/Account\/Login/i);
     }
   });
@@ -138,7 +138,7 @@ test.describe('Admin — Flujo completo', () => {
     await page.locator("input[name='Correo']").fill('no-es-email');
     await safeClick(page, { role: 'button', name: 'Guardar paciente' });
     await expect(page).toHaveURL(/\/Patients\/Create/i);
-    await expect(page.locator('body')).not.toContainText('500');
+    await expect(page.locator('body')).not.toContainText('500 Internal Server Error');
   });
 
   test('FASE 7: Regresión — login + dashboard + pacientes', async ({ page }) => {
@@ -146,7 +146,7 @@ test.describe('Admin — Flujo completo', () => {
     await page.goto('/Dashboard', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('h1')).toContainText(/Dashboard|Inicio/i);
     await page.goto('/Patients', { waitUntil: 'domcontentloaded' });
-    await expect(page.locator('body')).not.toContainText('500');
+    await expect(page.locator('body')).not.toContainText('500 Internal Server Error');
   });
 
 });

@@ -1,0 +1,127 @@
+@using MedFlow.Application.Accounting
+@model IncomeStatementDto
+@{
+    ViewData["PageTitle"] = "Estado de Resultados";
+}
+
+<div class="card card-outline card-secondary shadow-sm mb-3">
+    <div class="card-body">
+        <form method="get" class="row gx-2 align-items-end">
+            <div class="col-auto">
+                <label class="small text-muted d-block mb-1">Desde</label>
+                <input type="date" name="from" class="form-control form-control-sm" value="@ViewBag.From" />
+            </div>
+            <div class="col-auto">
+                <label class="small text-muted d-block mb-1">Hasta</label>
+                <input type="date" name="to" class="form-control form-control-sm" value="@ViewBag.To" />
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-refresh mr-1"></i>Actualizar</button>
+            </div>
+            <div class="col-auto ml-auto">
+                <div class="btn-group btn-group-sm mr-2">
+                    <a asp-action="ExportIncomeStatement" asp-route-from="@ViewBag.From" asp-route-to="@ViewBag.To" asp-route-format="csv" class="btn btn-outline-secondary">
+                        <i class="fa fa-file-text-o mr-1"></i>CSV
+                    </a>
+                    <a asp-action="ExportIncomeStatement" asp-route-from="@ViewBag.From" asp-route-to="@ViewBag.To" asp-route-format="html" class="btn btn-outline-secondary">
+                        <i class="fa fa-file-code-o mr-1"></i>HTML/PDF
+                    </a>
+                </div>
+                <button onclick="window.print()" class="btn btn-outline-secondary btn-sm"><i class="fa fa-print"></i></button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-7">
+        <div class="card card-outline card-primary shadow-sm">
+            <div class="card-header">
+                <h3 class="card-title font-weight-bold mb-0">Estado de Resultados</h3>
+                <small class="text-muted">@Model.From.ToString("dd/MM/yyyy") — @Model.To.ToString("dd/MM/yyyy")</small>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <thead class="thead-light">
+                        <tr><th colspan="2" class="bg-success text-white">INGRESOS</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in Model.Revenue)
+                        {
+                            <tr><td class="pl-4"><code>@r.AccountCode</code> @r.AccountName</td><td class="text-right">@r.Amount.ToString("N2")</td></tr>
+                        }
+                        <tr class="font-weight-bold table-success">
+                            <td>Total Ingresos</td><td class="text-right">@Model.TotalRevenue.ToString("N2")</td>
+                        </tr>
+                    </tbody>
+                    @if (Model.Costs.Any())
+                    {
+                        <thead class="thead-light">
+                            <tr><th colspan="2" class="bg-warning text-dark">COSTO DE VENTAS</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var c in Model.Costs)
+                            {
+                                <tr><td class="pl-4"><code>@c.AccountCode</code> @c.AccountName</td><td class="text-right">(@c.Amount.ToString("N2"))</td></tr>
+                            }
+                            <tr class="font-weight-bold table-warning">
+                                <td>Total Costos</td><td class="text-right">(@Model.TotalCosts.ToString("N2"))</td>
+                            </tr>
+                        </tbody>
+                    }
+                    <tbody>
+                        <tr class="font-weight-bold table-info">
+                            <td>UTILIDAD BRUTA</td><td class="text-right @(Model.GrossProfit < 0 ? "text-danger" : "")">@Model.GrossProfit.ToString("N2")</td>
+                        </tr>
+                    </tbody>
+                    @if (Model.Expenses.Any())
+                    {
+                        <thead class="thead-light">
+                            <tr><th colspan="2" class="bg-danger text-white">GASTOS OPERATIVOS</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var e in Model.Expenses)
+                            {
+                                <tr><td class="pl-4"><code>@e.AccountCode</code> @e.AccountName</td><td class="text-right">(@e.Amount.ToString("N2"))</td></tr>
+                            }
+                            <tr class="font-weight-bold table-danger">
+                                <td>Total Gastos</td><td class="text-right">(@Model.TotalExpenses.ToString("N2"))</td>
+                            </tr>
+                        </tbody>
+                    }
+                    <tbody>
+                        <tr class="font-weight-bold @(Model.NetIncome >= 0 ? "table-success" : "table-danger")" style="font-size:1.1em">
+                            <td>UTILIDAD NETA</td>
+                            <td class="text-right @(Model.NetIncome < 0 ? "text-danger" : "")">
+                                @Model.NetIncome.ToString("N2")
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="small-box @(Model.NetIncome >= 0 ? "bg-success" : "bg-danger")">
+            <div class="inner">
+                <h3>@Model.NetIncome.ToString("N2")</h3>
+                <p>Utilidad Neta del Período</p>
+            </div>
+            <div class="icon"><i class="fa fa-line-chart"></i></div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-7">Ingresos totales</dt><dd class="col-5 text-right text-success">@Model.TotalRevenue.ToString("N2")</dd>
+                    <dt class="col-7">Costos</dt><dd class="col-5 text-right text-warning">@Model.TotalCosts.ToString("N2")</dd>
+                    <dt class="col-7">Utilidad bruta</dt><dd class="col-5 text-right">@Model.GrossProfit.ToString("N2")</dd>
+                    <dt class="col-7">Gastos operativos</dt><dd class="col-5 text-right text-danger">@Model.TotalExpenses.ToString("N2")</dd>
+                    <dt class="col-7 border-top pt-2 font-weight-bold">Utilidad neta</dt>
+                    <dd class="col-5 text-right border-top pt-2 font-weight-bold @(Model.NetIncome >= 0 ? "text-success" : "text-danger")">
+                        @Model.NetIncome.ToString("N2")
+                    </dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>

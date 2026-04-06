@@ -1,0 +1,117 @@
+@using MedFlow.Application.Accounting
+@model BalanceSheetDto
+@{
+    ViewData["PageTitle"] = "Balance General";
+}
+
+<div class="card card-outline card-secondary shadow-sm mb-3">
+    <div class="card-body">
+        <form method="get" class="row gx-2 align-items-end">
+            <div class="col-auto">
+                <label class="small text-muted d-block mb-1">Al día</label>
+                <input type="date" name="asOf" class="form-control form-control-sm" value="@ViewBag.AsOf" />
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-refresh mr-1"></i>Actualizar</button>
+            </div>
+            <div class="col-auto ml-auto">
+                <div class="btn-group btn-group-sm mr-2">
+                    <a asp-action="ExportBalanceSheet" asp-route-asOf="@ViewBag.AsOf" asp-route-format="csv" class="btn btn-outline-secondary">
+                        <i class="fa fa-file-text-o mr-1"></i>CSV
+                    </a>
+                    <a asp-action="ExportBalanceSheet" asp-route-asOf="@ViewBag.AsOf" asp-route-format="html" class="btn btn-outline-secondary">
+                        <i class="fa fa-file-code-o mr-1"></i>HTML/PDF
+                    </a>
+                </div>
+                <button onclick="window.print()" class="btn btn-outline-secondary btn-sm"><i class="fa fa-print"></i></button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card card-outline card-info shadow-sm mb-3">
+            <div class="card-header bg-info text-white">
+                <h5 class="card-title mb-0"><i class="fa fa-plus-square mr-2"></i>ACTIVOS</h5>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    @foreach (var a in Model.Assets)
+                    {
+                        <tr>
+                            <td><code>@a.AccountCode</code> @a.AccountName</td>
+                            <td class="text-right">@a.Balance.ToString("N2")</td>
+                        </tr>
+                    }
+                    <tr class="font-weight-bold table-active">
+                        <td>TOTAL ACTIVOS</td>
+                        <td class="text-right">@Model.TotalAssets.ToString("N2")</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card card-outline card-danger shadow-sm mb-3">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0"><i class="fa fa-minus-square mr-2"></i>PASIVOS</h5>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    @foreach (var l in Model.Liabilities)
+                    {
+                        <tr>
+                            <td><code>@l.AccountCode</code> @l.AccountName</td>
+                            <td class="text-right">@l.Balance.ToString("N2")</td>
+                        </tr>
+                    }
+                    <tr class="font-weight-bold table-active">
+                        <td>TOTAL PASIVOS</td>
+                        <td class="text-right">@Model.TotalLiabilities.ToString("N2")</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        <div class="card card-outline card-purple shadow-sm">
+            <div class="card-header" style="background:#6f42c1;color:white">
+                <h5 class="card-title mb-0"><i class="fa fa-university mr-2"></i>PATRIMONIO</h5>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    @foreach (var e in Model.Equity)
+                    {
+                        <tr>
+                            <td><code>@e.AccountCode</code> @e.AccountName</td>
+                            <td class="text-right @(e.Balance < 0 ? "text-danger" : "")">@e.Balance.ToString("N2")</td>
+                        </tr>
+                    }
+                    <tr class="font-weight-bold table-active">
+                        <td>TOTAL PATRIMONIO</td>
+                        <td class="text-right @(Model.TotalEquity < 0 ? "text-danger" : "")">@Model.TotalEquity.ToString("N2")</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-2">
+    <div class="col-lg-6">
+        <div class="card card-@(Model.TotalAssets == (Model.TotalLiabilities + Model.TotalEquity) ? "success" : "danger") card-outline">
+            <div class="card-body text-center py-2">
+                @if (Model.TotalAssets == (Model.TotalLiabilities + Model.TotalEquity))
+                {
+                    <span class="text-success font-weight-bold"><i class="fa fa-check-circle mr-1"></i>Balance cuadrado: Activos = Pasivos + Patrimonio</span>
+                }
+                else
+                {
+                    <span class="text-danger font-weight-bold">
+                        <i class="fa fa-exclamation-triangle mr-1"></i>
+                        DIFERENCIA: @Math.Abs(Model.TotalAssets - Model.TotalLiabilities - Model.TotalEquity).ToString("N2")
+                    </span>
+                }
+            </div>
+        </div>
+    </div>
+</div>

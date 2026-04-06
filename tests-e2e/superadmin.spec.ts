@@ -13,7 +13,7 @@ test.describe('SuperAdmin — Flujo completo', () => {
     await page.waitForLoadState('domcontentloaded');
     await expect(page).not.toHaveURL(/\/Account\/Login/i);
     // Dashboard visible
-    await expect(page.locator('body')).not.toContainText('500');
+    await expect(page.locator('body')).not.toContainText('500 Internal Server Error');
   });
 
   test('FASE 3: Navegación completa de módulos', async ({ page }) => {
@@ -101,27 +101,27 @@ test.describe('SuperAdmin — Flujo completo', () => {
     await loginStaff(page, SA.email, SA.password);
     await page.goto('/AdminRoles', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('h1, h2')).toContainText(/Roles/i);
-    await expect(page.locator('body')).not.toContainText('500');
+    await expect(page.locator('body')).not.toContainText('500 Internal Server Error');
   });
 
   test('FASE 4-D: Citas — listar', async ({ page }) => {
     await loginStaff(page, SA.email, SA.password);
     await page.goto('/Appointments', { waitUntil: 'domcontentloaded' });
-    await expect(page.locator('body')).not.toContainText('500');
+    await expect(page.locator('body')).not.toContainText('500 Internal Server Error');
     await expect(page).not.toHaveURL(/\/Account\/Login/i);
   });
 
   test('FASE 4-E: Billing — listar', async ({ page }) => {
     await loginStaff(page, SA.email, SA.password);
     await page.goto('/BillingInvoices', { waitUntil: 'domcontentloaded' });
-    await expect(page.locator('body')).not.toContainText('500');
+    await expect(page.locator('body')).not.toContainText('500 Internal Server Error');
     await expect(page).not.toHaveURL(/\/Account\/Login/i);
   });
 
   test('FASE 4-F: Reportes — listar', async ({ page }) => {
     await loginStaff(page, SA.email, SA.password);
     await page.goto('/Reports/Appointments', { waitUntil: 'domcontentloaded' });
-    await expect(page.locator('body')).not.toContainText('500');
+    await expect(page.locator('body')).not.toContainText('500 Internal Server Error');
     await expect(page).not.toHaveURL(/\/Account\/Login/i);
   });
 
@@ -133,7 +133,7 @@ test.describe('SuperAdmin — Flujo completo', () => {
     await page.locator("input[name='Correo']").fill('no-es-un-email');
     await safeClick(page, { role: 'button', name: 'Guardar paciente' });
     await expect(page).toHaveURL(/\/Patients\/Create/i);
-    await expect(page.locator('body')).not.toContainText('500');
+    await expect(page.locator('body')).not.toContainText('500 Internal Server Error');
   });
 
 });

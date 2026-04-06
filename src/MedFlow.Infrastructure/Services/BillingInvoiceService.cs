@@ -18,19 +18,22 @@ public class BillingInvoiceService : IBillingInvoiceService
     private readonly IPlanFeatureService _planFeatures;
     private readonly IEventLogService _events;
     private readonly IAuditLogService _audit;
+    private readonly IJournalEntryService? _journalEntries;
 
     public BillingInvoiceService(
         IApplicationDbContext context,
         ITenantContext tenant,
         IPlanFeatureService planFeatures,
         IEventLogService events,
-        IAuditLogService audit)
+        IAuditLogService audit,
+        IJournalEntryService? journalEntries = null)
     {
         _context = context;
         _tenant = tenant;
         _planFeatures = planFeatures;
         _events = events;
         _audit = audit;
+        _journalEntries = journalEntries;
     }
 
     public async Task<BillingInvoice?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -141,6 +144,16 @@ public class BillingInvoiceService : IBillingInvoiceService
 
         await _audit.LogAsync(new AuditLogWriteDto("Create", "Billing", nameof(BillingInvoice), invoice.Id.ToString(),
             $"Factura {invoice.InvoiceNumber}"), cancellationToken);
+
+        // Auto-journal: silently create accounting entry if module is configured
+        if (_journalEntries != null && _tenant.TenantId.HasValue)
+        {
+            try
+            {
+                await _journalEntries.CreateFromInvoiceAsync(_tenant.TenantId.Value, invoice, "system", cancellationToken);
+            }
+            catch { /* Contabilidad no configurada aún – ignorar */ }
+        }
 
         return (invoice, null);
     }

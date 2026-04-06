@@ -1,0 +1,124 @@
+@using MedFlow.Application.Accounting
+@using MedFlow.Domain.Enums
+@model IReadOnlyList<FiscalPeriodDto>
+@{
+    ViewData["PageTitle"] = "Períodos Fiscales";
+}
+
+<div class="card card-outline card-primary shadow-sm">
+    <div class="card-header">
+        <h3 class="card-title font-weight-bold mb-0"><i class="fa fa-calendar mr-2"></i>Períodos Fiscales</h3>
+    </div>
+    <div class="card-body table-responsive p-0">
+        <table class="table table-hover mb-0">
+            <thead class="thead-light">
+                <tr>
+                    <th>Período</th>
+                    <th>Inicio</th>
+                    <th>Fin</th>
+                    <th>Asientos</th>
+                    <th>Estado</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model)
+                {
+                    <tr>
+                        <td class="font-weight-bold">@p.Name</td>
+                        <td>@p.StartDate.ToString("dd/MM/yyyy")</td>
+                        <td>@p.EndDate.ToString("dd/MM/yyyy")</td>
+                        <td>@p.JournalEntryCount</td>
+                        <td>
+                            @if (p.Status == FiscalPeriodStatus.Open)
+                            {
+                                <span class="badge badge-success">Abierto</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-danger">Cerrado</span>
+                            }
+                        </td>
+                        <td class="text-right">
+                            @if (p.Status == FiscalPeriodStatus.Open)
+                            {
+                                <form asp-action="Close" method="post" class="d-inline frm-close">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@p.Id" />
+                                    <button type="button" class="btn btn-xs btn-outline-danger btn-close-period" title="Cerrar período">
+                                        <i class="fa fa-lock"></i> Cerrar
+                                    </button>
+                                </form>
+                            }
+                            else
+                            {
+                                <form asp-action="Reopen" method="post" class="d-inline frm-reopen">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@p.Id" />
+                                    <button type="button" class="btn btn-xs btn-outline-warning btn-reopen-period" title="Reabrir período">
+                                        <i class="fa fa-unlock"></i> Reabrir
+                                    </button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card card-outline card-warning shadow-sm mt-4">
+    <div class="card-header">
+        <h3 class="card-title font-weight-bold mb-0"><i class="fa fa-calendar-times-o mr-2"></i>Cierre de Ejercicio Anual</h3>
+    </div>
+    <div class="card-body">
+        @{
+            var years = Model.Select(p => p.Year).Distinct().OrderByDescending(y => y).ToList();
+        }
+        @if (!years.Any())
+        {
+            <p class="text-muted mb-0">No hay períodos fiscales registrados.</p>
+        }
+        @foreach (var yr in years)
+        {
+            var yearPeriods = Model.Where(p => p.Year == yr).ToList();
+            var allClosed = yearPeriods.All(p => p.IsYearlyClosed);
+            <div class="d-inline-block mr-2 mb-2">
+                @if (allClosed)
+                {
+                    <span class="badge badge-secondary p-2"><i class="fa fa-lock mr-1"></i>@yr — Ejercicio cerrado</span>
+                }
+                else
+                {
+                    <form asp-action="CloseYear" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="year" value="@yr" />
+                        <button type="button" class="btn btn-sm btn-outline-warning btn-close-year" data-year="@yr">
+                            <i class="fa fa-calendar-times-o mr-1"></i>Cerrar ejercicio @yr
+                        </button>
+                    </form>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+<script>
+$(function() {
+    $(document).on('click', '.btn-close-period', function() {
+        var f = $(this).closest('form');
+        Swal.fire({ title: '¿Cerrar período?', text: 'Ya no se podrán crear asientos en este período.', icon: 'warning',
+            showCancelButton: true, confirmButtonText: 'Sí, cerrar', cancelButtonText: 'Cancelar' })
+            .then(function(r) { if (r.isConfirmed) f.submit(); });
+    });
+    $(document).on('click', '.btn-reopen-period', function() {
+        var f = $(this).closest('form');
+        Swal.fire({ title: '¿Reabrir período?', icon: 'question',
+            showCancelButton: true, confirmButtonText: 'Sí, reabrir', cancelButtonText: 'Cancelar' })
+            .then(function(r) { if (r.isConfirmed) f.submit(); });
+    });
+});
+</script>
+}
