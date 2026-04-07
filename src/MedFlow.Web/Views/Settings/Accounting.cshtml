@@ -1,0 +1,129 @@
+@model MedFlow.Web.Models.Accounting.AccountMappingSettingsViewModel
+@using MedFlow.Application.Accounting
+@{
+    ViewData["Title"] = "Mapeo de Cuentas Contables";
+    ViewData["PageSubtitle"] = "Prefijos de cuenta usados en asientos automáticos";
+    ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a href=\"" + Url.Action("Index") + "\">Configuración</a></li><li class=\"breadcrumb-item active\">Mapeo de Cuentas</li>";
+    var accounts = ViewBag.Accounts as IReadOnlyList<AccountListItemDto> ?? new List<AccountListItemDto>();
+}
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+        <i class="fa fa-check-circle mr-2"></i>@TempData["Success"]
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+        <i class="fa fa-exclamation-circle mr-2"></i>@TempData["Error"]
+    </div>
+}
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card card-outline card-primary shadow-sm">
+            <div class="card-header">
+                <h3 class="card-title font-weight-bold mb-0">
+                    <i class="fa fa-map mr-2"></i>Prefijos de Cuentas por Función
+                </h3>
+            </div>
+            <form asp-action="SaveAccountMapping" method="post">
+                @Html.AntiForgeryToken()
+                <div class="card-body">
+                    <p class="text-muted small mb-3">
+                        Indique el prefijo de código de cuenta que el sistema usará al generar asientos automáticos.
+                        El sistema buscará la primera cuenta activa cuyo código comience con el prefijo indicado.
+                    </p>
+
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger d-none"></div>
+
+                    <div class="form-group">
+                        <label asp-for="CashAccountCode" class="font-weight-bold"></label>
+                        <input asp-for="CashAccountCode" class="form-control" placeholder="Ej: 1100" />
+                        <span asp-validation-for="CashAccountCode" class="text-danger small"></span>
+                        <small class="form-text text-muted">Se usa al registrar cobros y pagos de pacientes.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="ReceivablesAccountCode" class="font-weight-bold"></label>
+                        <input asp-for="ReceivablesAccountCode" class="form-control" placeholder="Ej: 1200" />
+                        <span asp-validation-for="ReceivablesAccountCode" class="text-danger small"></span>
+                        <small class="form-text text-muted">Se usa al emitir facturas (deuda del paciente).</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="RevenueAccountCode" class="font-weight-bold"></label>
+                        <input asp-for="RevenueAccountCode" class="form-control" placeholder="Ej: 4100" />
+                        <span asp-validation-for="RevenueAccountCode" class="text-danger small"></span>
+                        <small class="form-text text-muted">Se usa al registrar ingresos por servicios médicos.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="TaxPayableAccountCode" class="font-weight-bold"></label>
+                        <input asp-for="TaxPayableAccountCode" class="form-control" placeholder="Ej: 2300" />
+                        <span asp-validation-for="TaxPayableAccountCode" class="text-danger small"></span>
+                        <small class="form-text text-muted">Se usa para el IVA u otros impuestos retenidos en facturas.</small>
+                    </div>
+
+                    <div class="form-group mb-0">
+                        <label asp-for="RetainedEarningsAccountCode" class="font-weight-bold"></label>
+                        <input asp-for="RetainedEarningsAccountCode" class="form-control" placeholder="Ej: 3300" />
+                        <span asp-validation-for="RetainedEarningsAccountCode" class="text-danger small"></span>
+                        <small class="form-text text-muted">Se usa en el asiento de cierre anual para acumular la utilidad/pérdida del ejercicio.</small>
+                    </div>
+                </div>
+                <div class="card-footer bg-white">
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="fa fa-save mr-1"></i>Guardar cambios
+                    </button>
+                    <a asp-action="Index" class="btn btn-link btn-sm ml-2">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card card-outline card-secondary shadow-sm">
+            <div class="card-header">
+                <h3 class="card-title font-weight-bold mb-0">
+                    <i class="fa fa-list mr-2"></i>Cuentas Disponibles (referencia)
+                </h3>
+            </div>
+            <div class="card-body p-0" style="max-height:520px;overflow-y:auto;">
+                @if (!accounts.Any())
+                {
+                    <p class="text-muted p-3 mb-0">No hay cuentas registradas en el plan contable.</p>
+                }
+                else
+                {
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Código</th>
+                                <th>Nombre</th>
+                                <th>Tipo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var acc in accounts.OrderBy(a => a.Code))
+                            {
+                                <tr>
+                                    <td class="font-weight-bold text-monospace">@acc.Code</td>
+                                    <td>@acc.Name</td>
+                                    <td><span class="badge badge-light">@acc.TypeLabel</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

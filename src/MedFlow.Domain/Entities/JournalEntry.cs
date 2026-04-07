@@ -26,6 +26,8 @@ public class JournalEntry : BaseEntity, ITenantScopedEntity
     public Guid? SourceDocumentId { get; set; }
 
     public string CreatedByUserId { get; set; } = string.Empty;
+    /// <summary>Usuario que realizó la última edición (solo aplica a borradores).</summary>
+    public string? UpdatedByUserId { get; set; }
     public DateTime? PostedAt { get; set; }
     public string? PostedByUserId { get; set; }
 

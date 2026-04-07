@@ -41,6 +41,11 @@
                     }
                     <dt class="col-sm-4">Origen</dt><dd class="col-sm-8">@Model.Origin</dd>
                     <dt class="col-sm-4">Creado por</dt><dd class="col-sm-8">@Model.CreatedByUserName</dd>
+                    @if (!string.IsNullOrEmpty(Model.UpdatedByUserId))
+                    {
+                        <dt class="col-sm-3">Editado por</dt>
+                        <dd class="col-sm-9">@Model.UpdatedByUserId</dd>
+                    }
                     @if (Model.PostedAt.HasValue)
                     {
                         <dt class="col-sm-4">Contabilizado</dt><dd class="col-sm-8">@Model.PostedAt.Value.ToString("dd/MM/yyyy HH:mm")</dd>

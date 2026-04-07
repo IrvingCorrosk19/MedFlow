@@ -5,6 +5,20 @@
     var accountId = ViewBag.AccountId as Guid?;
 }
 
+<div class="mb-3">
+    <a asp-action="Dashboard" class="btn btn-sm btn-outline-primary">
+        <i class="fa fa-tachometer-alt mr-1"></i>Ver Dashboard Contable
+    </a>
+</div>
+
+@if (ViewBag.Truncated == true)
+{
+    <div class="alert alert-warning">
+        <i class="fa fa-exclamation-triangle mr-1"></i>
+        Se muestran los primeros 200 movimientos. Ajuste el rango de fechas para ver más.
+    </div>
+}
+
 <div class="card card-outline card-secondary shadow-sm mb-3">
     <div class="card-body">
         <form method="get" class="row gx-2 align-items-end">

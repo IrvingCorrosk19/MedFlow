@@ -63,4 +63,18 @@ public class FiscalPeriodsController : Controller
         else TempData["Success"] = $"Ejercicio fiscal {year} cerrado correctamente.";
         return RedirectToAction(nameof(Index));
     }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    [RequirePermission(PermissionCodes.AccountingManage)]
+    public async Task<IActionResult> CreateOpening(int year, CancellationToken ct)
+    {
+        var tenantId = _tenant.TenantId ?? throw new InvalidOperationException();
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
+        var (ok, error) = await _fiscalPeriods.CreateOpeningEntryAsync(tenantId, year, userId, ct);
+        if (ok)
+            TempData["Success"] = $"Asiento de apertura {year} generado correctamente.";
+        else
+            TempData["Error"] = error;
+        return RedirectToAction(nameof(Index));
+    }
 }

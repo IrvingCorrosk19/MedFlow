@@ -14,4 +14,11 @@ public static class TenantSettingKeys
 
     /// <summary>JSON array de nombres de especialidades iniciales.</summary>
     public const string CatalogDefaultSpecialities = "catalog.defaultSpecialities";
+
+    // ── Account mapping overrides (per-tenant) ──────────────────────────────
+    public const string AccountingCashCode             = "accounting.map.cash";
+    public const string AccountingReceivablesCode      = "accounting.map.receivables";
+    public const string AccountingRevenueCode          = "accounting.map.revenue";
+    public const string AccountingTaxPayableCode       = "accounting.map.taxPayable";
+    public const string AccountingRetainedEarningsCode = "accounting.map.retainedEarnings";
 }

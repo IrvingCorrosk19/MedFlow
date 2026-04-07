@@ -11,4 +11,5 @@ public interface IFiscalPeriodService
     Task<(bool Ok, string? Error)> CloseAsync(Guid id, string userId, CancellationToken ct = default);
     Task<(bool Ok, string? Error)> ReopenAsync(Guid id, string userId, CancellationToken ct = default);
     Task<(bool Ok, string? Error)> CloseYearAsync(Guid tenantId, int year, string userId, CancellationToken ct = default);
+    Task<(bool Ok, string? Error)> CreateOpeningEntryAsync(Guid tenantId, int year, string userId, CancellationToken ct = default);
 }

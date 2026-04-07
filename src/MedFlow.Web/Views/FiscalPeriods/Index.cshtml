@@ -5,6 +5,25 @@
     ViewData["PageTitle"] = "Períodos Fiscales";
 }
 
+<div class="card card-outline card-success shadow-sm mb-4">
+    <div class="card-header d-flex align-items-center justify-content-between">
+        <h3 class="card-title font-weight-bold mb-0"><i class="fa fa-play-circle mr-2"></i>Apertura del Año Contable</h3>
+        <form asp-action="CreateOpening" method="post" class="d-inline mb-0">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="year" value="@DateTime.Today.Year" />
+            <button type="button" class="btn btn-outline-success btn-sm btn-create-opening" data-year="@DateTime.Today.Year">
+                <i class="fa fa-play-circle mr-1"></i>Crear Apertura @DateTime.Today.Year
+            </button>
+        </form>
+    </div>
+    <div class="card-body py-2">
+        <p class="text-muted small mb-0">
+            Genera el asiento de apertura del ejercicio @DateTime.Today.Year registrando los saldos actuales de todas las cuentas como saldo inicial.
+            Si ya existe un asiento de apertura para ese año, la operación no tendrá efecto.
+        </p>
+    </div>
+</div>
+
 <div class="card card-outline card-primary shadow-sm">
     <div class="card-header">
         <h3 class="card-title font-weight-bold mb-0"><i class="fa fa-calendar mr-2"></i>Períodos Fiscales</h3>
@@ -84,7 +103,7 @@
         {
             var yearPeriods = Model.Where(p => p.Year == yr).ToList();
             var allClosed = yearPeriods.All(p => p.IsYearlyClosed);
-            <div class="d-inline-block mr-2 mb-2">
+            <div class="d-inline-flex align-items-center mr-2 mb-2" style="gap:.35rem;">
                 @if (allClosed)
                 {
                     <span class="badge badge-secondary p-2"><i class="fa fa-lock mr-1"></i>@yr — Ejercicio cerrado</span>
@@ -96,6 +115,13 @@
                         <input type="hidden" name="year" value="@yr" />
                         <button type="button" class="btn btn-sm btn-outline-warning btn-close-year" data-year="@yr">
                             <i class="fa fa-calendar-times-o mr-1"></i>Cerrar ejercicio @yr
+                        </button>
+                    </form>
+                    <form asp-action="CreateOpening" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="year" value="@yr" />
+                        <button type="button" class="btn btn-sm btn-outline-success btn-create-opening" data-year="@yr">
+                            <i class="fa fa-play-circle mr-1"></i>Crear Apertura @yr
                         </button>
                     </form>
                 }
@@ -118,6 +144,18 @@ $(function() {
         Swal.fire({ title: '¿Reabrir período?', icon: 'question',
             showCancelButton: true, confirmButtonText: 'Sí, reabrir', cancelButtonText: 'Cancelar' })
             .then(function(r) { if (r.isConfirmed) f.submit(); });
+    });
+    $(document).on('click', '.btn-create-opening', function() {
+        var yr = $(this).data('year');
+        var f = $(this).closest('form');
+        Swal.fire({
+            title: '¿Crear asiento de apertura ' + yr + '?',
+            text: 'Se registrarán todos los saldos actuales de las cuentas como saldo inicial del año ' + yr + '.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, crear apertura',
+            cancelButtonText: 'Cancelar'
+        }).then(function(r) { if (r.isConfirmed) f.submit(); });
     });
 });
 </script>

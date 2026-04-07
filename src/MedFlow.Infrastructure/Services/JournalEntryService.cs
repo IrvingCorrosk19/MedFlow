@@ -94,7 +94,8 @@ public class JournalEntryService : IJournalEntryService
             entry.FiscalPeriodId, entry.FiscalPeriod?.Name ?? "-",
             entry.Description, entry.Reference, entry.Status, entry.Origin,
             entry.SourceDocumentId, entry.TotalDebit, entry.TotalCredit,
-            user, entry.PostedAt, lines);
+            user, entry.PostedAt, lines,
+            entry.UpdatedByUserId);
     }
 
     public async Task<JournalEntry?> GetByIdAsync(Guid id, Guid tenantId, CancellationToken ct = default)
@@ -147,7 +148,7 @@ public class JournalEntryService : IJournalEntryService
         return (entry, null);
     }
 
-    public async Task<(bool Ok, string? Error)> UpdateAsync(Guid id, JournalEntryFormDto form, CancellationToken ct = default)
+    public async Task<(bool Ok, string? Error)> UpdateAsync(Guid id, JournalEntryFormDto form, string? userId = null, CancellationToken ct = default)
     {
         // Load without Include to avoid navigation-collection tracking conflicts
         var entry = await _dbContext.JournalEntries
@@ -178,6 +179,8 @@ public class JournalEntryService : IJournalEntryService
         entry.Reference = form.Reference;
         entry.TotalDebit = form.Lines.Sum(l => l.Debit);
         entry.TotalCredit = form.Lines.Sum(l => l.Credit);
+        entry.UpdatedByUserId = userId;
+        entry.UpdatedAt = DateTime.UtcNow;
 
         // Add new lines
         int order = 1;

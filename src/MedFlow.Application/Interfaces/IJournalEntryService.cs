@@ -26,6 +26,7 @@ public interface IJournalEntryService
     Task<(bool Ok, string? Error)> UpdateAsync(
         Guid id,
         JournalEntryFormDto form,
+        string? userId = null,
         CancellationToken ct = default);
 
     Task<(bool Ok, string? Error)> PostAsync(Guid id, string userId, CancellationToken ct = default);

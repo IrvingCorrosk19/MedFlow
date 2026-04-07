@@ -43,10 +43,12 @@ public class JournalEntriesController : Controller
         ViewBag.Status = status;
         ViewBag.Origin = origin;
         ViewBag.Reference = reference;
+        ViewBag.TotalCount = list.Count;
         ViewData["Title"] = "Asientos Contables";
         ViewData["PageSubtitle"] = "Partida doble";
         ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item active\">Asientos</li>";
-        return View(list);
+        var limited = list.Count > 100 ? list.Take(100).ToList() : list.ToList();
+        return View(limited);
     }
 
     [RequirePermission(PermissionCodes.AccountingView)]
@@ -137,7 +139,8 @@ public class JournalEntriesController : Controller
             return View(form);
         }
 
-        var (ok, error) = await _journalEntries.UpdateAsync(id, form, ct);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var (ok, error) = await _journalEntries.UpdateAsync(id, form, userId, ct);
         if (!ok)
         {
             ModelState.AddModelError(string.Empty, error ?? "Error al actualizar el asiento.");

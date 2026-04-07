@@ -155,6 +155,77 @@ public class FiscalPeriodService : IFiscalPeriodService
         return (true, null);
     }
 
+    public async Task<(bool Ok, string? Error)> CreateOpeningEntryAsync(Guid tenantId, int year, string userId, CancellationToken ct = default)
+    {
+        // 1. Check if opening entry for this year already exists
+        var alreadyExists = await _context.JournalEntries
+            .AnyAsync(j => j.TenantId == tenantId
+                && j.Origin == JournalEntryOrigin.Opening
+                && j.EntryDate.Year == year, ct);
+
+        if (alreadyExists)
+            return (false, $"Ya existe un asiento de apertura para el año {year}.");
+
+        // 2. Load all accounts with non-zero balance for this tenant
+        var accounts = await _context.Accounts
+            .Where(a => a.TenantId == tenantId && a.CurrentBalance != 0 && a.AllowsDirectPosting)
+            .ToListAsync(ct);
+
+        if (accounts.Count == 0)
+            return (false, "No hay saldos en las cuentas para generar el asiento de apertura.");
+
+        // 3. Get or create January fiscal period for target year
+        var openingPeriod = await GetOrCreateAsync(tenantId, year, 1, ct);
+
+        // 4. Build journal entry
+        var entry = new JournalEntry
+        {
+            TenantId = tenantId,
+            EntryNumber = $"APE-{year}-001",
+            FiscalPeriodId = openingPeriod.Id,
+            EntryDate = new DateTime(year, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            Description = $"Asiento de apertura {year}",
+            Reference = $"APERTURA-{year}",
+            Status = JournalEntryStatus.Posted,
+            Origin = JournalEntryOrigin.Opening,
+            CreatedByUserId = userId,
+            PostedAt = DateTime.UtcNow,
+            PostedByUserId = userId
+        };
+
+        int lineOrder = 1;
+
+        // 5. Asset/Expense/Cost accounts: debit-normal balance → DEBIT line
+        //    Liability/Equity/Revenue accounts: credit-normal balance → CREDIT line
+        foreach (var acc in accounts)
+        {
+            bool isDebitNormal = acc.Type == AccountType.Asset
+                              || acc.Type == AccountType.Expense
+                              || acc.Type == AccountType.Cost;
+
+            entry.Lines.Add(new JournalEntryLine
+            {
+                AccountId = acc.Id,
+                Description = $"Saldo inicial: {acc.Name}",
+                Debit  = isDebitNormal ? acc.CurrentBalance : 0,
+                Credit = isDebitNormal ? 0 : acc.CurrentBalance,
+                LineOrder = lineOrder++
+            });
+        }
+
+        entry.TotalDebit  = entry.Lines.Sum(l => l.Debit);
+        entry.TotalCredit = entry.Lines.Sum(l => l.Credit);
+
+        _context.JournalEntries.Add(entry);
+        await _context.SaveChangesAsync(ct);
+
+        _logger.LogInformation(
+            "Opening entry {EntryNumber} created for tenant {TenantId}, year {Year}. Lines: {Lines}, TotalDebit: {Debit}",
+            entry.EntryNumber, tenantId, year, entry.Lines.Count, entry.TotalDebit);
+
+        return (true, null);
+    }
+
     private async Task GenerateYearEndClosingEntryAsync(Guid tenantId, int year, string userId, CancellationToken ct)
     {
         var mapping = _accountMapping.Value;
@@ -163,16 +234,14 @@ public class FiscalPeriodService : IFiscalPeriodService
         var revenueAccounts = await _context.Accounts
             .Where(a => a.TenantId == tenantId
                 && a.Type == AccountType.Revenue
-                && a.CurrentBalance != 0
-                && a.AllowsDirectPosting)
+                && a.CurrentBalance != 0)
             .ToListAsync(ct);
 
         // Load Expense and Cost accounts (types 5 and 6) with non-zero balance
         var expenseAccounts = await _context.Accounts
             .Where(a => a.TenantId == tenantId
                 && (a.Type == AccountType.Expense || a.Type == AccountType.Cost)
-                && a.CurrentBalance != 0
-                && a.AllowsDirectPosting)
+                && a.CurrentBalance != 0)
             .ToListAsync(ct);
 
         if (revenueAccounts.Count == 0 && expenseAccounts.Count == 0)

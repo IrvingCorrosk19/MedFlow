@@ -41,6 +41,7 @@
     var openClinica      = IsCtrl("Patients") || IsCtrl("Doctors") || IsCtrl("Appointments");
     var openFinanza      = canSeeFinanzas && (IsCtrl("BillingInvoices") || IsCtrl("Payments") || IsCtrl("CashMovements") || IsCtrl("EventLogs"));
     var openContabilidad = canSeeContabilidad && (IsCtrl("ChartOfAccounts") || IsCtrl("JournalEntries") || IsCtrl("Ledger") || IsCtrl("FiscalPeriods") || IsCtrl("TaxRates") || IsCtrl("BankAccounts"));
+    bool IsLedgerDashboard = IsCtrl("Ledger") && string.Equals(action, "Dashboard", StringComparison.OrdinalIgnoreCase);
     bool IsCoaReport = IsCtrl("ChartOfAccounts") && string.Equals(action, "Report", StringComparison.OrdinalIgnoreCase);
     var openSeguridad    = IsCtrl("AdminUsers") || IsCtrl("AdminRoles") || IsCtrl("Permissions") || IsCtrl("SecurityAudit");
     var openInteligencia = canSeeReportes && (IsCtrl("Reports") || IsCtrl("Analytics"));
@@ -281,6 +282,12 @@
                             <p>Contabilidad <i class="right fa fa-angle-left"></i></p>
                         </a>
                         <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a asp-controller="Ledger" asp-action="Dashboard" class="nav-link @(IsLedgerDashboard ? "active" : "")">
+                                    <i class="nav-icon fa fa-tachometer-alt"></i>
+                                    <p>Dashboard</p>
+                                </a>
+                            </li>
                             <li class="nav-item">
                                 <a asp-controller="ChartOfAccounts" asp-action="Index" class="nav-link @Active("ChartOfAccounts","Index")">
                                     <i class="fa fa-circle-o nav-icon"></i><p>Plan de Cuentas</p>

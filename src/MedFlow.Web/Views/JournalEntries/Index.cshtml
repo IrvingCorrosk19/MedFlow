@@ -1,8 +1,16 @@
 @using MedFlow.Application.Accounting
 @using MedFlow.Domain.Enums
-@model IReadOnlyList<JournalEntryListItemDto>
+@model List<JournalEntryListItemDto>
 @{
     ViewData["PageTitle"] = "Asientos Contables";
+}
+
+@if ((int)(ViewBag.TotalCount ?? 0) > 100)
+{
+    <div class="alert alert-info">
+        <i class="fa fa-info-circle mr-1"></i>
+        Mostrando los primeros 100 asientos de @ViewBag.TotalCount. Use los filtros de fecha para acotar la búsqueda.
+    </div>
 }
 
 <div class="card card-outline card-secondary shadow-sm mb-3">

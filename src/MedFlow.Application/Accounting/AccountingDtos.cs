@@ -68,7 +68,8 @@ public sealed record JournalEntryDetailDto(
     decimal TotalCredit,
     string CreatedByUserName,
     DateTime? PostedAt,
-    IReadOnlyList<JournalEntryLineDto> Lines);
+    IReadOnlyList<JournalEntryLineDto> Lines,
+    string? UpdatedByUserId = null);
 
 public sealed record JournalEntryLineDto(
     Guid? Id,

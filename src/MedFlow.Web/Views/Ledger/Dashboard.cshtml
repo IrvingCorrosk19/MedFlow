@@ -1,0 +1,212 @@
+@using MedFlow.Application.Accounting
+@using MedFlow.Domain.Enums
+@model MedFlow.Web.Models.Accounting.AccountingDashboardViewModel
+@{
+    ViewData["PageTitle"] = "Dashboard Contable";
+}
+
+@* ── Row 1: KPI Cards ──────────────────────────────────────────────────────── *@
+<div class="row">
+    <div class="col-lg col-md-6 col-sm-6 col-12 mb-3">
+        <div class="small-box bg-info">
+            <div class="inner">
+                <h4>@Model.TotalAssets.ToString("N2")</h4>
+                <p>Activos Totales</p>
+            </div>
+            <div class="icon"><i class="fa fa-building"></i></div>
+            <a asp-action="BalanceSheet" class="small-box-footer">Ver detalle <i class="fa fa-arrow-circle-right"></i></a>
+        </div>
+    </div>
+    <div class="col-lg col-md-6 col-sm-6 col-12 mb-3">
+        <div class="small-box bg-danger">
+            <div class="inner">
+                <h4>@Model.TotalLiabilities.ToString("N2")</h4>
+                <p>Pasivos Totales</p>
+            </div>
+            <div class="icon"><i class="fa fa-credit-card"></i></div>
+            <a asp-action="BalanceSheet" class="small-box-footer">Ver detalle <i class="fa fa-arrow-circle-right"></i></a>
+        </div>
+    </div>
+    <div class="col-lg col-md-6 col-sm-6 col-12 mb-3">
+        <div class="small-box bg-success">
+            <div class="inner">
+                <h4>@Model.TotalEquity.ToString("N2")</h4>
+                <p>Patrimonio</p>
+            </div>
+            <div class="icon"><i class="fa fa-chart-pie"></i></div>
+            <a asp-action="BalanceSheet" class="small-box-footer">Ver detalle <i class="fa fa-arrow-circle-right"></i></a>
+        </div>
+    </div>
+    <div class="col-lg col-md-6 col-sm-6 col-12 mb-3">
+        <div class="small-box bg-teal" style="background-color:#17a2b8!important;">
+            <div class="inner">
+                <h4>@Model.TotalRevenue.ToString("N2")</h4>
+                <p>Ingresos del Período</p>
+            </div>
+            <div class="icon"><i class="fa fa-arrow-up"></i></div>
+            <a asp-action="IncomeStatement" class="small-box-footer">Ver detalle <i class="fa fa-arrow-circle-right"></i></a>
+        </div>
+    </div>
+    <div class="col-lg col-md-6 col-sm-6 col-12 mb-3">
+        <div class="small-box" style="background-color:#fd7e14!important;color:#fff;">
+            <div class="inner">
+                <h4>@Model.TotalExpenses.ToString("N2")</h4>
+                <p>Gastos del Período</p>
+            </div>
+            <div class="icon"><i class="fa fa-arrow-down"></i></div>
+            <a asp-action="IncomeStatement" class="small-box-footer" style="background:rgba(0,0,0,.1);">Ver detalle <i class="fa fa-arrow-circle-right"></i></a>
+        </div>
+    </div>
+</div>
+
+@* ── Row 2: Utilidad / Pérdida banner ─────────────────────────────────────── *@
+<div class="row mb-3">
+    <div class="col-12">
+        @if (Model.NetIncome >= 0)
+        {
+            <div class="alert alert-success d-flex align-items-center shadow-sm mb-0" style="font-size:1.25rem;font-weight:600;">
+                <i class="fa fa-check-circle fa-2x mr-3"></i>
+                <span>Utilidad del período (@Model.CurrentPeriodName): $@Model.NetIncome.ToString("N2")</span>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-danger d-flex align-items-center shadow-sm mb-0" style="font-size:1.25rem;font-weight:600;">
+                <i class="fa fa-exclamation-triangle fa-2x mr-3"></i>
+                <span>Pérdida del período (@Model.CurrentPeriodName): $@(Math.Abs(Model.NetIncome).ToString("N2"))</span>
+            </div>
+        }
+    </div>
+</div>
+
+@* ── Row 3: Últimos Asientos + Períodos Abiertos ───────────────────────────── *@
+<div class="row">
+    @* Left: Últimos Asientos *@
+    <div class="col-lg-7 mb-3">
+        <div class="card card-outline card-primary shadow-sm h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="card-title font-weight-bold mb-0">
+                    <i class="fa fa-book mr-2"></i>Últimos Asientos
+                </h3>
+                <a asp-controller="JournalEntries" asp-action="Index" class="btn btn-sm btn-outline-primary">Ver todos</a>
+            </div>
+            <div class="card-body p-0">
+                @if (Model.RecentEntries.Any())
+                {
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Número</th>
+                                <th>Fecha</th>
+                                <th>Descripción</th>
+                                <th>Estado</th>
+                                <th class="text-right">Débito</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var e in Model.RecentEntries)
+                            {
+                                var stColor = e.Status switch {
+                                    JournalEntryStatus.Draft => "warning",
+                                    JournalEntryStatus.Posted => "success",
+                                    JournalEntryStatus.Voided => "danger",
+                                    _ => "secondary"
+                                };
+                                var stLabel = e.Status switch {
+                                    JournalEntryStatus.Draft => "Borrador",
+                                    JournalEntryStatus.Posted => "Contabilizado",
+                                    JournalEntryStatus.Voided => "Anulado",
+                                    _ => e.Status.ToString()
+                                };
+                                <tr>
+                                    <td>
+                                        <a asp-controller="JournalEntries" asp-action="Details" asp-route-id="@e.Id">
+                                            <code>@e.EntryNumber</code>
+                                        </a>
+                                    </td>
+                                    <td>@e.EntryDate.ToString("dd/MM/yy")</td>
+                                    <td class="text-truncate" style="max-width:200px;" title="@e.Description">@e.Description</td>
+                                    <td><span class="badge badge-@stColor">@stLabel</span></td>
+                                    <td class="text-right">@e.TotalDebit.ToString("N2")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div class="p-3 text-muted">No hay asientos en los últimos 30 días.</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    @* Right: Períodos Abiertos *@
+    <div class="col-lg-5 mb-3">
+        <div class="card card-outline card-warning shadow-sm h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="card-title font-weight-bold mb-0">
+                    <i class="fa fa-calendar mr-2"></i>Períodos Abiertos
+                </h3>
+                <a asp-controller="FiscalPeriods" asp-action="Index" class="btn btn-sm btn-outline-warning">Gestionar</a>
+            </div>
+            <div class="card-body p-0">
+                @if (Model.OpenPeriods.Any())
+                {
+                    <ul class="list-group list-group-flush">
+                        @foreach (var p in Model.OpenPeriods)
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fa fa-circle-o text-warning mr-2"></i>
+                                    <strong>@p.Name</strong>
+                                    <small class="text-muted ml-2">@p.JournalEntryCount asiento(s)</small>
+                                </div>
+                                <form asp-controller="FiscalPeriods" asp-action="Close" method="post" class="d-inline"
+                                      onsubmit="return confirm('¿Cerrar el período @p.Name?');">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@p.Id" />
+                                    <button type="submit" class="btn btn-xs btn-outline-danger" title="Cerrar período">
+                                        <i class="fa fa-lock"></i> Cerrar
+                                    </button>
+                                </form>
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <div class="p-3 text-muted"><i class="fa fa-check-circle text-success mr-2"></i>No hay períodos abiertos.</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ── Quick actions ─────────────────────────────────────────────────────────── *@
+<div class="row">
+    <div class="col-12">
+        <div class="card card-outline card-secondary shadow-sm">
+            <div class="card-header">
+                <h3 class="card-title font-weight-bold mb-0"><i class="fa fa-bolt mr-2"></i>Acciones Rápidas</h3>
+            </div>
+            <div class="card-body">
+                <a asp-controller="JournalEntries" asp-action="Create" class="btn btn-success mr-2 mb-1">
+                    <i class="fa fa-plus mr-1"></i>Nuevo Asiento
+                </a>
+                <a asp-action="TrialBalance" class="btn btn-info mr-2 mb-1">
+                    <i class="fa fa-balance-scale mr-1"></i>Bal. Comprobación
+                </a>
+                <a asp-action="BalanceSheet" class="btn btn-primary mr-2 mb-1">
+                    <i class="fa fa-file-text-o mr-1"></i>Balance General
+                </a>
+                <a asp-action="IncomeStatement" class="btn btn-warning mr-2 mb-1">
+                    <i class="fa fa-line-chart mr-1"></i>Estado de Resultados
+                </a>
+                <a asp-action="Index" class="btn btn-secondary mr-2 mb-1">
+                    <i class="fa fa-book mr-1"></i>Libro Mayor
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
