@@ -128,6 +128,26 @@ public class BankAccountsController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    [HttpGet]
+    [RequirePermission(PermissionCodes.AccountingView)]
+    public async Task<IActionResult> Details(Guid id, CancellationToken ct)
+    {
+        if (!_tenant.TenantId.HasValue) return NotFound();
+        var account = await _bankAccounts.GetByIdAsync(id, _tenant.TenantId.Value, ct);
+        if (account is null) return NotFound();
+        ViewData["Title"] = $"Detalle — {account.Name}";
+        return View(account);
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    [RequirePermission(PermissionCodes.AccountingManage)]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    {
+        await _bankAccounts.DeleteAsync(id, ct);
+        TempData["Success"] = "Cuenta bancaria eliminada.";
+        return RedirectToAction(nameof(Index));
+    }
+
     [RequirePermission(PermissionCodes.AccountingView)]
     public async Task<IActionResult> Transactions(Guid id, DateTime? from, DateTime? to, bool? reconciled, CancellationToken ct)
     {

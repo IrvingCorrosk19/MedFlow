@@ -1,0 +1,98 @@
+@model MedFlow.Domain.Entities.Account
+@{
+    ViewData["PageTitle"] = "Detalle de Cuenta";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="font-weight-bold mb-0"><i class="fa fa-list-ol mr-2"></i>@Model.Code — @Model.Name</h4>
+    <div>
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning btn-sm"><i class="fa fa-pencil mr-1"></i>Editar</a>
+        <a asp-action="Index" class="btn btn-secondary btn-sm"><i class="fa fa-arrow-left mr-1"></i>Volver</a>
+    </div>
+</div>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible">
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+        @TempData["Error"]
+    </div>
+}
+
+<div class="card card-outline card-primary shadow-sm">
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-3">Código</dt>
+            <dd class="col-sm-9"><code>@Model.Code</code></dd>
+
+            <dt class="col-sm-3">Nombre</dt>
+            <dd class="col-sm-9">@Model.Name</dd>
+
+            <dt class="col-sm-3">Descripción</dt>
+            <dd class="col-sm-9">@(Model.Description ?? "—")</dd>
+
+            <dt class="col-sm-3">Tipo</dt>
+            <dd class="col-sm-9"><span class="badge badge-info">@Model.Type</span></dd>
+
+            <dt class="col-sm-3">Cuenta padre</dt>
+            <dd class="col-sm-9">@(Model.Parent?.Name ?? "—")</dd>
+
+            <dt class="col-sm-3">Permite asientos directos</dt>
+            <dd class="col-sm-9">
+                @if (Model.AllowsDirectPosting)
+                {
+                    <span class="badge badge-success"><i class="fa fa-check mr-1"></i>Sí</span>
+                }
+                else
+                {
+                    <span class="badge badge-secondary"><i class="fa fa-minus mr-1"></i>No</span>
+                }
+            </dd>
+
+            <dt class="col-sm-3">Saldo actual</dt>
+            <dd class="col-sm-9 font-weight-bold @(Model.CurrentBalance < 0 ? "text-danger" : "")">
+                @Model.CurrentBalance.ToString("N2")
+            </dd>
+
+            <dt class="col-sm-3">Estado</dt>
+            <dd class="col-sm-9">
+                @if (Model.IsActive)
+                {
+                    <span class="badge badge-success">Activa</span>
+                }
+                else
+                {
+                    <span class="badge badge-secondary">Inactiva</span>
+                }
+            </dd>
+
+            <dt class="col-sm-3">Creada</dt>
+            <dd class="col-sm-9">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</dd>
+        </dl>
+    </div>
+</div>
+
+<form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="mt-3 frm-del-details">
+    @Html.AntiForgeryToken()
+    <button type="button" class="btn btn-danger btn-sm btn-del-details">
+        <i class="fa fa-trash mr-1"></i>Eliminar cuenta
+    </button>
+</form>
+
+@section Scripts {
+<script>
+$(function () {
+    $(document).on('click', '.btn-del-details', function () {
+        var f = $(this).closest('form');
+        Swal.fire({
+            title: '¿Eliminar esta cuenta?',
+            text: 'Esta acción no se puede deshacer.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then(function (r) { if (r.isConfirmed) f.submit(); });
+    });
+});
+</script>
+}

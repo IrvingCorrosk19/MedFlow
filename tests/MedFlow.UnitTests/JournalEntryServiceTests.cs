@@ -1,9 +1,11 @@
 using MedFlow.Application.Accounting;
 using MedFlow.Application.Interfaces;
+using MedFlow.Application.Options;
 using MedFlow.Domain.Entities;
 using MedFlow.Domain.Enums;
 using MedFlow.Infrastructure.Services;
 using MedFlow.UnitTests.Helpers;
+using Microsoft.Extensions.Options;
 using Moq;
 
 namespace MedFlow.UnitTests;
@@ -20,7 +22,8 @@ public class JournalEntryServiceTests
         IAccountService? accounts = null)
     {
         var mockAccounts = accounts ?? new Mock<IAccountService>().Object;
-        return new JournalEntryService(db, mockAccounts, db);
+        var mapping = Options.Create(new AccountMappingOptions());
+        return new JournalEntryService(db, mockAccounts, db, mapping);
     }
 
     /// <summary>Seeds an open fiscal period for the given tenant and returns it.</summary>

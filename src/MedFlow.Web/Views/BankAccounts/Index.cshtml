@@ -42,6 +42,9 @@
                                 }
                             </div>
                             <div>
+                                <a asp-action="Details" asp-route-id="@b.Id" class="btn btn-xs btn-outline-info mr-1" title="Ver detalle">
+                                    <i class="fa fa-eye"></i>
+                                </a>
                                 <a asp-action="Transactions" asp-route-id="@b.Id" class="btn btn-xs btn-outline-primary mr-1" title="Ver movimientos">
                                     <i class="fa fa-list"></i> Movimientos
                                 </a>

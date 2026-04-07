@@ -118,6 +118,16 @@ public class TaxRatesController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    [HttpGet]
+    [RequirePermission(PermissionCodes.AccountingView)]
+    public async Task<IActionResult> Details(Guid id, CancellationToken ct)
+    {
+        var rate = await _taxRates.GetByIdAsync(id, ct);
+        if (rate is null) return NotFound();
+        ViewData["Title"] = $"Detalle — {rate.Name}";
+        return View(rate);
+    }
+
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission(PermissionCodes.AccountingManage)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)

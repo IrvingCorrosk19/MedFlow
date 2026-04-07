@@ -1,3 +1,4 @@
+using System.Text;
 using MedFlow.Application.Interfaces;
 using MedFlow.Application.Security;
 using MedFlow.Domain.Entities;
@@ -117,6 +118,16 @@ public class ChartOfAccountsController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    [HttpGet]
+    [RequirePermission(PermissionCodes.AccountingView)]
+    public async Task<IActionResult> Details(Guid id, CancellationToken ct)
+    {
+        var account = await _accounts.GetByIdAsync(id, ct);
+        if (account is null) return NotFound();
+        ViewData["Title"] = $"Detalle — {account.Code}";
+        return View(account);
+    }
+
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission(PermissionCodes.AccountingManage)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
@@ -124,6 +135,45 @@ public class ChartOfAccountsController : Controller
         await _accounts.DeleteAsync(id, ct);
         TempData["Success"] = "Cuenta eliminada.";
         return RedirectToAction(nameof(Index));
+    }
+
+    [HttpGet]
+    [RequirePermission(PermissionCodes.AccountingView)]
+    public async Task<IActionResult> Report(CancellationToken ct)
+    {
+        if (!_tenant.TenantId.HasValue) return NotFound();
+        var list = await _accounts.GetAllAsync(_tenant.TenantId.Value, ct);
+        var ordered = list.OrderBy(a => a.Code).ToList();
+        ViewData["Title"] = "Plan de Cuentas — Reporte";
+        ViewData["PageSubtitle"] = "Vista jerárquica del catálogo de cuentas";
+        ViewData["TenantName"] = _tenant.TenantName;
+        return View(ordered);
+    }
+
+    [HttpGet]
+    [RequirePermission(PermissionCodes.AccountingView)]
+    public async Task<IActionResult> ExportCsv(CancellationToken ct)
+    {
+        if (!_tenant.TenantId.HasValue) return NotFound();
+        var list = await _accounts.GetAllAsync(_tenant.TenantId.Value, ct);
+        var ordered = list.OrderBy(a => a.Code);
+
+        var sb = new StringBuilder();
+        sb.AppendLine("Código,Nombre,Tipo,Cuenta Padre,Permite Posting,Saldo Actual,Activo");
+        foreach (var a in ordered)
+        {
+            var code    = $"\"{a.Code}\"";
+            var name    = $"\"{a.Name.Replace("\"", "\"\"")}\"";
+            var type    = $"\"{a.TypeLabel}\"";
+            var parent  = $"\"{a.ParentCode ?? ""}\"";
+            var posting = a.AllowsDirectPosting ? "Sí" : "No";
+            var balance = a.CurrentBalance.ToString("F2");
+            var active  = "Sí";
+            sb.AppendLine($"{code},{name},{type},{parent},{posting},{balance},{active}");
+        }
+
+        var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
+        return File(bytes, "text/csv; charset=utf-8", "plan_de_cuentas.csv");
     }
 
     private async Task PopulateParentSelectAsync(Guid? excludeId, CancellationToken ct)

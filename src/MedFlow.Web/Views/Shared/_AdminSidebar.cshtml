@@ -41,6 +41,7 @@
     var openClinica      = IsCtrl("Patients") || IsCtrl("Doctors") || IsCtrl("Appointments");
     var openFinanza      = canSeeFinanzas && (IsCtrl("BillingInvoices") || IsCtrl("Payments") || IsCtrl("CashMovements") || IsCtrl("EventLogs"));
     var openContabilidad = canSeeContabilidad && (IsCtrl("ChartOfAccounts") || IsCtrl("JournalEntries") || IsCtrl("Ledger") || IsCtrl("FiscalPeriods") || IsCtrl("TaxRates") || IsCtrl("BankAccounts"));
+    bool IsCoaReport = IsCtrl("ChartOfAccounts") && string.Equals(action, "Report", StringComparison.OrdinalIgnoreCase);
     var openSeguridad    = IsCtrl("AdminUsers") || IsCtrl("AdminRoles") || IsCtrl("Permissions") || IsCtrl("SecurityAudit");
     var openInteligencia = canSeeReportes && (IsCtrl("Reports") || IsCtrl("Analytics"));
     var isAIArea         = ViewContext.RouteData.Values["area"]?.ToString() == "AI";
@@ -281,8 +282,13 @@
                         </a>
                         <ul class="nav nav-treeview">
                             <li class="nav-item">
-                                <a asp-controller="ChartOfAccounts" asp-action="Index" class="nav-link @Active("ChartOfAccounts")">
+                                <a asp-controller="ChartOfAccounts" asp-action="Index" class="nav-link @Active("ChartOfAccounts","Index")">
                                     <i class="fa fa-circle-o nav-icon"></i><p>Plan de Cuentas</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a asp-controller="ChartOfAccounts" asp-action="Report" class="nav-link @(IsCoaReport ? "active" : "")">
+                                    <i class="fa fa-book nav-icon"></i><p>Reporte de Cuentas</p>
                                 </a>
                             </li>
                             <li class="nav-item">

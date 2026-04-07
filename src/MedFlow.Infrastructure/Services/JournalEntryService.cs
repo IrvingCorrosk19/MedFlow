@@ -1,9 +1,11 @@
 using MedFlow.Application.Accounting;
 using MedFlow.Application.Interfaces;
+using MedFlow.Application.Options;
 using MedFlow.Domain.Entities;
 using MedFlow.Domain.Enums;
 using MedFlow.Infrastructure.Telemetry;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using System.Diagnostics;
 
 namespace MedFlow.Infrastructure.Services;
@@ -13,15 +15,18 @@ public class JournalEntryService : IJournalEntryService
     private readonly IApplicationDbContext _context;
     private readonly IAccountService _accounts;
     private readonly MedFlow.Infrastructure.Persistence.ApplicationDbContext _dbContext;
+    private readonly IOptions<AccountMappingOptions> _accountMapping;
 
     public JournalEntryService(
         IApplicationDbContext context,
         IAccountService accounts,
-        MedFlow.Infrastructure.Persistence.ApplicationDbContext dbContext)
+        MedFlow.Infrastructure.Persistence.ApplicationDbContext dbContext,
+        IOptions<AccountMappingOptions> accountMapping)
     {
         _context = context;
         _accounts = accounts;
         _dbContext = dbContext;
+        _accountMapping = accountMapping;
     }
 
     public async Task<IReadOnlyList<JournalEntryListItemDto>> SearchAsync(
@@ -246,13 +251,14 @@ public class JournalEntryService : IJournalEntryService
 
     public async Task<JournalEntry?> CreateFromInvoiceAsync(Guid tenantId, BillingInvoice invoice, string userId, CancellationToken ct = default)
     {
-        // Lookup accounts: Cuentas por cobrar (1200) and Ingresos (4100)
+        // Lookup accounts: Cuentas por cobrar and Ingresos
+        var mapping = _accountMapping.Value;
         var receivableAccount = await _context.Accounts
-            .FirstOrDefaultAsync(a => a.TenantId == tenantId && a.Code.StartsWith("1200"), ct);
+            .FirstOrDefaultAsync(a => a.TenantId == tenantId && a.Code.StartsWith(mapping.ReceivablesAccountCode), ct);
         var revenueAccount = await _context.Accounts
-            .FirstOrDefaultAsync(a => a.TenantId == tenantId && a.Code.StartsWith("4100"), ct);
+            .FirstOrDefaultAsync(a => a.TenantId == tenantId && a.Code.StartsWith(mapping.RevenueAccountCode), ct);
         var taxAccount = await _context.Accounts
-            .FirstOrDefaultAsync(a => a.TenantId == tenantId && a.Code.StartsWith("2300"), ct);
+            .FirstOrDefaultAsync(a => a.TenantId == tenantId && a.Code.StartsWith(mapping.TaxPayableAccountCode), ct);
 
         if (receivableAccount is null || revenueAccount is null)
             return null; // Chart of accounts not configured yet
@@ -320,10 +326,11 @@ public class JournalEntryService : IJournalEntryService
 
     public async Task<JournalEntry?> CreateFromPaymentAsync(Guid tenantId, Payment payment, string userId, CancellationToken ct = default)
     {
+        var mapping = _accountMapping.Value;
         var cashAccount = await _context.Accounts
-            .FirstOrDefaultAsync(a => a.TenantId == tenantId && a.Code.StartsWith("1100"), ct);
+            .FirstOrDefaultAsync(a => a.TenantId == tenantId && a.Code.StartsWith(mapping.CashAccountCode), ct);
         var receivableAccount = await _context.Accounts
-            .FirstOrDefaultAsync(a => a.TenantId == tenantId && a.Code.StartsWith("1200"), ct);
+            .FirstOrDefaultAsync(a => a.TenantId == tenantId && a.Code.StartsWith(mapping.ReceivablesAccountCode), ct);
 
         if (cashAccount is null || receivableAccount is null)
             return null;

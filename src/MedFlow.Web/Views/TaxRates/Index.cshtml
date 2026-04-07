@@ -47,6 +47,7 @@
                             }
                         </td>
                         <td class="text-right">
+                            <a asp-action="Details" asp-route-id="@t.Id" class="btn btn-xs btn-outline-info mr-1" title="Ver detalle"><i class="fa fa-eye"></i></a>
                             <a asp-action="Edit" asp-route-id="@t.Id" class="btn btn-xs btn-outline-primary mr-1"><i class="fa fa-pencil"></i></a>
                             <form asp-action="Delete" method="post" class="d-inline frm-del">
                                 @Html.AntiForgeryToken()

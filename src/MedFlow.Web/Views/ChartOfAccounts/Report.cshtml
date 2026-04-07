@@ -1,0 +1,229 @@
+@using MedFlow.Application.Accounting
+@using MedFlow.Domain.Enums
+@model IReadOnlyList<AccountListItemDto>
+@{
+    ViewData["PageTitle"] = "Plan de Cuentas — Reporte";
+    var tenantName  = ViewData["TenantName"] as string;
+    var reportTitle = string.IsNullOrWhiteSpace(tenantName)
+        ? "Plan de Cuentas"
+        : $"Plan de Cuentas — {tenantName}";
+    var today = DateTime.Today.ToString("dd/MM/yyyy");
+
+    // ── Type ordering & labels ────────────────────────────────────────────────
+    var typeOrder = new[]
+    {
+        AccountType.Asset,
+        AccountType.Liability,
+        AccountType.Equity,
+        AccountType.Revenue,
+        AccountType.Cost,
+        AccountType.Expense
+    };
+
+    static string TypeLabel(AccountType t) => t switch
+    {
+        AccountType.Asset     => "ACTIVO",
+        AccountType.Liability => "PASIVO",
+        AccountType.Equity    => "PATRIMONIO",
+        AccountType.Revenue   => "INGRESOS",
+        AccountType.Cost      => "COSTO",
+        AccountType.Expense   => "GASTOS",
+        _                     => t.ToString().ToUpper()
+    };
+
+    // Bootstrap text/bg colour token per type
+    static string TypeColor(AccountType t) => t switch
+    {
+        AccountType.Asset     => "primary",
+        AccountType.Liability => "danger",
+        AccountType.Equity    => "success",
+        AccountType.Revenue   => "info",
+        AccountType.Cost      => "warning",
+        AccountType.Expense   => "warning",
+        _                     => "secondary"
+    };
+
+    // Hex header background per type (for the section headers in the table)
+    static string HeaderBg(AccountType t) => t switch
+    {
+        AccountType.Asset     => "#cfe2ff",   // blue-100
+        AccountType.Liability => "#f8d7da",   // red-100
+        AccountType.Equity    => "#d1e7dd",   // green-100
+        AccountType.Revenue   => "#d3f4f0",   // teal-100
+        AccountType.Cost      => "#fff3cd",   // yellow-100
+        AccountType.Expense   => "#ffe5d0",   // orange-100
+        _                     => "#f8f9fa"
+    };
+
+    static string HeaderFg(AccountType t) => t switch
+    {
+        AccountType.Asset     => "#084298",
+        AccountType.Liability => "#842029",
+        AccountType.Equity    => "#0f5132",
+        AccountType.Revenue   => "#0a6965",
+        AccountType.Cost      => "#664d03",
+        AccountType.Expense   => "#7a3300",
+        _                     => "#343a40"
+    };
+
+    // Build a lookup of all accounts by Id for parent name resolution
+    var byId = Model.ToDictionary(a => a.Id);
+
+    // Group by type, keeping the pre-sorted order
+    var groups = typeOrder
+        .Select(t => new { Type = t, Accounts = Model.Where(a => a.Type == t).ToList() })
+        .Where(g => g.Accounts.Count > 0)
+        .ToList();
+
+    // Grand total across all accounts that allow direct posting
+    var grandTotal = Model.Sum(a => a.CurrentBalance);
+}
+
+<div class="card card-outline card-primary shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h3 class="card-title font-weight-bold mb-0">
+                <i class="fa fa-book mr-2"></i>@reportTitle
+            </h3>
+            <small class="text-muted">Generado el @today</small>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            <a asp-action="ExportCsv" class="btn btn-outline-success btn-sm">
+                <i class="fa fa-download mr-1"></i>Exportar CSV
+            </a>
+            <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+                <i class="fa fa-arrow-left mr-1"></i>Volver al catálogo
+            </a>
+        </div>
+    </div>
+
+    <div class="card-body p-0">
+        <table class="table table-sm mb-0 report-coa">
+            <colgroup>
+                <col style="width:130px" />
+                <col />
+                <col style="width:160px" />
+                <col style="width:140px" />
+            </colgroup>
+            <thead class="thead-light d-print-table-header-group">
+                <tr>
+                    <th>Código</th>
+                    <th>Nombre de cuenta</th>
+                    <th class="text-center">Tipo</th>
+                    <th class="text-right">Saldo actual</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var group in groups)
+                {
+                    var sectionBg  = HeaderBg(group.Type);
+                    var sectionFg  = HeaderFg(group.Type);
+                    var typeTotal  = group.Accounts.Sum(a => a.CurrentBalance);
+                    var colorToken = TypeColor(group.Type);
+
+                    @* ── Section header row ─────────────────────────────── *@
+                    <tr>
+                        <td colspan="4"
+                            style="background:@sectionBg; color:@sectionFg; font-weight:700;
+                                   text-transform:uppercase; letter-spacing:.05em;
+                                   border-top:2px solid @sectionFg; border-bottom:1px solid @sectionFg;
+                                   padding:.45rem .75rem;">
+                            <i class="fa fa-folder-open mr-1"></i>@TypeLabel(group.Type)
+                        </td>
+                    </tr>
+
+                    @foreach (var acct in group.Accounts)
+                    {
+                        var isRoot    = acct.Level == 0;
+                        var indentPx  = acct.Level * 20;
+                        var fontCls   = isRoot ? "fw-bold" : "";
+                        var balCls    = acct.CurrentBalance < 0 ? "text-danger" : "";
+
+                        <tr class="coa-row @(isRoot ? "coa-root" : "coa-child")"
+                            data-level="@acct.Level">
+                            <td>
+                                <code class="@(isRoot ? "fw-bold" : "")">@acct.Code</code>
+                            </td>
+                            <td style="padding-left: calc(.75rem + @(indentPx)px);">
+                                @if (isRoot)
+                                {
+                                    <strong>@acct.Name</strong>
+                                }
+                                else if (acct.AllowsDirectPosting)
+                                {
+                                    <span>@acct.Name</span>
+                                }
+                                else
+                                {
+                                    <em class="text-muted">@acct.Name</em>
+                                }
+                                @if (!acct.AllowsDirectPosting)
+                                {
+                                    <span class="badge badge-secondary ml-1" style="font-size:.65em;">grupo</span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                <span class="badge badge-@colorToken" style="font-size:.7em;">@acct.TypeLabel</span>
+                            </td>
+                            <td class="text-right @balCls @fontCls">
+                                @acct.CurrentBalance.ToString("N2")
+                            </td>
+                        </tr>
+                    }
+
+                    @* ── Section subtotal row ───────────────────────────── *@
+                    <tr class="coa-subtotal"
+                        style="background:@sectionBg; color:@sectionFg; font-weight:700;
+                               border-top:1px solid @sectionFg; border-bottom:2px solid @sectionFg;">
+                        <td></td>
+                        <td colspan="2" style="padding-left:1rem;">Total @TypeLabel(group.Type)</td>
+                        <td class="text-right @(typeTotal < 0 ? "text-danger" : "")">
+                            @typeTotal.ToString("N2")
+                        </td>
+                    </tr>
+
+                    @* Spacer *@
+                    <tr style="height:6px; background:#fff;"><td colspan="4"></td></tr>
+                }
+
+                @* ── Grand total ────────────────────────────────────────── *@
+                <tr class="coa-grand-total"
+                    style="background:#212529; color:#fff; font-size:1rem; font-weight:700;
+                           border-top:3px solid #000;">
+                    <td></td>
+                    <td colspan="2" style="padding-left:1rem; text-transform:uppercase; letter-spacing:.05em;">
+                        <i class="fa fa-sigma mr-1"></i>Total general
+                    </td>
+                    <td class="text-right @(grandTotal < 0 ? "text-danger" : "")">
+                        @grandTotal.ToString("N2")
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card-footer text-muted small d-print-none">
+        @Model.Count cuenta(s) — exportado el @today
+    </div>
+</div>
+
+@section Styles {
+<style>
+    .report-coa td, .report-coa th {
+        vertical-align: middle;
+    }
+    .coa-root td {
+        background-color: #f8f9fa;
+    }
+    .coa-child td {
+        background-color: #fff;
+    }
+    .coa-row:hover td {
+        background-color: #eef4ff !important;
+    }
+    @@media print {
+        .btn, .card-footer { display: none !important; }
+        .card { box-shadow: none !important; border: none !important; }
+    }
+</style>
+}

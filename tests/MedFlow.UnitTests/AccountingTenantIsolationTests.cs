@@ -1,8 +1,10 @@
 using MedFlow.Application.Interfaces;
+using MedFlow.Application.Options;
 using MedFlow.Domain.Entities;
 using MedFlow.Domain.Enums;
 using MedFlow.Infrastructure.Services;
 using MedFlow.UnitTests.Helpers;
+using Microsoft.Extensions.Options;
 using Moq;
 
 namespace MedFlow.UnitTests;
@@ -19,9 +21,9 @@ public class AccountingTenantIsolationTests
     private static JournalEntryService CreateJournalService(
         MedFlow.Infrastructure.Persistence.ApplicationDbContext db)
     {
-        // Constructor: JournalEntryService(IApplicationDbContext context, IAccountService accounts, ApplicationDbContext dbContext)
-        // Pass the same db instance for both interface and concrete type.
-        return new JournalEntryService(db, new Mock<IAccountService>().Object, db);
+        // Constructor: JournalEntryService(IApplicationDbContext, IAccountService, ApplicationDbContext, IOptions<AccountMappingOptions>)
+        var mapping = Options.Create(new AccountMappingOptions());
+        return new JournalEntryService(db, new Mock<IAccountService>().Object, db, mapping);
     }
 
     private static BankAccountService CreateBankAccountService(

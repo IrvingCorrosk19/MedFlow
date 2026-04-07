@@ -133,6 +133,7 @@ public static class DependencyInjection
         services.AddScoped<IWebhookEventQueryService, WebhookEventQueryService>();
         services.AddScoped<Startup.IStartupValidator, Startup.StartupValidator>();
 
+        services.Configure<MedFlow.Application.Options.AccountMappingOptions>(configuration.GetSection(MedFlow.Application.Options.AccountMappingOptions.SectionName));
         services.Configure<MedFlow.Application.Options.JwtOptions>(configuration.GetSection(MedFlow.Application.Options.JwtOptions.SectionName));
         services.AddScoped<MedFlow.Application.Interfaces.IJwtTokenService, JwtTokenService>();
         services.AddScoped<MedFlow.Application.Interfaces.IRefreshTokenService, RefreshTokenService>();
