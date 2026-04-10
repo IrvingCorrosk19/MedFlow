@@ -16,9 +16,17 @@
 <div class="card card-outline card-primary shadow-sm">
     <div class="card-header d-flex flex-wrap align-items-center justify-content-between">
         <h3 class="card-title mb-0"><i class="fa fa-calendar mr-2"></i>Listado de citas</h3>
-        <a asp-action="Create" class="btn btn-primary btn-sm mt-2 mt-sm-0">
-            <i class="fa fa-plus"></i> Nueva cita
-        </a>
+        <div class="d-flex flex-wrap mt-2 mt-sm-0" style="gap:6px">
+            <a asp-action="ExportCsv" asp-route-from="@from.ToString("yyyy-MM-dd")" asp-route-to="@to.ToString("yyyy-MM-dd")" asp-route-doctorId="@doctorId" class="btn btn-outline-secondary btn-sm">
+                <i class="fa fa-download mr-1"></i> Exportar CSV
+            </a>
+            <a asp-action="Calendar" class="btn btn-outline-primary btn-sm">
+                <i class="fa fa-calendar mr-1"></i> Calendario
+            </a>
+            <a asp-action="Create" class="btn btn-primary btn-sm">
+                <i class="fa fa-plus"></i> Nueva cita
+            </a>
+        </div>
     </div>
     <div class="card-body border-bottom bg-light">
         <form method="get" class="form-row align-items-end">

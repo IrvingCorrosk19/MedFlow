@@ -10,8 +10,13 @@
         <h3 class="card-title mb-0"><i class="fa fa-users mr-2"></i>Listado de pacientes</h3>
         <div class="d-flex flex-wrap gap-1 mt-2 mt-sm-0">
             <a asp-action="ExportCsv" asp-route-search="@ViewBag.Search" asp-route-estadoActivo="@ViewBag.EstadoActivo"
+               asp-route-documento="@ViewBag.Documento" asp-route-telefono="@ViewBag.Telefono"
+               asp-route-edadDesde="@ViewBag.EdadDesde" asp-route-edadHasta="@ViewBag.EdadHasta"
                class="btn btn-outline-success btn-sm" title="Exportar CSV">
                 <i class="fa fa-file-excel-o"></i> CSV
+            </a>
+            <a asp-action="ImportCsv" class="btn btn-outline-info btn-sm" title="Importar desde CSV">
+                <i class="fa fa-upload"></i> Importar
             </a>
             <a asp-action="Create" class="btn btn-primary btn-sm">
                 <i class="fa fa-user-plus"></i> Nuevo paciente
@@ -20,11 +25,27 @@
     </div>
     <div class="card-body border-bottom bg-light">
         <form method="get" class="form-row align-items-end">
-            <div class="form-group col-md-5 col-lg-4 mb-2 mb-md-0">
-                <label class="small text-muted mb-0">Búsqueda</label>
-                <input type="search" name="search" value="@ViewBag.Search" class="form-control form-control-sm" placeholder="Nombre, documento, teléfono, correo…" />
+            <div class="form-group col-md-4 col-lg-3 mb-2">
+                <label class="small text-muted mb-0">Nombre / correo</label>
+                <input type="search" name="search" value="@ViewBag.Search" class="form-control form-control-sm" placeholder="Nombre o correo…" />
             </div>
-            <div class="form-group col-md-3 col-lg-2 mb-2 mb-md-0">
+            <div class="form-group col-md-3 col-lg-2 mb-2">
+                <label class="small text-muted mb-0">Nro. documento</label>
+                <input type="search" name="documento" value="@ViewBag.Documento" class="form-control form-control-sm" placeholder="Ej: 12345678" />
+            </div>
+            <div class="form-group col-md-3 col-lg-2 mb-2">
+                <label class="small text-muted mb-0">Teléfono</label>
+                <input type="search" name="telefono" value="@ViewBag.Telefono" class="form-control form-control-sm" placeholder="Ej: 300…" />
+            </div>
+            <div class="form-group col-6 col-md-2 col-lg-1 mb-2">
+                <label class="small text-muted mb-0">Edad desde</label>
+                <input type="number" name="edadDesde" value="@ViewBag.EdadDesde" class="form-control form-control-sm" min="0" max="150" placeholder="0" />
+            </div>
+            <div class="form-group col-6 col-md-2 col-lg-1 mb-2">
+                <label class="small text-muted mb-0">Edad hasta</label>
+                <input type="number" name="edadHasta" value="@ViewBag.EdadHasta" class="form-control form-control-sm" min="0" max="150" placeholder="99" />
+            </div>
+            <div class="form-group col-md-2 col-lg-1 mb-2">
                 <label class="small text-muted mb-0">Estado</label>
                 <select name="estadoActivo" class="form-control form-control-sm">
                     <option value="">Todos</option>
@@ -32,8 +53,9 @@
                     <option value="false" selected="@(ViewBag.EstadoActivo == false)">Inactivos</option>
                 </select>
             </div>
-            <div class="form-group col-auto mb-0">
-                <button type="submit" class="btn btn-default btn-sm"><i class="fa fa-filter"></i> Aplicar</button>
+            <div class="form-group col-auto mb-2 d-flex" style="gap:4px;align-items:flex-end">
+                <button type="submit" class="btn btn-default btn-sm"><i class="fa fa-filter"></i> Filtrar</button>
+                <a asp-action="Index" class="btn btn-outline-secondary btn-sm" title="Limpiar filtros"><i class="fa fa-times"></i></a>
             </div>
         </form>
     </div>

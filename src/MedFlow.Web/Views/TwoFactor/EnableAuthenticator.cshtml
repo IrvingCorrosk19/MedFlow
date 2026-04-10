@@ -1,0 +1,65 @@
+@model MedFlow.Web.Models.EnableAuthenticatorViewModel
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card card-outline card-primary shadow-sm">
+            <div class="card-header">
+                <h3 class="card-title mb-0"><i class="fa fa-qrcode mr-2"></i>Configurar aplicación autenticadora</h3>
+            </div>
+            <div class="card-body">
+                <ol class="pl-3">
+                    <li class="mb-3">
+                        <strong>Descarga</strong> una aplicación autenticadora en tu móvil:
+                        <span class="badge badge-secondary">Google Authenticator</span>
+                        <span class="badge badge-secondary">Microsoft Authenticator</span>
+                        <span class="badge badge-secondary">Authy</span>
+                    </li>
+                    <li class="mb-3">
+                        <strong>Escanea el código QR</strong> con la aplicación o introduce la clave manualmente:
+                        <div class="my-3 text-center">
+                            <div id="qrcode" class="d-inline-block p-2 bg-white border rounded shadow-sm"></div>
+                        </div>
+                        <p class="text-muted small">
+                            Si no puedes escanear el QR, usa esta clave:
+                            <code class="d-inline-block bg-light border rounded px-2 py-1 mt-1 user-select-all">@Model.SharedKey</code>
+                        </p>
+                    </li>
+                    <li>
+                        <strong>Ingresa el código</strong> de 6 dígitos que muestra la aplicación:
+                        <form asp-action="EnableAuthenticator" method="post" class="mt-2">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" asp-for="SharedKey" />
+                            <input type="hidden" asp-for="AuthenticatorUri" />
+                            <div asp-validation-summary="ModelOnly" class="alert alert-danger small"></div>
+                            <div class="form-group">
+                                <input asp-for="Code" class="form-control form-control-lg"
+                                       placeholder="000000" maxlength="7" autocomplete="one-time-code"
+                                       inputmode="numeric" autofocus style="max-width:160px;letter-spacing:4px;font-size:1.4rem;text-align:center" />
+                                <span asp-validation-for="Code" class="text-danger small"></span>
+                            </div>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fa fa-check mr-1"></i> Verificar y activar
+                            </button>
+                            <a asp-action="Index" class="btn btn-default ml-2">Cancelar</a>
+                        </form>
+                    </li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script>
+        QRCode.toCanvas(
+            document.createElement('canvas'),
+            '@Html.Raw(Model.AuthenticatorUri)',
+            { width: 200, margin: 2 },
+            function (err, canvas) {
+                if (!err) document.getElementById('qrcode').appendChild(canvas);
+            }
+        );
+    </script>
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}

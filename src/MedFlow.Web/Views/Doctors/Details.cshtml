@@ -1,41 +1,132 @@
 @model MedFlow.Domain.Entities.Doctor
+@using System.Text.Json
 @{
     ViewData["Title"] = "Detalle de doctor";
     ViewData["PageSubtitle"] = Model.FullName;
     ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a href=\"" + Url.Action("Index") + "\">Doctores</a></li><li class=\"breadcrumb-item active\">Detalle</li>";
+
+    // Parse working hours JSON
+    List<dynamic>? schedule = null;
+    if (!string.IsNullOrWhiteSpace(Model.WorkingHours))
+    {
+        try { schedule = JsonSerializer.Deserialize<List<System.Text.Json.Nodes.JsonObject>>(Model.WorkingHours)
+                ?.Select(o => (dynamic)o).ToList(); } catch { }
+    }
 }
 
-<div class="card card-outline card-primary shadow-sm">
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-6">
-                <p><strong>Nombre:</strong> @Model.FullName</p>
-                <p><strong>Especialidad:</strong> @(string.IsNullOrWhiteSpace(Model.Speciality) ? "—" : Model.Speciality)</p>
-                <p><strong>Licencia:</strong> @(string.IsNullOrWhiteSpace(Model.LicenseNumber) ? "—" : Model.LicenseNumber)</p>
-                <p><strong>Consultorio:</strong> @(string.IsNullOrWhiteSpace(Model.ConsultationRoom) ? "—" : Model.ConsultationRoom)</p>
+<div class="row">
+    <div class="col-lg-5">
+        <div class="card card-outline card-primary shadow-sm mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="card-title mb-0"><i class="fa fa-user-md mr-2"></i>@Model.FullName</h3>
+                <span class="badge @(Model.IsActive ? "badge-success" : "badge-secondary") px-3 py-2">
+                    @(Model.IsActive ? "Activo" : "Inactivo")
+                </span>
             </div>
-            <div class="col-md-6">
-                <p><strong>Teléfono:</strong> @(string.IsNullOrWhiteSpace(Model.Phone) ? "—" : Model.Phone)</p>
-                <p><strong>Correo:</strong> @(string.IsNullOrWhiteSpace(Model.Email) ? "—" : Model.Email)</p>
-                <p><strong>Horario:</strong> @(string.IsNullOrWhiteSpace(Model.WorkingHours) ? "—" : Model.WorkingHours)</p>
-                <p><strong>Estado:</strong> @(Model.IsActive ? "Activo" : "Inactivo")</p>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-5 text-muted small">Especialidad</dt>
+                    <dd class="col-7">@(string.IsNullOrWhiteSpace(Model.Speciality) ? "—" : Model.Speciality)</dd>
+                    <dt class="col-5 text-muted small">Licencia médica</dt>
+                    <dd class="col-7">@(string.IsNullOrWhiteSpace(Model.LicenseNumber) ? "—" : Model.LicenseNumber)</dd>
+                    <dt class="col-5 text-muted small">Consultorio</dt>
+                    <dd class="col-7">@(string.IsNullOrWhiteSpace(Model.ConsultationRoom) ? "—" : Model.ConsultationRoom)</dd>
+                    <dt class="col-5 text-muted small">Teléfono</dt>
+                    <dd class="col-7">@(string.IsNullOrWhiteSpace(Model.Phone) ? "—" : Model.Phone)</dd>
+                    <dt class="col-5 text-muted small">Correo</dt>
+                    <dd class="col-7">@(string.IsNullOrWhiteSpace(Model.Email) ? "—" : Model.Email)</dd>
+                    @if (!string.IsNullOrWhiteSpace(Model.Notes))
+                    {
+                        <dt class="col-5 text-muted small">Notas</dt>
+                        <dd class="col-7">@Model.Notes</dd>
+                    }
+                </dl>
             </div>
         </div>
-        <hr />
-        <p class="mb-0"><strong>Notas:</strong> @(string.IsNullOrWhiteSpace(Model.Notes) ? "—" : Model.Notes)</p>
-    </div>
-</div>
 
-<div class="mt-3 d-flex gap-2">
-    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary"><i class="fa fa-edit"></i> Editar</a>
-    <form asp-action="SetActive" method="post" class="d-inline">
-        @Html.AntiForgeryToken()
-        <input type="hidden" name="id" value="@Model.Id" />
-        <input type="hidden" name="active" value="@(!Model.IsActive)" />
-        <button type="submit" class="btn btn-sm @(Model.IsActive ? "btn-outline-warning" : "btn-outline-success")">
-            <i class="fa fa-@(Model.IsActive ? "ban" : "check") mr-1"></i>
-            @(Model.IsActive ? "Desactivar" : "Activar")
-        </button>
-    </form>
-    <a asp-action="Index" class="btn btn-outline-secondary">Volver</a>
+        <div class="mt-2 d-flex flex-wrap" style="gap:8px">
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary btn-sm">
+                <i class="fa fa-edit mr-1"></i> Editar
+            </a>
+            <form asp-action="SetActive" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <input type="hidden" name="active" value="@(!Model.IsActive)" />
+                <button type="submit" class="btn btn-sm @(Model.IsActive ? "btn-outline-warning" : "btn-outline-success")">
+                    <i class="fa @(Model.IsActive ? "fa-ban" : "fa-check") mr-1"></i>
+                    @(Model.IsActive ? "Desactivar" : "Activar")
+                </button>
+            </form>
+            <a asp-action="Index" class="btn btn-outline-secondary btn-sm">Volver</a>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="card card-outline card-info shadow-sm mb-3">
+            <div class="card-header">
+                <h3 class="card-title mb-0"><i class="fa fa-clock-o mr-2"></i>Horario de atención</h3>
+            </div>
+            <div class="card-body p-0">
+                @{
+                    var days = new[] { "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo" };
+                    List<(string day, bool enabled, string start, string end, string notes)> sched = days
+                        .Select(d => (d, false, "—", "—", "")).ToList();
+
+                    if (!string.IsNullOrWhiteSpace(Model.WorkingHours))
+                    {
+                        try
+                        {
+                            var parsed = JsonSerializer.Deserialize<List<Dictionary<string, JsonElement>>>(Model.WorkingHours);
+                            if (parsed != null)
+                            {
+                                sched = days.Select(d =>
+                                {
+                                    var entry = parsed.FirstOrDefault(x =>
+                                        x.TryGetValue("day", out var dv) && dv.GetString() == d);
+                                    if (entry == null) return (d, false, "—", "—", "");
+                                    var start = entry.TryGetValue("start", out var sv) ? sv.GetString() ?? "—" : "—";
+                                    var end   = entry.TryGetValue("end",   out var ev) ? ev.GetString() ?? "—" : "—";
+                                    var notes = entry.TryGetValue("notes", out var nv) ? nv.GetString() ?? "" : "";
+                                    return (d, true, start, end, notes);
+                                }).ToList();
+                            }
+                        }
+                        catch { }
+                    }
+                }
+                <table class="table table-sm mb-0">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Día</th>
+                            <th>Estado</th>
+                            <th>Entrada</th>
+                            <th>Salida</th>
+                            <th>Notas</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var (day, enabled, start, end, notes) in sched)
+                        {
+                            <tr class="@(enabled ? "" : "text-muted")">
+                                <td class="font-weight-medium">@day</td>
+                                <td>
+                                    @if (enabled)
+                                    {
+                                        <span class="badge badge-success">Trabaja</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-light text-muted">Libre</span>
+                                    }
+                                </td>
+                                <td>@(enabled ? start : "—")</td>
+                                <td>@(enabled ? end : "—")</td>
+                                <td class="small text-muted">@notes</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>

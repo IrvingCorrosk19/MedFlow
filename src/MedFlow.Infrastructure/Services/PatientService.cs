@@ -39,6 +39,10 @@ public class PatientService : IPatientService
         bool? isActive = null,
         int page = 1,
         int pageSize = 100,
+        string? documento = null,
+        string? telefono = null,
+        int? edadDesde = null,
+        int? edadHasta = null,
         CancellationToken cancellationToken = default)
     {
         // Límites seguros: mínimo 1, máximo 500 por página para evitar OOM.
@@ -58,6 +62,37 @@ public class PatientService : IPatientService
                 (p.NumeroDocumento != null && p.NumeroDocumento.ToLower().Contains(s)) ||
                 (p.Correo != null && p.Correo.ToLower().Contains(s)) ||
                 (p.Telefono != null && p.Telefono.Contains(search)));
+        }
+
+        if (!string.IsNullOrWhiteSpace(documento))
+        {
+            var d = documento.Trim().ToLower();
+            query = query.Where(p => p.NumeroDocumento != null && p.NumeroDocumento.ToLower().Contains(d));
+        }
+
+        if (!string.IsNullOrWhiteSpace(telefono))
+        {
+            var t = telefono.Trim();
+            query = query.Where(p => p.Telefono != null && p.Telefono.Contains(t));
+        }
+
+        if (edadDesde.HasValue || edadHasta.HasValue)
+        {
+            var today = DateOnly.FromDateTime(DateTime.Today);
+            if (edadHasta.HasValue)
+            {
+                // age >= edadHasta means born on or before today - edadHasta years
+                var maxBirth = today.AddYears(-edadHasta.Value);
+                query = query.Where(p => p.FechaNacimiento.HasValue &&
+                    DateOnly.FromDateTime(p.FechaNacimiento.Value) <= maxBirth);
+            }
+            if (edadDesde.HasValue)
+            {
+                // age <= edadDesde means born on or after today - edadDesde years
+                var minBirth = today.AddYears(-edadDesde.Value);
+                query = query.Where(p => p.FechaNacimiento.HasValue &&
+                    DateOnly.FromDateTime(p.FechaNacimiento.Value) >= minBirth);
+            }
         }
 
         return await query

@@ -14,4 +14,11 @@ public class Prescription : BaseEntity, ITenantScopedEntity
     public string? Frequency { get; set; }
     public string? Duration { get; set; }
     public string? Instructions { get; set; }
+
+    public string? PrescriberName { get; set; }
+    public string? PrescriberLicense { get; set; }
+    public DateTime IssuedAt { get; set; } = DateTime.UtcNow;
+    public int PrintCount { get; set; } = 0;
+    public bool IsVoid { get; set; } = false;
+    public string? VoidReason { get; set; }
 }

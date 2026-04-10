@@ -1,0 +1,43 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -rn \"class.*BillingInvoice.*ViewModel\\\\|class.*CreateInvoice\\\\|class.*InvoiceCreate\" C:/Proyectos/MedFlow/src/MedFlow.Web/ViewModels/ --include=*.cs)",
+      "Bash(dotnet build:*)",
+      "Bash(dotnet test:*)",
+      "Bash(taskkill /PID 26420 /F)",
+      "Bash(taskkill //PID 26420 //F)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5116/Account/Login)",
+      "Bash(\"C:/Proyectos/MedFlow/.gitignore\":*)",
+      "Bash(echo $ADMIN_INITIAL_PASSWORD)",
+      "Bash(\"/c/Program Files/PostgreSQL/17/bin/psql.exe\" -h localhost -p 5432 -U postgres -d medflow -c \"SELECT \"\"Email\"\", \"\"IsActive\"\", \"\"LockoutEnd\"\" FROM \"\"AspNetUsers\"\" WHERE \"\"Email\"\" = ''admin@medflow.ai'';\")",
+      "Bash(taskkill //IM \"MedFlow.Web.exe\" //F)",
+      "Bash(timeout 20 dotnet run --no-build)",
+      "Bash(xargs grep:*)",
+      "Bash(grep -r \"DocumentId\\\\|AcademicYear\\\\|PolicyNumber\" C:/Proyectos/MedFlow/src --include=*.cs -l)",
+      "Bash(find C:/Proyectos/MedFlow/src -type f -name *.cs -exec grep -l \"Card\\\\|card\" {})",
+      "Bash(2)",
+      "Bash(grep -r \"ShowDocumentId\\\\|ShowPolicyNumber\\\\|ShowAcademicYear\\\\|DocumentId\\\\|AcademicYear\\\\|PolicyNumber\" C:/Proyectos/MedFlow/src --include=*.cs)",
+      "Bash(grep -r \"RedirectToAction\\\\|RedirectToRoute\" /c/Proyectos/MedFlow/src/MedFlow.Web/Controllers/*.cs)",
+      "Bash(grep -r \"\\\\[Route\\\\|[Route\" /c/Proyectos/MedFlow/src/MedFlow.Web/Controllers/*.cs)",
+      "Bash(find C:ProyectosMedFlow/src/MedFlow.Web/Views/Reports -type f -name *.cshtml)",
+      "Bash(find C:ProyectosMedFlow/src/MedFlow.Web/Views -name _*.cshtml -type f)",
+      "Bash(find C:ProyectosMedFlowsrcMedFlow.Application -name *Dto.cs -o -name *DTO.cs)",
+      "Bash(find /c/Proyectos/MedFlow/src/MedFlow.Web/Controllers -name \"*.cs\" -type f -exec basename {})",
+      "Bash(\"C:\\\\Program Files\\\\PostgreSQL\\\\18\\\\bin\\\\psql.exe\" -U postgres -c \"\\\\du\")",
+      "Bash(cmd /c set)",
+      "Bash(dotnet run:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(ls -lt C:/Proyectos/MedFlow/src/MedFlow.Infrastructure/Migrations/*.cs)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5116/health/startup)",
+      "Bash(grep -r \"ObservabilityOptions\\\\|OpenTelemetry\\\\|AddOpenTelemetry\\\\|ActivitySource\\\\|Meter\" C:/Proyectos/MedFlow/src/ --include=*.cs -l)",
+      "Bash(grep -r \"AddOpenTelemetry\\\\|OpenTelemetry\\\\|ActivitySource\\\\|System.Diagnostics.Metrics\" C:/Proyectos/MedFlow/src/ --include=*.cs)",
+      "Bash(taskkill /F /PID 6912)",
+      "Bash(taskkill /F /IM \"MedFlow.Web.exe\")",
+      "Bash(powershell.exe -Command \"Stop-Process -Id 6912 -Force -ErrorAction SilentlyContinue; Get-Process MedFlow* -ErrorAction SilentlyContinue | Stop-Process -Force\")",
+      "Bash(powershell.exe -Command \"Get-Process MedFlow* -ErrorAction SilentlyContinue | Stop-Process -Force\")",
+      "Bash(grep -n \"new JournalEntryService\\\\|new BankAccountService\\\\|new FiscalPeriodService\\\\|new LedgerService\\\\|new AccountService\\\\|new TaxRateService\" C:/Proyectos/MedFlow/tests/MedFlow.UnitTests/*.cs)"
+    ]
+  }
+}

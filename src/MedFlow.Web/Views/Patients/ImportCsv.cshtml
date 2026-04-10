@@ -1,0 +1,140 @@
+@{
+    ViewData["Title"] = "Importar pacientes";
+    var importResults = ViewBag.ImportResults as List<(int Row, string? Error, string? Name)>;
+    int created = ViewBag.ImportCreated ?? 0;
+    int skipped = ViewBag.ImportSkipped ?? 0;
+    bool hasResults = importResults != null && importResults.Count > 0;
+}
+
+<div class="row">
+    <div class="col-lg-7">
+        <div class="card card-outline card-primary shadow-sm mb-3">
+            <div class="card-header">
+                <h3 class="card-title mb-0">
+                    <i class="fa fa-upload mr-2"></i>Importar pacientes desde CSV
+                </h3>
+            </div>
+            <div class="card-body">
+                @if (!ViewData.ModelState.IsValid)
+                {
+                    <div class="alert alert-danger">
+                        @foreach (var e in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                        {
+                            <div>@e.ErrorMessage</div>
+                        }
+                    </div>
+                }
+
+                @if (hasResults)
+                {
+                    <div class="alert @(skipped == 0 ? "alert-success" : created == 0 ? "alert-danger" : "alert-warning") mb-3">
+                        <i class="fa fa-info-circle mr-1"></i>
+                        <strong>@created</strong> paciente(s) importado(s) correctamente.
+                        @if (skipped > 0)
+                        { <span> <strong>@skipped</strong> fila(s) omitida(s) por errores.</span> }
+                    </div>
+
+                    <div class="table-responsive mb-4">
+                        <table class="table table-sm table-bordered mb-0 small">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th style="width:60px">Fila</th>
+                                    <th>Paciente</th>
+                                    <th>Resultado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var (row, error, name) in importResults!)
+                                {
+                                    <tr class="@(error == null ? "table-success" : "table-danger")">
+                                        <td>@row</td>
+                                        <td>@(name ?? "—")</td>
+                                        <td>
+                                            @if (error == null)
+                                            {
+                                                <span class="text-success"><i class="fa fa-check mr-1"></i>Importado</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-danger"><i class="fa fa-times mr-1"></i>@error</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+
+                <form asp-action="ImportCsv" method="post" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <div class="form-group">
+                        <label class="font-weight-medium">Archivo CSV <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <div class="custom-file">
+                                <input type="file" class="custom-file-input" id="csvFile" name="file" accept=".csv" required />
+                                <label class="custom-file-label" for="csvFile">Seleccionar archivo…</label>
+                            </div>
+                        </div>
+                        <small class="text-muted">Solo archivos .csv, codificación UTF-8. Máx. 5 MB.</small>
+                    </div>
+                    <div class="d-flex" style="gap:8px">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-upload mr-1"></i> Importar
+                        </button>
+                        <a asp-action="Index" class="btn btn-outline-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card card-outline card-info shadow-sm mb-3">
+            <div class="card-header">
+                <h3 class="card-title mb-0"><i class="fa fa-info-circle mr-2"></i>Formato esperado</h3>
+            </div>
+            <div class="card-body">
+                <p class="small mb-2">El archivo CSV debe tener una fila de encabezado (se ignora) y las siguientes columnas en orden:</p>
+                <table class="table table-sm table-bordered small mb-3">
+                    <thead class="thead-light">
+                        <tr><th>#</th><th>Columna</th><th>Obligatorio</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>1</td><td>PrimerNombre</td><td><span class="badge badge-danger">Sí</span></td></tr>
+                        <tr><td>2</td><td>SegundoNombre</td><td><span class="badge badge-secondary">No</span></td></tr>
+                        <tr><td>3</td><td>PrimerApellido</td><td><span class="badge badge-danger">Sí</span></td></tr>
+                        <tr><td>4</td><td>SegundoApellido</td><td><span class="badge badge-secondary">No</span></td></tr>
+                        <tr><td>5</td><td>FechaNacimiento <span class="text-muted">(dd/MM/yyyy)</span></td><td><span class="badge badge-secondary">No</span></td></tr>
+                        <tr><td>6</td><td>Sexo <span class="text-muted">(M/F)</span></td><td><span class="badge badge-secondary">No</span></td></tr>
+                        <tr><td>7</td><td>TipoDocumento</td><td><span class="badge badge-secondary">No</span></td></tr>
+                        <tr><td>8</td><td>NumeroDocumento</td><td><span class="badge badge-secondary">No</span></td></tr>
+                        <tr><td>9</td><td>Telefono</td><td><span class="badge badge-secondary">No</span></td></tr>
+                        <tr><td>10</td><td>Correo</td><td><span class="badge badge-secondary">No</span></td></tr>
+                        <tr><td>11</td><td>Direccion</td><td><span class="badge badge-secondary">No</span></td></tr>
+                        <tr><td>12</td><td>Alergias</td><td><span class="badge badge-secondary">No</span></td></tr>
+                        <tr><td>13</td><td>Observaciones</td><td><span class="badge badge-secondary">No</span></td></tr>
+                    </tbody>
+                </table>
+                <a asp-action="ImportCsvTemplate" class="btn btn-outline-success btn-sm btn-block">
+                    <i class="fa fa-download mr-1"></i> Descargar plantilla CSV
+                </a>
+            </div>
+        </div>
+
+        <div class="alert alert-warning small">
+            <i class="fa fa-exclamation-triangle mr-1"></i>
+            <strong>Nota:</strong> Se aplicará el límite de pacientes del plan de suscripción. Las filas que excedan el límite serán rechazadas.
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Show selected filename in custom-file-label
+        document.getElementById('csvFile').addEventListener('change', function () {
+            var label = this.nextElementSibling;
+            label.textContent = this.files.length > 0 ? this.files[0].name : 'Seleccionar archivo…';
+        });
+    </script>
+}

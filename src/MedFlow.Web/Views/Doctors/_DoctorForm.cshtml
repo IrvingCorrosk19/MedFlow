@@ -43,9 +43,29 @@
                 <span asp-validation-for="Email" class="text-danger small"></span>
             </div>
         </div>
+        <!-- Horario de atención visual -->
         <div class="form-group">
-            <label asp-for="WorkingHours"></label>
-            <input asp-for="WorkingHours" class="form-control" placeholder="Ej: Lun-Vie 08:00-17:00" />
+            <label class="font-weight-medium">Horario de atención</label>
+            <input asp-for="WorkingHours" type="hidden" id="workingHoursJson" />
+            <div class="card card-outline card-light mt-1">
+                <div class="card-body p-2">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-borderless mb-0" id="scheduleTable">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th style="width:120px">Día</th>
+                                    <th style="width:60px">Activo</th>
+                                    <th>Entrada</th>
+                                    <th>Salida</th>
+                                    <th>Notas</th>
+                                </tr>
+                            </thead>
+                            <tbody id="scheduleBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
             <span asp-validation-for="WorkingHours" class="text-danger small"></span>
         </div>
         <div class="form-group">

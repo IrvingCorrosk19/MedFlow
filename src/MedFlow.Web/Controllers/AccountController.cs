@@ -71,6 +71,11 @@ public sealed class AccountController : Controller
             return RedirectToAction("Index", "Dashboard");
         }
 
+        if (result.RequiresTwoFactor)
+        {
+            return RedirectToAction(nameof(LoginWith2fa), new { returnUrl, model.RememberMe });
+        }
+
         _logger.LogWarning("Login fallido para {Email}: Succeeded={Succeeded}, IsLockedOut={Locked}, IsNotAllowed={NotAllowed}",
             model.Email, result.Succeeded, result.IsLockedOut, result.IsNotAllowed);
 
@@ -179,5 +184,54 @@ public sealed class AccountController : Controller
     public IActionResult ResetPasswordConfirmation()
     {
         return View();
+    }
+
+    [HttpGet]
+    [AllowAnonymous]
+    public async Task<IActionResult> LoginWith2fa(bool rememberMe, string? returnUrl = null)
+    {
+        var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
+        if (user == null)
+            return RedirectToAction(nameof(Login));
+
+        ViewBag.ReturnUrl = returnUrl;
+        ViewBag.RememberMe = rememberMe;
+        return View();
+    }
+
+    [HttpPost]
+    [AllowAnonymous]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> LoginWith2fa(LoginWith2faViewModel model, bool rememberMe, string? returnUrl = null)
+    {
+        if (!ModelState.IsValid)
+        {
+            ViewBag.ReturnUrl = returnUrl;
+            ViewBag.RememberMe = rememberMe;
+            return View(model);
+        }
+
+        var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
+        if (user == null)
+            return RedirectToAction(nameof(Login));
+
+        var code = model.TwoFactorCode?.Replace(" ", "").Replace("-", "") ?? string.Empty;
+        var result = await _signInManager.TwoFactorAuthenticatorSignInAsync(code, rememberMe, model.RememberMachine);
+
+        if (result.Succeeded)
+        {
+            if (Url.IsLocalUrl(returnUrl))
+                return LocalRedirect(returnUrl);
+            return RedirectToAction("Index", "Dashboard");
+        }
+
+        if (result.IsLockedOut)
+            ModelState.AddModelError(string.Empty, "Cuenta bloqueada por intentos fallidos.");
+        else
+            ModelState.AddModelError(string.Empty, "Código de verificación inválido.");
+
+        ViewBag.ReturnUrl = returnUrl;
+        ViewBag.RememberMe = rememberMe;
+        return View(model);
     }
 }

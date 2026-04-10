@@ -123,6 +123,7 @@ public class PaymentService : IPaymentService
                 {
                     BillingInvoiceId = billingInvoiceId,
                     PatientId = patientId,
+                    TenantId = invoice.TenantId,
                     PaymentDate = paymentDate.Kind == DateTimeKind.Unspecified
                         ? DateTime.SpecifyKind(paymentDate, DateTimeKind.Utc)
                         : paymentDate.ToUniversalTime(),

@@ -1,0 +1,74 @@
+<script>
+(function () {
+    const DAYS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+    const DEFAULT = { enabled: false, start: '08:00', end: '17:00', notes: '' };
+
+    function loadSchedule() {
+        var raw = document.getElementById('workingHoursJson').value;
+        var parsed = [];
+        try { parsed = JSON.parse(raw || '[]'); } catch (e) { parsed = []; }
+        return DAYS.map(function (day) {
+            var found = parsed.find(function (x) { return x.day === day; });
+            return found ? Object.assign({ day: day }, DEFAULT, found) : Object.assign({ day: day }, DEFAULT);
+        });
+    }
+
+    function saveSchedule() {
+        var rows = document.querySelectorAll('#scheduleBody tr');
+        var data = [];
+        rows.forEach(function (row) {
+            var day     = row.dataset.day;
+            var enabled = row.querySelector('.sched-enabled').checked;
+            var start   = row.querySelector('.sched-start').value;
+            var end     = row.querySelector('.sched-end').value;
+            var notes   = row.querySelector('.sched-notes').value;
+            if (enabled) data.push({ day: day, enabled: true, start: start, end: end, notes: notes });
+        });
+        document.getElementById('workingHoursJson').value = JSON.stringify(data);
+    }
+
+    function buildTable() {
+        var schedule = loadSchedule();
+        var tbody = document.getElementById('scheduleBody');
+        tbody.innerHTML = '';
+        schedule.forEach(function (s) {
+            var tr = document.createElement('tr');
+            tr.dataset.day = s.day;
+            var disabledStyle = s.enabled ? '' : 'opacity:.4;pointer-events:none';
+            tr.innerHTML =
+                '<td class="align-middle font-weight-medium small">' + s.day + '</td>' +
+                '<td class="align-middle text-center">' +
+                  '<div class="custom-control custom-switch">' +
+                    '<input type="checkbox" class="custom-control-input sched-enabled" id="chk_' + s.day + '"' + (s.enabled ? ' checked' : '') + '>' +
+                    '<label class="custom-control-label" for="chk_' + s.day + '"></label>' +
+                  '</div>' +
+                '</td>' +
+                '<td><div class="sched-times d-flex align-items-center" style="' + disabledStyle + '">' +
+                  '<input type="time" class="form-control form-control-sm sched-start" value="' + s.start + '" style="width:110px">' +
+                '</div></td>' +
+                '<td><div class="sched-times d-flex align-items-center" style="' + disabledStyle + '">' +
+                  '<input type="time" class="form-control form-control-sm sched-end" value="' + s.end + '" style="width:110px">' +
+                '</div></td>' +
+                '<td><div class="sched-times" style="' + disabledStyle + '">' +
+                  '<input type="text" class="form-control form-control-sm sched-notes" value="' + (s.notes||'') + '" placeholder="Obs. opcionales">' +
+                '</div></td>';
+            tbody.appendChild(tr);
+
+            tr.querySelector('.sched-enabled').addEventListener('change', function () {
+                var isOn = this.checked;
+                tr.querySelectorAll('.sched-times').forEach(function (el) {
+                    el.style.opacity = isOn ? '1' : '.4';
+                    el.style.pointerEvents = isOn ? '' : 'none';
+                });
+                saveSchedule();
+            });
+            tr.querySelectorAll('.sched-start,.sched-end,.sched-notes').forEach(function (el) {
+                el.addEventListener('change', saveSchedule);
+            });
+        });
+        saveSchedule();
+    }
+
+    document.addEventListener('DOMContentLoaded', buildTable);
+})();
+</script>

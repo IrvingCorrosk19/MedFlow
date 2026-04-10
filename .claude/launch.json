@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "medflow",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "src/MedFlow.Web/MedFlow.Web.csproj", "--launch-profile", "http", "--no-build"],
+      "port": 5116
+    }
+  ]
+}

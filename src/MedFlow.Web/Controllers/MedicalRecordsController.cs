@@ -2,10 +2,12 @@ using MedFlow.Application.Interfaces;
 using MedFlow.Application.Security;
 using MedFlow.Domain.Entities;
 using MedFlow.Web.Authorization;
+using MedFlow.Web.Pdf;
 using MedFlow.Web.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using QuestPDF.Fluent;
 
 namespace MedFlow.Web.Controllers;
 
@@ -17,19 +19,25 @@ public class MedicalRecordsController : Controller
     private readonly IDoctorService _doctors;
     private readonly IWebHostEnvironment _env;
     private readonly IApplicationDbContext _db;
+    private readonly IClinicSettingsService _clinicSettings;
+    private readonly ITenantContext _tenantContext;
 
     public MedicalRecordsController(
         IMedicalRecordService medicalRecords,
         IPatientService patients,
         IDoctorService doctors,
         IWebHostEnvironment env,
-        IApplicationDbContext db)
+        IApplicationDbContext db,
+        IClinicSettingsService clinicSettings,
+        ITenantContext tenantContext)
     {
         _medicalRecords = medicalRecords;
         _patients = patients;
         _doctors = doctors;
         _env = env;
         _db = db;
+        _clinicSettings = clinicSettings;
+        _tenantContext = tenantContext;
     }
 
     [RequirePermission(PermissionCodes.MedicalRecordsView)]
@@ -240,6 +248,27 @@ public class MedicalRecordsController : Controller
         await _medicalRecords.DeleteAsync(id, cancellationToken);
         TempData["Success"] = "Registro archivado.";
         return RedirectToAction(nameof(Patient), new { patientId });
+    }
+
+    [RequirePermission(PermissionCodes.MedicalRecordsView)]
+    public async Task<IActionResult> ExportPdf(Guid id, CancellationToken cancellationToken)
+    {
+        var record = await _medicalRecords.GetByIdAsync(id, cancellationToken: cancellationToken);
+        if (record == null) return NotFound();
+
+        var settings = _tenantContext.TenantId.HasValue
+            ? await _clinicSettings.GetAsync(_tenantContext.TenantId.Value, cancellationToken)
+            : null;
+
+        var doc = new MedicalRecordPdfDocument(
+            settings?.Name ?? "MedFlow",
+            settings?.Address,
+            settings?.Phone,
+            record);
+
+        var bytes = doc.GeneratePdf();
+        var fileName = $"HistoriaClinica_{record.Patient?.NombreCompleto?.Replace(" ", "_") ?? record.PatientId.ToString("N")}_{record.VisitDate:yyyyMMdd}.pdf";
+        return File(bytes, "application/pdf", fileName);
     }
 
     [HttpPost]

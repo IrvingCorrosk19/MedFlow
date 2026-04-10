@@ -17,6 +17,9 @@
             <a asp-controller="Settings" asp-action="Index" class="dropdown-item">
                 <i class="fa fa-cog mr-2 text-muted"></i> Mi cuenta
             </a>
+            <a asp-controller="TwoFactor" asp-action="Index" class="dropdown-item">
+                <i class="fa fa-shield mr-2 text-muted"></i> Seguridad 2FA
+            </a>
             <div class="dropdown-divider"></div>
             <form asp-controller="Account" asp-action="Logout" method="post">
                 <button type="submit" class="dropdown-item text-danger">

@@ -1,0 +1,101 @@
+@{
+    bool is2faEnabled = ViewBag.Is2faEnabled ?? false;
+    bool hasAuthenticator = ViewBag.HasAuthenticator ?? false;
+    int recoveryCodesLeft = ViewBag.RecoveryCodesLeft ?? 0;
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+
+        @if (TempData["Success"] != null)
+        {
+            <div class="alert alert-success alert-dismissible">
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+                @TempData["Success"]
+            </div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible">
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+                @TempData["Error"]
+            </div>
+        }
+
+        <div class="card card-outline @(is2faEnabled ? "card-success" : "card-warning") shadow-sm mb-4">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <h3 class="card-title mb-0">
+                    <i class="fa @(is2faEnabled ? "fa-shield" : "fa-shield") mr-2"></i>
+                    Autenticación de dos factores (2FA)
+                </h3>
+                <span class="badge @(is2faEnabled ? "badge-success" : "badge-warning") px-3 py-2">
+                    @(is2faEnabled ? "Activada" : "Desactivada")
+                </span>
+            </div>
+            <div class="card-body">
+                @if (!is2faEnabled)
+                {
+                    <p class="text-muted">
+                        La autenticación de dos factores añade una capa de seguridad extra a tu cuenta.
+                        Necesitarás una aplicación de autenticación como <strong>Google Authenticator</strong>,
+                        <strong>Microsoft Authenticator</strong> o <strong>Authy</strong>.
+                    </p>
+                    <a asp-action="EnableAuthenticator" class="btn btn-success">
+                        <i class="fa fa-lock mr-1"></i> Activar 2FA
+                    </a>
+                }
+                else
+                {
+                    <p class="text-success font-weight-medium">
+                        <i class="fa fa-check-circle mr-1"></i>
+                        Tu cuenta está protegida con autenticación de dos factores.
+                    </p>
+                    @if (recoveryCodesLeft <= 2)
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fa fa-exclamation-triangle mr-1"></i>
+                            Solo te quedan <strong>@recoveryCodesLeft</strong> código(s) de recuperación.
+                            Genera nuevos códigos para no perder acceso a tu cuenta.
+                        </div>
+                    }
+                    <div class="d-flex flex-wrap" style="gap:8px">
+                        <form asp-action="GenerateRecoveryCodes" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-outline-info btn-sm">
+                                <i class="fa fa-key mr-1"></i> Generar códigos de recuperación
+                            </button>
+                        </form>
+                        <a asp-action="EnableAuthenticator" class="btn btn-outline-primary btn-sm">
+                            <i class="fa fa-refresh mr-1"></i> Reconfigurar autenticador
+                        </a>
+                        <form asp-action="Disable" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-outline-danger btn-sm"
+                                    onclick="return confirm('¿Desactivar la autenticación de dos factores? Tu cuenta quedará menos protegida.')">
+                                <i class="fa fa-unlock mr-1"></i> Desactivar 2FA
+                            </button>
+                        </form>
+                    </div>
+                    <p class="text-muted small mt-3 mb-0">
+                        Códigos de recuperación disponibles: <strong>@recoveryCodesLeft</strong>
+                    </p>
+                }
+            </div>
+        </div>
+
+        <div class="card card-outline card-light shadow-sm">
+            <div class="card-header"><h3 class="card-title mb-0 text-sm">¿Qué es el 2FA?</h3></div>
+            <div class="card-body small text-muted">
+                <p>
+                    Al activar el 2FA, al iniciar sesión se te pedirá un código de 6 dígitos generado
+                    por tu aplicación autenticadora, además de tu contraseña habitual.
+                </p>
+                <p class="mb-0">
+                    Si pierdes acceso a tu autenticador, puedes usar un <strong>código de recuperación</strong>
+                    para entrar. Guárdalos en un lugar seguro.
+                </p>
+            </div>
+        </div>
+
+    </div>
+</div>

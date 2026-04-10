@@ -11,6 +11,10 @@ public interface IPatientService
         bool? isActive = null,
         int page = 1,
         int pageSize = 100,
+        string? documento = null,
+        string? telefono = null,
+        int? edadDesde = null,
+        int? edadHasta = null,
         CancellationToken cancellationToken = default);
     Task<PagedResult<Patient>> GetPagedAsync(
         string? search = null,
