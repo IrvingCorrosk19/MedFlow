@@ -82,6 +82,10 @@
     <div class="card-header d-flex justify-content-between align-items-center">
         <h3 class="card-title mb-0">Resultados</h3>
         <div class="btn-group btn-group-sm">
+            <a href="@Url.Action("ExportAppointmentsPdf", new { from = ViewBag.From, to = ViewBag.To, doctorId = ViewBag.DoctorId, speciality = ViewBag.Speciality, status = ViewBag.Status })"
+               class="btn btn-outline-danger" title="Exportar PDF" target="_blank">
+                <i class="fa fa-file-pdf-o"></i> PDF
+            </a>
             <a href="@Url.Action("ExportAppointmentsCsv", new { from = ViewBag.From, to = ViewBag.To, doctorId = ViewBag.DoctorId, speciality = ViewBag.Speciality, status = ViewBag.Status })"
                class="btn btn-outline-success" title="Exportar CSV">
                 <i class="fa fa-file-excel-o"></i> CSV

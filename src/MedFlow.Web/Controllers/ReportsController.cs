@@ -290,6 +290,31 @@ public class ReportsController : Controller
             $"reporte-financiero-{DateTime.UtcNow:yyyyMMdd}.pdf");
     }
 
+    [HttpGet]
+    [RequirePermission(PermissionCodes.ReportsView)]
+    public async Task<IActionResult> ExportAppointmentsPdf(
+        DateTime? from,
+        DateTime? to,
+        Guid? doctorId,
+        string? speciality,
+        int? status,
+        CancellationToken cancellationToken)
+    {
+        if (!_tenant.TenantId.HasValue) return NotFound();
+
+        var vm = await _analytics.GetAppointmentsReportAsync(
+            new AppointmentsReportFilter(from, to, doctorId, speciality, status),
+            cancellationToken);
+
+        var settings = await _clinicSettings.GetAsync(_tenant.TenantId.Value, cancellationToken);
+
+        var doc = new AppointmentsReportPdfDocument(settings.Name, vm, from, to);
+        var bytes = doc.GeneratePdf();
+
+        return File(bytes, "application/pdf",
+            $"reporte-citas-{DateTime.UtcNow:yyyyMMdd}.pdf");
+    }
+
     private static string CsvField(string value)
     {
         if (value.Contains(',') || value.Contains('"') || value.Contains('\n'))
