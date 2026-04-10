@@ -26,6 +26,16 @@
                         </form>
                     }
                     <a asp-action="DownloadPdf" asp-route-id="@Model.Id" class="btn btn-primary btn-sm"><i class="fa fa-file-pdf mr-1"></i> Descargar PDF</a>
+                    @if (!string.IsNullOrWhiteSpace(Model.Patient?.Correo))
+                    {
+                        <form asp-action="SendEmail" asp-route-id="@Model.Id" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-outline-info btn-sm"
+                                    onclick="return confirm('¿Enviar la factura a @Model.Patient.Correo?')">
+                                <i class="fa fa-envelope-o mr-1"></i> Enviar por email
+                            </button>
+                        </form>
+                    }
                     <a asp-action="Print" asp-route-id="@Model.Id" target="_blank" class="btn btn-outline-secondary btn-sm"><i class="fa fa-print"></i> Imprimir</a>
                     <a asp-action="Index" class="btn btn-default btn-sm">Volver</a>
                 </div>

@@ -5,6 +5,13 @@
     Layout = "~/Views/Shared/_PatientLayout.cshtml";
 }
 
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="fa fa-calendar mr-2"></i>Mis Citas</h4>
+    <a href="/portal/appointments/request" class="btn btn-primary btn-sm">
+        <i class="fa fa-calendar-plus-o mr-1"></i> Solicitar cita
+    </a>
+</div>
+
 <ul class="nav nav-tabs mb-4" id="apptTabs">
     <li class="nav-item">
         <a class="nav-link active" data-toggle="tab" href="#upcoming">

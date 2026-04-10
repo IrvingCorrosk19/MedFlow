@@ -191,6 +191,28 @@ public class ReportsController : Controller
 
     [HttpGet]
     [RequirePermission(PermissionCodes.ReportsView)]
+    public async Task<IActionResult> ExportDoctorsPdf(
+        DateTime? from,
+        DateTime? to,
+        Guid? doctorId = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (!_tenant.TenantId.HasValue) return NotFound();
+
+        var vm = await _analytics.GetDoctorsReportAsync(
+            new DoctorsReportFilter(from, to, doctorId),
+            cancellationToken);
+
+        var settings = await _clinicSettings.GetAsync(_tenant.TenantId.Value, cancellationToken);
+
+        var doc = new DoctorsReportPdfDocument(settings.Name, vm, from, to);
+        var bytes = doc.GeneratePdf();
+
+        return File(bytes, "application/pdf", $"reporte-doctores-{DateTime.UtcNow:yyyyMMdd}.pdf");
+    }
+
+    [HttpGet]
+    [RequirePermission(PermissionCodes.ReportsView)]
     public async Task<IActionResult> ExportDoctorsCsv(
         DateTime? from,
         DateTime? to,

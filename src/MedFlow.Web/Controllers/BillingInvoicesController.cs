@@ -1,4 +1,5 @@
 using MedFlow.Application.Interfaces;
+using MedFlow.Application.Notifications;
 using MedFlow.Application.Security;
 using MedFlow.Domain.Entities;
 using MedFlow.Domain.Enums;
@@ -24,6 +25,7 @@ public class BillingInvoicesController : Controller
     private readonly IDoctorService _doctors;
     private readonly IClinicSettingsService _clinicSettings;
     private readonly ITenantContext _tenant;
+    private readonly INotificationDispatchService _notifications;
 
     public BillingInvoicesController(
         IBillingInvoiceService billing,
@@ -32,7 +34,8 @@ public class BillingInvoicesController : Controller
         IAppointmentService appointments,
         IDoctorService doctors,
         IClinicSettingsService clinicSettings,
-        ITenantContext tenant)
+        ITenantContext tenant,
+        INotificationDispatchService notifications)
     {
         _billing = billing;
         _payments = payments;
@@ -41,6 +44,7 @@ public class BillingInvoicesController : Controller
         _doctors = doctors;
         _clinicSettings = clinicSettings;
         _tenant = tenant;
+        _notifications = notifications;
     }
 
     [RequirePermission(PermissionCodes.BillingView)]
@@ -314,5 +318,51 @@ public class BillingInvoicesController : Controller
 
         var bytes = doc.GeneratePdf();
         return File(bytes, "application/pdf", $"factura-{invoice.InvoiceNumber}.pdf");
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [RequirePermission(PermissionCodes.BillingView)]
+    public async Task<IActionResult> SendEmail(Guid id, CancellationToken cancellationToken = default)
+    {
+        if (!_tenant.TenantId.HasValue) return Forbid();
+
+        var invoice = await _billing.GetByIdAsync(id, cancellationToken);
+        if (invoice == null) return NotFound();
+
+        var email = invoice.Patient?.Correo;
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            TempData["Error"] = "El paciente no tiene correo electrónico registrado.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        var payload = new Dictionary<string, object>
+        {
+            ["invoice_number"] = invoice.InvoiceNumber,
+            ["patient_name"]   = invoice.Patient?.NombreCompleto ?? "",
+            ["issue_date"]     = invoice.IssueDate.ToLocalTime().ToString("dd/MM/yyyy"),
+            ["due_date"]       = invoice.DueDate?.ToLocalTime().ToString("dd/MM/yyyy") ?? "—",
+            ["total"]          = invoice.TotalAmount.ToString("N2"),
+            ["balance_due"]    = invoice.BalanceDue.ToString("N2"),
+            ["status"]         = invoice.Status.ToString()
+        };
+
+        var result = await _notifications.DispatchAsync(new DispatchRequest(
+            TenantId: _tenant.TenantId.Value,
+            EventType: MedFlow.Domain.Enums.NotificationEventType.Custom,
+            Payload: payload,
+            RecipientEmail: email,
+            RelatedEntityType: "BillingInvoice",
+            RelatedEntityId: invoice.Id.ToString()), cancellationToken);
+
+        if (result.Success)
+            TempData["Success"] = $"Factura enviada a {email}.";
+        else
+            TempData["Error"] = result.Errors.Any()
+                ? string.Join("; ", result.Errors)
+                : "No se pudo enviar el correo. Verifique la configuración de notificaciones.";
+
+        return RedirectToAction(nameof(Details), new { id });
     }
 }

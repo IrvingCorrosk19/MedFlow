@@ -1,0 +1,84 @@
+@using MedFlow.Application.Interfaces
+@using MedFlow.Domain.Entities
+@{
+    ViewData["Title"] = "Matriz de permisos";
+    var roles = ViewBag.Roles as List<RoleDetails> ?? new List<RoleDetails>();
+    var grouped = ViewBag.Grouped as IEnumerable<IGrouping<string, Permission>>
+                  ?? Enumerable.Empty<IGrouping<string, Permission>>();
+    // Build fast lookup: roleId -> HashSet<permissionId>
+    var rolePerms = roles.ToDictionary(
+        r => r.Id,
+        r => r.PermissionIds.ToHashSet());
+}
+
+<div class="card card-outline card-primary shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title mb-0">
+            <i class="fa fa-th mr-2"></i>Roles × Permisos
+        </h3>
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+            <i class="fa fa-arrow-left mr-1"></i> Volver a roles
+        </a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-sm table-bordered mb-0" id="tblMatrix" style="font-size:.8rem">
+                <thead class="thead-dark" style="position:sticky;top:0;z-index:2">
+                    <tr>
+                        <th style="min-width:200px;position:sticky;left:0;z-index:3;background:#343a40">
+                            Permiso / Módulo
+                        </th>
+                        @foreach (var role in roles)
+                        {
+                            <th class="text-center text-nowrap" style="min-width:90px">
+                                <a asp-action="Permissions" asp-route-id="@role.Id"
+                                   class="text-white text-decoration-none" title="Editar permisos de @role.Name">
+                                    @role.Name
+                                </a>
+                            </th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var group in grouped)
+                    {
+                        <tr class="table-secondary">
+                            <td colspan="@(roles.Count + 1)" class="font-weight-bold small text-uppercase py-1 px-2"
+                                style="position:sticky;left:0;background:#e9ecef">
+                                <i class="fa fa-folder-open-o mr-1"></i>@group.Key
+                            </td>
+                        </tr>
+                        @foreach (var perm in group)
+                        {
+                            <tr>
+                                <td style="position:sticky;left:0;background:#fff;z-index:1">
+                                    <span title="@perm.Code" class="text-dark">@perm.Name</span>
+                                    <br><small class="text-muted">@perm.Code</small>
+                                </td>
+                                @foreach (var role in roles)
+                                {
+                                    var has = rolePerms.TryGetValue(role.Id, out var set) && set.Contains(perm.Id);
+                                    <td class="text-center @(has ? "table-success" : "")">
+                                        @if (has)
+                                        {
+                                            <i class="fa fa-check text-success"></i>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer text-muted small">
+        <i class="fa fa-info-circle mr-1"></i>
+        Haz clic en el nombre de un rol para editar sus permisos.
+        <span class="ml-3 badge badge-success"><i class="fa fa-check"></i></span> = permiso activo
+    </div>
+</div>

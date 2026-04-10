@@ -1,0 +1,133 @@
+@using MedFlow.Application.PatientPortal
+@{
+    ViewData["Title"] = "Solicitar Cita";
+    var doctors = ViewBag.Doctors as IReadOnlyList<PortalDoctorDto> ?? Array.Empty<PortalDoctorDto>();
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="card card-outline card-primary shadow-sm">
+            <div class="card-header">
+                <h3 class="card-title mb-0">
+                    <i class="fa fa-calendar-plus-o mr-2"></i>Solicitar nueva cita
+                </h3>
+            </div>
+            <div class="card-body">
+                @if (TempData["Error"] != null)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="fa fa-exclamation-circle mr-1"></i>@TempData["Error"]
+                        <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+                    </div>
+                }
+
+                <p class="text-muted small mb-3">
+                    Completa el formulario y el consultorio confirmará tu cita a la brevedad.
+                </p>
+
+                <form method="post" action="/portal/appointments/request">
+                    @Html.AntiForgeryToken()
+
+                    <div class="form-group">
+                        <label class="font-weight-medium">Doctor <span class="text-danger">*</span></label>
+                        <select name="doctorId" class="form-control" required>
+                            <option value="">— Selecciona un doctor —</option>
+                            @foreach (var d in doctors)
+                            {
+                                <option value="@d.Id">
+                                    @d.FullName @(string.IsNullOrWhiteSpace(d.Speciality) ? "" : $"— {d.Speciality}")
+                                    @(string.IsNullOrWhiteSpace(d.ConsultationRoom) ? "" : $" (Cons. {d.ConsultationRoom})")
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="font-weight-medium">Fecha deseada <span class="text-danger">*</span></label>
+                        <input type="date" name="desiredDate" class="form-control"
+                               min="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            <label class="font-weight-medium">Hora inicio <span class="text-danger">*</span></label>
+                            <input type="time" name="startTime" class="form-control"
+                                   value="08:00" required />
+                        </div>
+                        <div class="form-group col-6">
+                            <label class="font-weight-medium">Hora fin <span class="text-danger">*</span></label>
+                            <input type="time" name="endTime" class="form-control"
+                                   value="08:30" required />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="font-weight-medium">Motivo de consulta</label>
+                        <textarea name="reason" class="form-control" rows="3"
+                                  placeholder="Describe brevemente el motivo de tu consulta…"></textarea>
+                    </div>
+
+                    <div class="alert alert-info small mb-3">
+                        <i class="fa fa-info-circle mr-1"></i>
+                        Tu solicitud quedará en estado <strong>Pendiente</strong> hasta que el consultorio la confirme.
+                        Recibirás una notificación cuando sea aprobada.
+                    </div>
+
+                    <div class="d-flex" style="gap:8px">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-paper-plane mr-1"></i> Enviar solicitud
+                        </button>
+                        <a href="/portal/appointments" class="btn btn-outline-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        @if (doctors.Any())
+        {
+            <div class="card card-outline card-light shadow-sm mt-3">
+                <div class="card-header">
+                    <h3 class="card-title mb-0 small"><i class="fa fa-clock-o mr-1"></i>Horarios de atención</h3>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Doctor</th>
+                                <th>Especialidad</th>
+                                <th>Días disponibles</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var d in doctors)
+                            {
+                                var workDays = "—";
+                                if (!string.IsNullOrWhiteSpace(d.WorkingHours))
+                                {
+                                    try
+                                    {
+                                        var parsed = System.Text.Json.JsonSerializer
+                                            .Deserialize<List<Dictionary<string, System.Text.Json.JsonElement>>>(d.WorkingHours);
+                                        if (parsed != null)
+                                        {
+                                            workDays = string.Join(", ", parsed
+                                                .Where(e => e.TryGetValue("enabled", out var en) && en.GetBoolean())
+                                                .Select(e => e.TryGetValue("day", out var dn) ? dn.GetString() : "")
+                                                .Where(s => !string.IsNullOrEmpty(s)));
+                                        }
+                                    }
+                                    catch { }
+                                }
+                                <tr>
+                                    <td>@d.FullName</td>
+                                    <td class="text-muted">@(string.IsNullOrWhiteSpace(d.Speciality) ? "—" : d.Speciality)</td>
+                                    <td class="small">@workDays</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </div>
+</div>

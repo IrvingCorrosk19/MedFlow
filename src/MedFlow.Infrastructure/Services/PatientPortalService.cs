@@ -271,4 +271,66 @@ public sealed class PatientPortalService : IPatientPortalService
 
     private static PatientInvoiceSummaryDto ToInvoiceSummary(BillingInvoice i) => new(
         i.Id, i.InvoiceNumber, i.IssueDate, i.TotalAmount, i.BalanceDue, i.Status);
+
+    public async Task<IReadOnlyList<PortalDoctorDto>> GetAvailableDoctorsAsync(Guid tenantId, CancellationToken cancellationToken = default)
+    {
+        return await _db.Doctors
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(d => d.TenantId == tenantId && d.IsActive && !d.IsDeleted)
+            .OrderBy(d => d.LastName)
+            .Select(d => new PortalDoctorDto(d.Id, d.FullName, d.Speciality, d.ConsultationRoom, d.WorkingHours))
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<(bool Success, string? Error)> RequestAppointmentAsync(
+        Guid patientId,
+        PortalAppointmentRequestDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        var patient = await _db.Patients.AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == patientId, cancellationToken);
+        if (patient == null) return (false, "Paciente no encontrado.");
+
+        if (dto.DesiredDate.Date < DateTime.UtcNow.Date)
+            return (false, "No puedes solicitar citas en fechas pasadas.");
+
+        if (dto.EndTime <= dto.StartTime)
+            return (false, "La hora de fin debe ser posterior a la hora de inicio.");
+
+        // Check for conflict on that doctor / date / time
+        var conflict = await _db.Appointments
+            .AnyAsync(a => a.DoctorId == dto.DoctorId
+                        && a.ScheduledDate == dto.DesiredDate.Date
+                        && !a.IsDeleted
+                        && a.Status != AppointmentStatus.Cancelled
+                        && dto.StartTime < a.EndTime && dto.EndTime > a.StartTime,
+                cancellationToken);
+
+        if (conflict)
+            return (false, "El doctor no está disponible en el horario solicitado. Por favor elige otro.");
+
+        var appointment = new Appointment
+        {
+            TenantId      = patient.TenantId,
+            PatientId     = patientId,
+            DoctorId      = dto.DoctorId,
+            ScheduledDate = dto.DesiredDate.Date,
+            StartTime     = dto.StartTime,
+            EndTime       = dto.EndTime,
+            Reason        = dto.Reason,
+            Status        = AppointmentStatus.Scheduled,
+            Notes         = "Solicitada por el paciente desde el portal."
+        };
+
+        _db.Appointments.Add(appointment);
+        await _db.SaveChangesAsync(cancellationToken);
+
+        await _audit.LogAsync(new AuditLogWriteDto(
+            "Create", "Appointments", "Appointment",
+            appointment.Id.ToString(),
+            "Cita solicitada desde portal del paciente"), cancellationToken);
+
+        return (true, null);
+    }
 }

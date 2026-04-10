@@ -105,3 +105,18 @@ public sealed record PatientPaymentListItemDto(
     ClinicalPaymentMethod PaymentMethod,
     string? ReferenceNumber,
     PaymentEntryStatus Status);
+
+public sealed record PortalDoctorDto(
+    Guid Id,
+    string FullName,
+    string? Speciality,
+    string? ConsultationRoom,
+    string? WorkingHours);
+
+public sealed record PortalAppointmentRequestDto(
+    Guid DoctorId,
+    DateTime DesiredDate,
+    TimeSpan StartTime,
+    TimeSpan EndTime,
+    string? Reason);
+

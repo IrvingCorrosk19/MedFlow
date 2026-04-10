@@ -8,9 +8,14 @@
 <div class="card card-outline card-primary shadow-sm">
     <div class="card-header d-flex flex-wrap align-items-center justify-content-between">
         <h3 class="card-title mb-0"><i class="fa fa-id-badge mr-2"></i>Roles</h3>
-        <a asp-action="Create" class="btn btn-primary btn-sm mt-2 mt-sm-0">
-            <i class="fa fa-plus"></i> Nuevo rol
-        </a>
+        <div class="d-flex" style="gap:6px">
+            <a asp-action="Matrix" class="btn btn-outline-info btn-sm mt-2 mt-sm-0">
+                <i class="fa fa-th mr-1"></i> Matriz de permisos
+            </a>
+            <a asp-action="Create" class="btn btn-primary btn-sm mt-2 mt-sm-0">
+                <i class="fa fa-plus mr-1"></i> Nuevo rol
+            </a>
+        </div>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">

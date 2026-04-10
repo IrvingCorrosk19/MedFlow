@@ -31,6 +31,9 @@
                 <a asp-controller="BillingInvoices" asp-action="Details" asp-route-id="@Model.BillingInvoiceId" class="btn btn-outline-primary">Ver factura</a>
                 @if (Model.Status == PaymentEntryStatus.Registered)
                 {
+                    <a asp-action="Receipt" asp-route-id="@Model.Id" class="btn btn-outline-danger btn-sm" target="_blank">
+                        <i class="fa fa-file-pdf-o mr-1"></i> Recibo PDF
+                    </a>
                     <form asp-action="Cancel" method="post" class="d-inline frm-cancel-pay">
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="id" value="@Model.Id" />

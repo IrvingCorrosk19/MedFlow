@@ -75,7 +75,13 @@
 <div class="card card-outline card-secondary shadow-sm">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h3 class="card-title font-weight-bold mb-0">Movimientos</h3>
-        <a asp-action="Create" class="btn btn-success btn-sm"><i class="fa fa-plus"></i> Nuevo movimiento</a>
+        <div class="d-flex" style="gap:6px">
+            <a asp-action="ExportCsv" asp-route-from="@fromVal" asp-route-to="@toVal" asp-route-day="@day"
+               class="btn btn-outline-success btn-sm" title="Exportar CSV">
+                <i class="fa fa-file-excel-o mr-1"></i> CSV
+            </a>
+            <a asp-action="Create" class="btn btn-success btn-sm"><i class="fa fa-plus mr-1"></i> Nuevo movimiento</a>
+        </div>
     </div>
     <div class="card-body table-responsive p-0">
         <table id="tblC" class="table table-hover mb-0">

@@ -2,10 +2,12 @@ using MedFlow.Application.Interfaces;
 using MedFlow.Application.Security;
 using MedFlow.Domain.Enums;
 using MedFlow.Web.Authorization;
+using MedFlow.Web.Pdf;
 using MedFlow.Web.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using QuestPDF.Fluent;
 
 namespace MedFlow.Web.Controllers;
 
@@ -16,12 +18,21 @@ public class PaymentsController : Controller
     private readonly IPaymentService _payments;
     private readonly IBillingInvoiceService _billing;
     private readonly IPatientService _patients;
+    private readonly IClinicSettingsService _clinicSettings;
+    private readonly ITenantContext _tenant;
 
-    public PaymentsController(IPaymentService payments, IBillingInvoiceService billing, IPatientService patients)
+    public PaymentsController(
+        IPaymentService payments,
+        IBillingInvoiceService billing,
+        IPatientService patients,
+        IClinicSettingsService clinicSettings,
+        ITenantContext tenant)
     {
         _payments = payments;
         _billing = billing;
         _patients = patients;
+        _clinicSettings = clinicSettings;
+        _tenant = tenant;
     }
 
     [RequirePermission(PermissionCodes.BillingView)]
@@ -143,5 +154,33 @@ public class PaymentsController : Controller
         else
             TempData["Error"] = err ?? "No se pudo anular el pago.";
         return RedirectToAction(nameof(Details), new { id });
+    }
+
+    [HttpGet]
+    [RequirePermission(PermissionCodes.BillingView)]
+    public async Task<IActionResult> Receipt(Guid id, CancellationToken cancellationToken = default)
+    {
+        if (!_tenant.TenantId.HasValue) return NotFound();
+
+        var p = await _payments.GetByIdAsync(id, cancellationToken);
+        if (p == null) return NotFound();
+
+        var settings = await _clinicSettings.GetAsync(_tenant.TenantId.Value, cancellationToken);
+
+        var doc = new PaymentReceiptPdfDocument(
+            clinicName: settings.Name,
+            clinicAddress: settings.Address,
+            clinicPhone: settings.Phone,
+            patientName: p.Patient?.NombreCompleto ?? "—",
+            invoiceNumber: p.BillingInvoice?.InvoiceNumber ?? "—",
+            receiptNumber: p.Id.ToString("N")[..8].ToUpper(),
+            paymentDate: p.PaymentDate,
+            amount: p.Amount,
+            paymentMethod: p.PaymentMethod.ToString(),
+            referenceNumber: p.ReferenceNumber,
+            notes: p.Notes);
+
+        var bytes = doc.GeneratePdf();
+        return File(bytes, "application/pdf", $"recibo-pago-{p.Id:N}.pdf");
     }
 }

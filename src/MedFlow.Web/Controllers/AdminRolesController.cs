@@ -245,6 +245,33 @@ public class AdminRolesController : Controller
         return View(vm);
     }
 
+    public async Task<IActionResult> Matrix(CancellationToken cancellationToken)
+    {
+        var gate = await EnsureAllowedAsync(cancellationToken);
+        if (gate != null) return gate;
+
+        ViewData["Title"] = "Matriz de permisos";
+        ViewData["PageSubtitle"] = "Roles × Permisos";
+        ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a href=\"" + Url.Action(nameof(Index)) + "\">Roles</a></li><li class=\"breadcrumb-item active\">Matriz</li>";
+
+        var roles = await _roles.GetAllAsync(cancellationToken);
+        var allPermissions = await _permissions.GetAllAsync(cancellationToken);
+
+        // Load permission IDs per role
+        var roleDetails = new List<RoleDetails>();
+        foreach (var r in roles)
+        {
+            var d = await _roles.GetByIdAsync(r.Id, cancellationToken);
+            if (d != null) roleDetails.Add(d);
+        }
+
+        var grouped = allPermissions.GroupBy(p => p.Module).OrderBy(g => g.Key).ToList();
+
+        ViewBag.Roles = roleDetails;
+        ViewBag.Grouped = grouped;
+        return View();
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Permissions(string id, List<Guid> permissionIds, CancellationToken cancellationToken)

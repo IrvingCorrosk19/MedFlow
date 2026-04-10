@@ -1,4 +1,5 @@
 using MedFlow.Application.Interfaces;
+using MedFlow.Application.Notifications;
 using MedFlow.Domain.Entities;
 using MedFlow.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -13,19 +14,22 @@ public class AppointmentService : IAppointmentService
     private readonly ISubscriptionLimitService _limits;
     private readonly IEventLogService _eventLog;
     private readonly IAuditLogService _audit;
+    private readonly INotificationDispatchService _notifications;
 
     public AppointmentService(
         IApplicationDbContext context,
         ITenantContext tenant,
         ISubscriptionLimitService limits,
         IEventLogService eventLog,
-        IAuditLogService audit)
+        IAuditLogService audit,
+        INotificationDispatchService notifications)
     {
         _context = context;
         _tenant = tenant;
         _limits = limits;
         _eventLog = eventLog;
         _audit = audit;
+        _notifications = notifications;
     }
 
     public async Task<Appointment?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -86,17 +90,24 @@ public class AppointmentService : IAppointmentService
         bool conflictInTx = false;
         await strategy.ExecuteAsync(async () =>
         {
-            await using var tx = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
-            conflictInTx = await HasConflictAsync(appointment.DoctorId, appointment.ScheduledDate, appointment.StartTime, appointment.EndTime, null, cancellationToken);
-            if (!conflictInTx)
+            // IsolationLevel.Serializable is only supported by relational providers (e.g. PostgreSQL)
+            var useIsolation = _context.Database.IsRelational();
+            var tx = useIsolation
+                ? await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken)
+                : await _context.Database.BeginTransactionAsync(cancellationToken);
+            await using (tx)
             {
-                await _context.Appointments.AddAsync(appointment, cancellationToken);
-                await _context.SaveChangesAsync(cancellationToken);
-                await tx.CommitAsync(cancellationToken);
-            }
-            else
-            {
-                await tx.RollbackAsync(cancellationToken);
+                conflictInTx = await HasConflictAsync(appointment.DoctorId, appointment.ScheduledDate, appointment.StartTime, appointment.EndTime, null, cancellationToken);
+                if (!conflictInTx)
+                {
+                    await _context.Appointments.AddAsync(appointment, cancellationToken);
+                    await _context.SaveChangesAsync(cancellationToken);
+                    await tx.CommitAsync(cancellationToken);
+                }
+                else
+                {
+                    await tx.RollbackAsync(cancellationToken);
+                }
             }
         });
         if (conflictInTx)
@@ -115,6 +126,10 @@ public class AppointmentService : IAppointmentService
 
         await _audit.LogAsync(new AuditLogWriteDto("Create", "Appointments", nameof(Appointment), appointment.Id.ToString(),
             "Cita creada"), cancellationToken);
+
+        // Fire confirmation notification (best-effort)
+        _ = DispatchAppointmentNotificationAsync(
+            appointment, NotificationEventType.AppointmentConfirmed, cancellationToken);
 
         return (true, null);
     }
@@ -142,6 +157,9 @@ public class AppointmentService : IAppointmentService
                 StartTime = appointment.StartTime.ToString(),
                 EndTime = appointment.EndTime.ToString()
             }, "Appointment", appointment.Id.ToString(), cancellationToken);
+
+            _ = DispatchAppointmentNotificationAsync(
+                appointment, NotificationEventType.AppointmentConfirmed, cancellationToken);
         }
 
         if (appointment.Status == AppointmentStatus.Cancelled)
@@ -153,6 +171,9 @@ public class AppointmentService : IAppointmentService
                 appointment.DoctorId,
                 appointment.ScheduledDate
             }, "Appointment", appointment.Id.ToString(), cancellationToken);
+
+            _ = DispatchAppointmentNotificationAsync(
+                appointment, NotificationEventType.AppointmentCancelled, cancellationToken);
         }
 
         if (appointment.Status == AppointmentStatus.Cancelled)
@@ -187,5 +208,48 @@ public class AppointmentService : IAppointmentService
             query = query.Where(a => a.Id != excludeId.Value);
 
         return await query.AnyAsync(cancellationToken);
+    }
+
+    private async Task DispatchAppointmentNotificationAsync(
+        Appointment appointment,
+        NotificationEventType eventType,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var tenantId = appointment.TenantId != Guid.Empty ? appointment.TenantId : (_tenant.TenantId ?? Guid.Empty);
+            if (tenantId == Guid.Empty) return;
+
+            // Load patient email if not already present
+            var patient = appointment.Patient
+                ?? await _context.Patients.AsNoTracking().FirstOrDefaultAsync(p => p.Id == appointment.PatientId, cancellationToken);
+            var doctor = appointment.Doctor
+                ?? await _context.Doctors.AsNoTracking().FirstOrDefaultAsync(d => d.Id == appointment.DoctorId, cancellationToken);
+
+            var payload = new Dictionary<string, object>
+            {
+                ["patient_name"]       = patient?.NombreCompleto ?? "",
+                ["doctor_name"]        = doctor?.FullName ?? "",
+                ["appointment_date"]   = appointment.ScheduledDate.ToString("dd/MM/yyyy"),
+                ["appointment_time"]   = appointment.StartTime.ToString(@"hh\:mm"),
+                ["appointment_end"]    = appointment.EndTime.ToString(@"hh\:mm"),
+                ["appointment_reason"] = appointment.Reason ?? ""
+            };
+
+            var request = new DispatchRequest(
+                TenantId: tenantId,
+                EventType: eventType,
+                Payload: payload,
+                RecipientEmail: patient?.Correo,
+                RecipientPhone: patient?.Telefono,
+                RelatedEntityType: "Appointment",
+                RelatedEntityId: appointment.Id.ToString());
+
+            await _notifications.DispatchAsync(request, cancellationToken);
+        }
+        catch
+        {
+            // Notifications are best-effort — never block the main flow
+        }
     }
 }

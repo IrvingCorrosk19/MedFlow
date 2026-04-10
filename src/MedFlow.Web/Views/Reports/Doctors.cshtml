@@ -36,10 +36,16 @@
 <div class="card card-outline card-secondary shadow-sm">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h3 class="card-title mb-0">Detalle de doctores</h3>
-        <a href="@Url.Action("ExportDoctorsCsv", "Reports", new { from = ViewBag.From, to = ViewBag.To, doctorId = ViewBag.DoctorId })"
-           class="btn btn-sm btn-outline-success">
-            <i class="fa fa-file-csv"></i> Exportar CSV
-        </a>
+        <div class="btn-group btn-group-sm">
+            <a href="@Url.Action("ExportDoctorsPdf", "Reports", new { from = ViewBag.From, to = ViewBag.To, doctorId = ViewBag.DoctorId })"
+               class="btn btn-outline-danger" title="Exportar PDF" target="_blank">
+                <i class="fa fa-file-pdf-o"></i> PDF
+            </a>
+            <a href="@Url.Action("ExportDoctorsCsv", "Reports", new { from = ViewBag.From, to = ViewBag.To, doctorId = ViewBag.DoctorId })"
+               class="btn btn-outline-success" title="Exportar CSV">
+                <i class="fa fa-file-excel-o"></i> CSV
+            </a>
+        </div>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">

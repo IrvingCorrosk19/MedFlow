@@ -183,6 +183,67 @@ public class PatientPortalController : Controller
         return RedirectToAction(nameof(Profile));
     }
 
+    // ── Solicitar cita ──────────────────────────────────────────────────────────
+
+    [HttpGet("appointments/request")]
+    public async Task<IActionResult> RequestAppointment(CancellationToken ct)
+    {
+        var patientId = await GetPatientIdAsync(ct);
+        if (!patientId.HasValue) return View("NoAccess");
+
+        var tenantId = _tenant.TenantId;
+        if (!tenantId.HasValue) return View("NoAccess");
+
+        var doctors = await _portal.GetAvailableDoctorsAsync(tenantId.Value, ct);
+
+        ViewData["Title"] = "Solicitar Cita";
+        ViewData["Layout"] = "~/Views/Shared/_PatientLayout.cshtml";
+        ViewBag.Doctors = doctors;
+        return View();
+    }
+
+    [HttpPost("appointments/request")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RequestAppointment(
+        Guid doctorId,
+        string desiredDate,
+        string startTime,
+        string endTime,
+        string? reason,
+        CancellationToken ct)
+    {
+        var patientId = await GetPatientIdAsync(ct);
+        if (!patientId.HasValue) return View("NoAccess");
+
+        if (!DateTime.TryParse(desiredDate, out var date) ||
+            !TimeSpan.TryParse(startTime, out var start) ||
+            !TimeSpan.TryParse(endTime, out var end))
+        {
+            TempData["Error"] = "Fecha u hora inválida. Por favor verifica los campos.";
+            return RedirectToAction(nameof(RequestAppointment));
+        }
+
+        var dto = new MedFlow.Application.PatientPortal.PortalAppointmentRequestDto(
+            doctorId, date, start, end, reason);
+
+        var (ok, err) = await _portal.RequestAppointmentAsync(patientId.Value, dto, ct);
+
+        if (ok)
+        {
+            TempData["Success"] = "¡Tu solicitud de cita fue enviada! El consultorio confirmará a la brevedad.";
+            return RedirectToAction(nameof(Appointments));
+        }
+
+        var tenantId = _tenant.TenantId;
+        if (tenantId.HasValue)
+            ViewBag.Doctors = await _portal.GetAvailableDoctorsAsync(tenantId.Value, ct);
+
+        TempData["Error"] = err ?? "No fue posible procesar tu solicitud.";
+        ViewData["Title"] = "Solicitar Cita";
+        ViewData["Layout"] = "~/Views/Shared/_PatientLayout.cshtml";
+        return View();
+    }
+
     // ── Sin acceso ─────────────────────────────────────────────────────────────
 
     [HttpGet("no-access")]

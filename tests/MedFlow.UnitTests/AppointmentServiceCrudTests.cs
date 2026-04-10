@@ -23,7 +23,10 @@ public class AppointmentServiceCrudTests
         var limits = new Mock<ISubscriptionLimitService>();
         var eventLog = new Mock<IEventLogService>();
         var audit = new Mock<IAuditLogService>();
-        return (new AppointmentService(db, tenant.Object, limits.Object, eventLog.Object, audit.Object), db, limits, eventLog, audit);
+        var notifications = new Mock<INotificationDispatchService>();
+        notifications.Setup(n => n.DispatchAsync(It.IsAny<MedFlow.Application.Notifications.DispatchRequest>(), It.IsAny<CancellationToken>()))
+                     .ReturnsAsync(new MedFlow.Application.Interfaces.DispatchResult(true, Array.Empty<Guid>(), Array.Empty<string>()));
+        return (new AppointmentService(db, tenant.Object, limits.Object, eventLog.Object, audit.Object, notifications.Object), db, limits, eventLog, audit);
     }
 
     private static void AllowCreate(Mock<ISubscriptionLimitService> limits) =>

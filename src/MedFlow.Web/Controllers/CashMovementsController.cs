@@ -129,6 +129,51 @@ public class CashMovementsController : Controller
         return View(movement);
     }
 
+    [HttpGet]
+    [RequirePermission(PermissionCodes.CashView)]
+    public async Task<IActionResult> ExportCsv(DateTime? from, DateTime? to, DateTime? day, CancellationToken cancellationToken = default)
+    {
+        DateTime start, end;
+        if (from.HasValue || to.HasValue)
+        {
+            start = (from ?? to!.Value).ToUniversalTime().Date;
+            end   = (to ?? from!.Value).ToUniversalTime().Date.AddDays(1);
+        }
+        else
+        {
+            var d = day?.ToUniversalTime().Date ?? DateTime.UtcNow.Date;
+            start = d;
+            end   = start.AddDays(1);
+        }
+
+        var movements = await _cash.GetByDateRangeAsync(start, end, cancellationToken);
+
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("Fecha,Tipo,Monto,Descripción,Registrado por");
+        foreach (var m in movements)
+        {
+            sb.AppendLine(string.Join(",",
+                CsvField(m.MovementDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")),
+                CsvField(m.MovementType.ToString()),
+                CsvField(m.Amount.ToString("N2")),
+                CsvField(m.Description ?? ""),
+                CsvField(m.CreatedByUserId ?? "")));
+        }
+
+        var bytes = System.Text.Encoding.UTF8.GetPreamble()
+            .Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString()))
+            .ToArray();
+
+        return File(bytes, "text/csv", $"caja_{DateTime.UtcNow:yyyyMMdd}.csv");
+    }
+
+    private static string CsvField(string value)
+    {
+        if (value.Contains(',') || value.Contains('"') || value.Contains('\n'))
+            return "\"" + value.Replace("\"", "\"\"") + "\"";
+        return value;
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     [RequirePermission(PermissionCodes.CashDelete)]

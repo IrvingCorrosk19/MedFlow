@@ -22,4 +22,6 @@ public interface IPatientPortalService
     Task<int> GetUnreadNotificationsCountAsync(Guid patientId, CancellationToken cancellationToken = default);
     Task MarkNotificationReadAsync(Guid patientId, Guid notificationId, CancellationToken cancellationToken = default);
     Task<Guid?> GetPatientIdByUserIdAsync(string userId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<PortalDoctorDto>> GetAvailableDoctorsAsync(Guid tenantId, CancellationToken cancellationToken = default);
+    Task<(bool Success, string? Error)> RequestAppointmentAsync(Guid patientId, PortalAppointmentRequestDto dto, CancellationToken cancellationToken = default);
 }
