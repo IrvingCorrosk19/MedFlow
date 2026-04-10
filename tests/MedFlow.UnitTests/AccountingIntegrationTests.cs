@@ -346,10 +346,14 @@ public class AccountingIntegrationTests
         Assert.NotNull(cancelledInvoice);
         Assert.Equal(InvoiceStatus.Cancelled, cancelledInvoice!.Status);
 
-        // CancelAsync does not create a reversal journal entry in the current implementation.
-        // Document this: only the original Invoice-origin entry should exist.
-        var entryCount = await db.JournalEntries
-            .CountAsync(j => j.TenantId == tenantId && j.Origin == JournalEntryOrigin.Invoice);
-        Assert.Equal(1, entryCount);
+        // CancelAsync auto-creates a reversal journal entry (swapped debits/credits).
+        // We expect 2 Invoice-origin entries: the original + the reversal.
+        var entries = await db.JournalEntries
+            .Where(j => j.TenantId == tenantId && j.Origin == JournalEntryOrigin.Invoice)
+            .ToListAsync();
+        Assert.Equal(2, entries.Count);
+
+        var reversal = entries.FirstOrDefault(j => j.Description.Contains("Reversión"));
+        Assert.NotNull(reversal);
     }
 }

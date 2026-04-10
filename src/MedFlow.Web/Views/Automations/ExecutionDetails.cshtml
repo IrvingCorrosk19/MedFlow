@@ -1,0 +1,105 @@
+@using MedFlow.Domain.Enums
+@model MedFlow.Domain.Entities.WorkflowExecution
+@{
+    ViewData["Title"] = "Detalle de ejecución";
+    var statusColor = Model.Status switch
+    {
+        WorkflowExecutionStatus.Succeeded => "success",
+        WorkflowExecutionStatus.Failed    => "danger",
+        WorkflowExecutionStatus.Pending   => "warning",
+        WorkflowExecutionStatus.Retrying  => "info",
+        _                                 => "secondary"
+    };
+}
+
+<div class="row">
+    <div class="col-lg-7">
+        <div class="card card-outline card-primary shadow-sm mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="card-title mb-0"><i class="fa fa-bolt mr-2"></i>Ejecución #@Model.Id.ToString("N")[..8]</h3>
+                <span class="badge badge-@statusColor px-3 py-2">@Model.Status</span>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-5 text-muted small">Evento</dt>
+                    <dd class="col-7 font-weight-medium">@Model.EventType</dd>
+                    <dt class="col-5 text-muted small">Entidad</dt>
+                    <dd class="col-7">@(Model.AggregateId ?? "—")</dd>
+                    <dt class="col-5 text-muted small">Workflow</dt>
+                    <dd class="col-7">@(Model.WorkflowDefinition?.Name ?? "—")</dd>
+                    <dt class="col-5 text-muted small">Iniciado</dt>
+                    <dd class="col-7">@Model.StartedAt.ToLocalTime().ToString("g")</dd>
+                    @if (Model.CompletedAt.HasValue)
+                    {
+                        <dt class="col-5 text-muted small">Completado</dt>
+                        <dd class="col-7">@Model.CompletedAt.Value.ToLocalTime().ToString("g")</dd>
+                    }
+                    <dt class="col-5 text-muted small">HTTP Status</dt>
+                    <dd class="col-7">@(Model.ResponseStatusCode.HasValue ? Model.ResponseStatusCode.ToString() : "—")</dd>
+                    <dt class="col-5 text-muted small">Intentos</dt>
+                    <dd class="col-7">@Model.AttemptCount</dd>
+                </dl>
+            </div>
+        </div>
+
+        <div class="mt-2 d-flex" style="gap:8px">
+            <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+                <i class="fa fa-arrow-left mr-1"></i> Volver
+            </a>
+            @if (Model.Status == WorkflowExecutionStatus.Failed || Model.Status == WorkflowExecutionStatus.Pending || Model.Status == WorkflowExecutionStatus.Retrying)
+            {
+                <form asp-action="RetryExecution" asp-route-id="@Model.Id" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-warning btn-sm">
+                        <i class="fa fa-repeat mr-1"></i> Re-ejecutar
+                    </button>
+                </form>
+            }
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+        {
+            <div class="card card-outline card-danger shadow-sm mb-3">
+                <div class="card-header"><h3 class="card-title mb-0 small text-danger"><i class="fa fa-exclamation-triangle mr-1"></i>Error</h3></div>
+                <div class="card-body p-2">
+                    <pre class="small mb-0 text-danger" style="white-space:pre-wrap">@Model.ErrorMessage</pre>
+                </div>
+            </div>
+        }
+
+        <div class="card card-outline card-secondary shadow-sm mb-3">
+            <div class="card-header"><h3 class="card-title mb-0 small"><i class="fa fa-code mr-1"></i>Payload enviado</h3></div>
+            <div class="card-body p-2">
+                <pre class="small mb-0" style="max-height:200px;overflow:auto;white-space:pre-wrap">@(FormatJson(Model.PayloadJson))</pre>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.ResponseBody))
+        {
+            <div class="card card-outline card-success shadow-sm">
+                <div class="card-header"><h3 class="card-title mb-0 small"><i class="fa fa-reply mr-1"></i>Respuesta webhook</h3></div>
+                <div class="card-body p-2">
+                    <pre class="small mb-0" style="max-height:150px;overflow:auto;white-space:pre-wrap">@(FormatJson(Model.ResponseBody))</pre>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@functions {
+    private string FormatJson(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return "—";
+        try
+        {
+            var doc = System.Text.Json.JsonDocument.Parse(json);
+            return System.Text.Json.JsonSerializer.Serialize(doc, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+        }
+        catch
+        {
+            return json;
+        }
+    }
+}

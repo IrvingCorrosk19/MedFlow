@@ -266,6 +266,40 @@ public class AutomationsController : Controller
         }
         return RedirectToAction(nameof(Index));
     }
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [RequirePermission(PermissionCodes.AutomationsManage)]
+    public async Task<IActionResult> RetryExecution(Guid id, CancellationToken ct)
+    {
+        bool isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+        try
+        {
+            await _executions.RetryAsync(id, ct);
+            if (isAjax)
+                return Json(new { success = true, message = "Ejecución re-encolada correctamente." });
+            TempData["Success"] = "Ejecución re-encolada. Será procesada en breve.";
+        }
+        catch (Exception ex)
+        {
+            if (isAjax)
+                return Json(new { success = false, message = ex.Message });
+            TempData["Error"] = ex.Message;
+        }
+        return RedirectToAction(nameof(Index));
+    }
+
+    [RequirePermission(PermissionCodes.AutomationsView)]
+    public async Task<IActionResult> ExecutionDetails(Guid id, CancellationToken ct)
+    {
+        var exec = await _executions.GetByIdAsync(id, ct);
+        if (exec == null) return NotFound();
+
+        ViewData["Title"] = "Detalle de ejecución";
+        ViewData["PageSubtitle"] = exec.EventType;
+        ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a href=\"" + Url.Action(nameof(Index)) + "\">Automatizaciones</a></li><li class=\"breadcrumb-item active\">Ejecución</li>";
+        return View(exec);
+    }
+
     private static bool IsValidJson(string json)
     {
         try

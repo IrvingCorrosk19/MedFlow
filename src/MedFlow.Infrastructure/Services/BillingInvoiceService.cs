@@ -251,6 +251,13 @@ public class BillingInvoiceService : IBillingInvoiceService
         await _audit.LogAsync(new AuditLogWriteDto("Cancel", "Billing", nameof(BillingInvoice), inv.Id.ToString(),
             $"Factura {inv.InvoiceNumber} cancelada"), cancellationToken);
 
+        // Auto-reverse the accounting journal entry
+        if (_journalEntries is not null && _tenant.TenantId.HasValue)
+        {
+            var userId = "system";
+            await _journalEntries.ReverseFromInvoiceCancelAsync(_tenant.TenantId.Value, inv, userId, cancellationToken);
+        }
+
         return (true, null);
     }
 

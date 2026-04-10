@@ -25,6 +25,11 @@ public static class WorkflowTriggerEvents
     public const string NoShowRiskDetected = "NoShowRiskDetected";
     public const string PaymentRiskDetected = "PaymentRiskDetected";
     public const string PatientReengagementSuggested = "PatientReengagementSuggested";
+    public const string MedicalRecordCreated = "MedicalRecordCreated";
+    public const string PrescriptionIssued = "PrescriptionIssued";
+    public const string AppointmentRequestedFromPortal = "AppointmentRequestedFromPortal";
+    public const string InvoicePaid = "InvoicePaid";
+    public const string InvoiceOverdue = "InvoiceOverdue";
 
     public static IReadOnlyList<string> All { get; } =
     [
@@ -32,18 +37,23 @@ public static class WorkflowTriggerEvents
         AppointmentReminder,
         AppointmentConfirmed,
         AppointmentCancelled,
+        AppointmentRequestedFromPortal,
         PaymentRegistered,
         InvoiceCreated,
         InvoicePending,
+        InvoicePaid,
+        InvoiceOverdue,
+        InvoiceCancelled,
+        PaymentCancelled,
         SaaSPaymentFailed,
         SaaSPaymentSucceeded,
         TenantSuspended,
         PatientRegistered,
         PatientInactive,
         PatientCreated,
+        MedicalRecordCreated,
+        PrescriptionIssued,
         UserCreated,
-        InvoiceCancelled,
-        PaymentCancelled,
         DailySummary,
         AIInsightGenerated,
         AIRecommendationApplied,

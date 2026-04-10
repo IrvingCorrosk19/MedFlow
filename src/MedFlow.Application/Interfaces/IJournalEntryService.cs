@@ -38,5 +38,8 @@ public interface IJournalEntryService
     /// <summary>Crea automáticamente un asiento al registrar un pago.</summary>
     Task<JournalEntry?> CreateFromPaymentAsync(Guid tenantId, Payment payment, string userId, CancellationToken ct = default);
 
+    /// <summary>Reversa automáticamente el asiento de una factura al cancelarla.</summary>
+    Task<(bool Ok, string? Message)> ReverseFromInvoiceCancelAsync(Guid tenantId, BillingInvoice invoice, string userId, CancellationToken ct = default);
+
     Task<string> GenerateNextEntryNumberAsync(Guid tenantId, CancellationToken ct = default);
 }

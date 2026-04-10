@@ -383,6 +383,57 @@ public class JournalEntryService : IJournalEntryService
         return entry;
     }
 
+    public async Task<(bool Ok, string? Message)> ReverseFromInvoiceCancelAsync(
+        Guid tenantId, BillingInvoice invoice, string userId, CancellationToken ct = default)
+    {
+        // Find the original journal entry created for this invoice (by reference = InvoiceNumber)
+        var original = await _context.JournalEntries
+            .Include(j => j.Lines)
+            .FirstOrDefaultAsync(j => j.TenantId == tenantId
+                && j.Reference == invoice.InvoiceNumber
+                && j.Origin == JournalEntryOrigin.Invoice
+                && j.Status == JournalEntryStatus.Posted, ct);
+
+        if (original is null)
+            return (false, "No se encontró asiento contable asociado a la factura.");
+
+        var entryNumber = await GenerateNextEntryNumberAsync(tenantId, ct);
+        var period = await GetOrCreatePeriodAsync(tenantId, DateTime.UtcNow, ct);
+
+        var reversal = new JournalEntry
+        {
+            TenantId       = tenantId,
+            EntryNumber    = entryNumber,
+            EntryDate      = DateTime.UtcNow,
+            FiscalPeriodId = period.Id,
+            Description    = $"Reversión — Cancelación factura {invoice.InvoiceNumber}",
+            Reference      = invoice.InvoiceNumber,
+            Status         = JournalEntryStatus.Posted,
+            Origin         = JournalEntryOrigin.Invoice,
+            CreatedByUserId = userId
+        };
+
+        // Swap debits/credits from the original entry
+        var lineOrder = 1;
+        foreach (var line in original.Lines)
+        {
+            reversal.Lines.Add(new JournalEntryLine
+            {
+                AccountId   = line.AccountId,
+                Description = $"Rev. {line.Description}",
+                Debit       = line.Credit,
+                Credit      = line.Debit,
+                LineOrder   = lineOrder++
+            });
+        }
+
+        _context.JournalEntries.Add(reversal);
+        await _context.SaveChangesAsync(ct);
+        await _accounts.RecalculateBalancesAsync(tenantId, ct);
+
+        return (true, $"Asiento de reversión {entryNumber} creado.");
+    }
+
     public async Task<string> GenerateNextEntryNumberAsync(Guid tenantId, CancellationToken ct = default)
     {
         var year = DateTime.UtcNow.Year;
