@@ -87,4 +87,11 @@ public class CashMovementService : ICashMovementService
         await _context.SaveChangesAsync(cancellationToken);
         return true;
     }
+
+    public async Task<Domain.Entities.CashMovement?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await _context.CashMovements
+            .AsNoTracking()
+            .FirstOrDefaultAsync(m => m.Id == id && !m.IsDeleted, cancellationToken);
+    }
 }

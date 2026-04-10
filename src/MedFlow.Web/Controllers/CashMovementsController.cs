@@ -116,6 +116,19 @@ public class CashMovementsController : Controller
         return RedirectToAction(nameof(Index), new { day = created!.MovementDate.ToLocalTime().ToString("yyyy-MM-dd") });
     }
 
+    [HttpGet]
+    [RequirePermission(PermissionCodes.CashView)]
+    public async Task<IActionResult> Details(Guid id, CancellationToken cancellationToken = default)
+    {
+        var movement = await _cash.GetByIdAsync(id, cancellationToken);
+        if (movement == null) return NotFound();
+
+        ViewData["Title"] = "Movimiento de caja";
+        ViewData["PageSubtitle"] = movement.MovementDate.ToLocalTime().ToString("dd/MM/yyyy");
+        ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a href=\"" + Url.Action(nameof(Index)) + "\">Caja</a></li><li class=\"breadcrumb-item active\">Detalle</li>";
+        return View(movement);
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     [RequirePermission(PermissionCodes.CashDelete)]

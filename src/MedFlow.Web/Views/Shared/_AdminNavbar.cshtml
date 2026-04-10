@@ -8,13 +8,15 @@
             <span class="nav-link text-muted small mb-0 mf-navbar-date">@DateTime.Now.ToString("dddd, dd MMMM yyyy", new System.Globalization.CultureInfo("es-ES"))</span>
         </li>
     </ul>
-    <form class="form-inline ml-3 d-none d-lg-flex flex-grow-1 mx-4" onsubmit="return false;">
+    <form class="form-inline ml-3 d-none d-lg-flex flex-grow-1 mx-4" onsubmit="return false;" style="position:relative">
         <div class="input-group input-group-sm w-100 mf-navbar-search">
-            <input type="search" class="form-control form-control-navbar" placeholder="Buscar paciente, cita…" id="globalSearch" disabled title="Próximamente" />
+            <input type="search" class="form-control form-control-navbar" placeholder="Buscar paciente, factura…"
+                   id="globalSearch" autocomplete="off" />
             <div class="input-group-append">
-                <button class="btn btn-navbar" type="button" disabled title="Próximamente"><i class="fa fa-search"></i></button>
+                <button class="btn btn-navbar" type="button" id="globalSearchBtn"><i class="fa fa-search"></i></button>
             </div>
         </div>
+        <div id="searchResults" class="shadow bg-white border rounded" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:9999;max-height:320px;overflow-y:auto;"></div>
     </form>
     <ul class="navbar-nav ml-auto align-items-center">
         <li class="nav-item d-none d-sm-inline-block mr-2">
@@ -44,6 +46,56 @@
 </nav>
 
 <script>
+    // Global search
+    (function () {
+        var input = document.getElementById('globalSearch');
+        var resultsBox = document.getElementById('searchResults');
+        var timer;
+
+        input.addEventListener('input', function () {
+            clearTimeout(timer);
+            var q = this.value.trim();
+            if (q.length < 2) { resultsBox.style.display = 'none'; return; }
+            timer = setTimeout(function () { doSearch(q); }, 250);
+        });
+
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') { resultsBox.style.display = 'none'; input.blur(); }
+        });
+
+        document.addEventListener('click', function (e) {
+            if (!resultsBox.contains(e.target) && e.target !== input) {
+                resultsBox.style.display = 'none';
+            }
+        });
+
+        function doSearch(q) {
+            fetch('/api/search?q=' + encodeURIComponent(q), { credentials: 'same-origin' })
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (data) {
+                    if (!data) return;
+                    if (data.results.length === 0) {
+                        resultsBox.innerHTML = '<div class="p-3 text-muted small">Sin resultados para "' + escHtml(q) + '"</div>';
+                    } else {
+                        resultsBox.innerHTML = data.results.map(function (r) {
+                            return '<a href="' + r.link + '" class="d-flex align-items-center px-3 py-2 border-bottom text-dark text-decoration-none" style="gap:8px">' +
+                                '<i class="' + r.icon + ' fa-fw"></i>' +
+                                '<div><div class="small font-weight-bold">' + escHtml(r.title) + '</div>' +
+                                '<div class="text-muted" style="font-size:11px">' + escHtml(r.subtitle) + '</div></div>' +
+                                '</a>';
+                        }).join('');
+                    }
+                    resultsBox.style.display = 'block';
+                })
+                .catch(function () { });
+        }
+
+        function escHtml(s) {
+            return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+    })();
+
+    // Notifications bell
     (function () {
         var loaded = false;
 

@@ -98,6 +98,7 @@
                         <td class="text-right font-weight-medium">@m.Amount.ToString("N2")</td>
                         <td>@(m.Description ?? "—")</td>
                         <td>
+                            <a asp-action="Details" asp-route-id="@m.Id" class="btn btn-xs btn-default mr-1" title="Ver detalle"><i class="fa fa-eye"></i></a>
                             @if (m.RelatedPaymentId == null)
                             {
                                 <form asp-action="Delete" method="post" class="d-inline frm-del-mov">

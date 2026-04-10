@@ -9,4 +9,5 @@ public interface ICashMovementService
     Task<(decimal Income, decimal Expense, decimal Adjustment)> GetRangeTotalsAsync(DateTime fromUtc, DateTime toUtc, CancellationToken cancellationToken = default);
     Task<(MedFlow.Domain.Entities.CashMovement? Created, string? Error)> CreateAsync(MedFlow.Domain.Entities.CashMovement movement, CancellationToken cancellationToken = default);
     Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<CashMovement?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 }
