@@ -110,6 +110,7 @@ public static class DependencyInjection
         services.AddScoped<IAnalyticsRebuildService, Analytics.AnalyticsRebuildService>();
         services.AddScoped<IAnalyticsSettingsService, Analytics.AnalyticsSettingsService>();
         services.AddHostedService<Analytics.AnalyticsSnapshotBackgroundService>();
+        services.AddHostedService<Notifications.AppointmentReminderBackgroundService>();
 
         services.Configure<ResendOptions>(configuration.GetSection(ResendOptions.SectionName));
         services.Configure<Resend.ResendClientOptions>(o =>

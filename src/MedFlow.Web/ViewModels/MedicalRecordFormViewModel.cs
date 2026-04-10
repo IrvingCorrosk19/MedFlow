@@ -2,6 +2,47 @@ using System.ComponentModel.DataAnnotations;
 
 namespace MedFlow.Web.ViewModels;
 
+public class PrescriptionFormViewModel
+{
+    public Guid? Id { get; set; }
+
+    [Required]
+    public Guid MedicalRecordId { get; set; }
+
+    public Guid? PatientId { get; set; }
+
+    [Required(ErrorMessage = "El nombre del medicamento es obligatorio.")]
+    [StringLength(300)]
+    [Display(Name = "Medicamento")]
+    public string MedicationName { get; set; } = string.Empty;
+
+    [StringLength(200)]
+    [Display(Name = "Dosis")]
+    public string? Dosage { get; set; }
+
+    [StringLength(200)]
+    [Display(Name = "Frecuencia")]
+    public string? Frequency { get; set; }
+
+    [StringLength(200)]
+    [Display(Name = "Duración")]
+    public string? Duration { get; set; }
+
+    [StringLength(1000)]
+    [Display(Name = "Indicaciones especiales")]
+    public string? Instructions { get; set; }
+
+    [StringLength(200)]
+    [Display(Name = "Nombre del médico prescriptor")]
+    public string? PrescriberName { get; set; }
+
+    [StringLength(100)]
+    [Display(Name = "Cédula / Matrícula")]
+    public string? PrescriberLicense { get; set; }
+
+    public DateTime IssuedAt { get; set; } = DateTime.UtcNow.Date;
+}
+
 public class PrescriptionLineViewModel
 {
     [StringLength(300)]

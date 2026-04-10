@@ -79,6 +79,23 @@ public class PrescriptionService : IPrescriptionService
             .ToListAsync(ct);
     }
 
+    public async Task<Prescription> CreateAsync(Prescription prescription, CancellationToken ct = default)
+    {
+        prescription.CreatedAt = DateTime.UtcNow;
+        prescription.UpdatedAt = DateTime.UtcNow;
+        _db.Prescriptions.Add(prescription);
+        await _db.SaveChangesAsync(ct);
+        return prescription;
+    }
+
+    public async Task<Prescription> UpdateAsync(Prescription prescription, CancellationToken ct = default)
+    {
+        prescription.UpdatedAt = DateTime.UtcNow;
+        _db.Prescriptions.Update(prescription);
+        await _db.SaveChangesAsync(ct);
+        return prescription;
+    }
+
     public async Task IncrementPrintCountAsync(Guid id, CancellationToken ct = default)
     {
         var prescription = await _db.Prescriptions

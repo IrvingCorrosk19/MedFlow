@@ -9,6 +9,9 @@
             <div class="card-header">
                 <h3 class="card-title"><i class="fa fa-medkit mr-1"></i> Recetas emitidas</h3>
                 <div class="card-tools">
+                    <a asp-action="Create" class="btn btn-success btn-sm mr-2">
+                        <i class="fa fa-plus mr-1"></i> Nueva Receta
+                    </a>
                     <span class="badge badge-success badge-pill">@Model.Count recetas</span>
                 </div>
             </div>

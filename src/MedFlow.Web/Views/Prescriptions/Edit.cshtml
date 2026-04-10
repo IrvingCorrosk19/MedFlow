@@ -1,0 +1,118 @@
+@model MedFlow.Web.ViewModels.PrescriptionFormViewModel
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card card-outline card-warning">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fa fa-edit mr-1"></i> Editar Receta</h3>
+            </div>
+            <form asp-action="Edit" method="post">
+                @Html.AntiForgeryToken()
+                <input asp-for="Id" type="hidden" />
+                <input asp-for="MedicalRecordId" type="hidden" />
+                <input asp-for="PatientId" type="hidden" />
+
+                <div class="card-body">
+                    <div asp-validation-summary="All" class="alert alert-danger"></div>
+
+                    @* Consulta (read-only info) *@
+                    <div class="form-group row">
+                        <label class="col-sm-3 col-form-label">Consulta</label>
+                        <div class="col-sm-9">
+                            @if (ViewBag.MedicalRecords != null)
+                            {
+                                <select class="form-control" disabled>
+                                    @foreach (SelectListItem item in ViewBag.MedicalRecords)
+                                    {
+                                        if (item.Value == Model.MedicalRecordId.ToString())
+                                        {
+                                            <option selected>@item.Text</option>
+                                        }
+                                    }
+                                </select>
+                            }
+                            <small class="form-text text-muted">La consulta asociada no se puede cambiar.</small>
+                        </div>
+                    </div>
+
+                    <hr />
+
+                    <div class="form-group row">
+                        <label asp-for="MedicationName" class="col-sm-3 col-form-label"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="MedicationName" class="form-control" />
+                            <span asp-validation-for="MedicationName" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label asp-for="Dosage" class="col-sm-3 col-form-label"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="Dosage" class="form-control" />
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label asp-for="Frequency" class="col-sm-3 col-form-label"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="Frequency" class="form-control" />
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label asp-for="Duration" class="col-sm-3 col-form-label"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="Duration" class="form-control" />
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label asp-for="Instructions" class="col-sm-3 col-form-label"></label>
+                        <div class="col-sm-9">
+                            <textarea asp-for="Instructions" class="form-control" rows="2"></textarea>
+                        </div>
+                    </div>
+
+                    <hr />
+                    <h6 class="text-muted mb-3">Datos del médico prescriptor</h6>
+
+                    <div class="form-group row">
+                        <label asp-for="PrescriberName" class="col-sm-3 col-form-label"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="PrescriberName" class="form-control" />
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label asp-for="PrescriberLicense" class="col-sm-3 col-form-label"></label>
+                        <div class="col-sm-5">
+                            <input asp-for="PrescriberLicense" class="form-control" />
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label asp-for="IssuedAt" class="col-sm-3 col-form-label">Fecha de emisión</label>
+                        <div class="col-sm-4">
+                            <input asp-for="IssuedAt" type="date" class="form-control"
+                                   value="@Model.IssuedAt.ToString("yyyy-MM-dd")" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fa fa-save mr-1"></i> Guardar cambios
+                    </button>
+                    <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-default ml-2">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

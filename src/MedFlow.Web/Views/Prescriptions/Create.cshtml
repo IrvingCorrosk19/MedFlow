@@ -1,0 +1,147 @@
+@model MedFlow.Web.ViewModels.PrescriptionFormViewModel
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card card-outline card-success">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fa fa-medkit mr-1"></i> Nueva Receta</h3>
+            </div>
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+                <input asp-for="Id" type="hidden" />
+                <input asp-for="PatientId" type="hidden" />
+
+                <div class="card-body">
+                    <div asp-validation-summary="All" class="alert alert-danger" style="display:none" id="valSummary"></div>
+
+                    @* Paciente + Consulta *@
+                    <div class="form-group row">
+                        <label class="col-sm-3 col-form-label">Paciente</label>
+                        <div class="col-sm-9">
+                            <select asp-for="PatientId" asp-items="ViewBag.Patients" class="form-control select2"
+                                    id="patientSelect" onchange="loadMedicalRecords(this.value)">
+                                <option value="">-- Seleccione paciente --</option>
+                            </select>
+                            <span asp-validation-for="PatientId" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label asp-for="MedicalRecordId" class="col-sm-3 col-form-label">Consulta asociada</label>
+                        <div class="col-sm-9">
+                            <select asp-for="MedicalRecordId" asp-items="ViewBag.MedicalRecords" class="form-control" id="medicalRecordSelect">
+                                <option value="">-- Seleccione consulta --</option>
+                            </select>
+                            <span asp-validation-for="MedicalRecordId" class="text-danger"></span>
+                            <small class="form-text text-muted">Seleccione primero un paciente para ver sus consultas.</small>
+                        </div>
+                    </div>
+
+                    <hr />
+
+                    @* Medicamento *@
+                    <div class="form-group row">
+                        <label asp-for="MedicationName" class="col-sm-3 col-form-label"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="MedicationName" class="form-control" placeholder="Ej: Amoxicilina 500mg" />
+                            <span asp-validation-for="MedicationName" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label asp-for="Dosage" class="col-sm-3 col-form-label"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="Dosage" class="form-control" placeholder="Ej: 1 cápsula" />
+                            <span asp-validation-for="Dosage" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label asp-for="Frequency" class="col-sm-3 col-form-label"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="Frequency" class="form-control" placeholder="Ej: Cada 8 horas" />
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label asp-for="Duration" class="col-sm-3 col-form-label"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="Duration" class="form-control" placeholder="Ej: 7 días" />
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label asp-for="Instructions" class="col-sm-3 col-form-label"></label>
+                        <div class="col-sm-9">
+                            <textarea asp-for="Instructions" class="form-control" rows="2"
+                                      placeholder="Tomar con alimentos, evitar alcohol..."></textarea>
+                        </div>
+                    </div>
+
+                    <hr />
+
+                    @* Prescriptor *@
+                    <h6 class="text-muted mb-3">Datos del médico prescriptor</h6>
+
+                    <div class="form-group row">
+                        <label asp-for="PrescriberName" class="col-sm-3 col-form-label"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="PrescriberName" class="form-control" placeholder="Dr. Juan Pérez" />
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label asp-for="PrescriberLicense" class="col-sm-3 col-form-label"></label>
+                        <div class="col-sm-5">
+                            <input asp-for="PrescriberLicense" class="form-control" placeholder="MP-12345" />
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label asp-for="IssuedAt" class="col-sm-3 col-form-label">Fecha de emisión</label>
+                        <div class="col-sm-4">
+                            <input asp-for="IssuedAt" type="date" class="form-control"
+                                   value="@Model.IssuedAt.ToString("yyyy-MM-dd")" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fa fa-save mr-1"></i> Guardar receta
+                    </button>
+                    <a asp-action="Index" class="btn btn-default ml-2">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Init select2
+        $('#patientSelect').select2({ placeholder: '-- Seleccione paciente --', width: '100%' });
+        $('#patientSelect').on('change', function () { loadMedicalRecords(this.value); });
+
+        function loadMedicalRecords(patientId) {
+            if (!patientId) {
+                $('#medicalRecordSelect').html('<option value="">-- Seleccione consulta --</option>');
+                return;
+            }
+            $.get('/Prescriptions/MedicalRecordsByPatient?patientId=' + patientId, function (data) {
+                var opts = '<option value="">-- Seleccione consulta --</option>';
+                data.forEach(function (r) { opts += '<option value="' + r.id + '">' + r.display + '</option>'; });
+                $('#medicalRecordSelect').html(opts);
+            });
+        }
+
+        // Show validation summary if errors
+        if ($('[data-valmsg-summary]').find('li').length > 0) {
+            $('#valSummary').show();
+        }
+    </script>
+}

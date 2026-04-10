@@ -10,4 +10,6 @@ public interface IPrescriptionService
     Task VoidAsync(Guid id, Guid tenantId, string reason, CancellationToken ct = default);
     Task IncrementPrintCountAsync(Guid id, CancellationToken ct = default);
     Task<IReadOnlyList<Prescription>> GetRecentAsync(Guid tenantId, int limit, CancellationToken ct = default);
+    Task<Prescription> CreateAsync(Prescription prescription, CancellationToken ct = default);
+    Task<Prescription> UpdateAsync(Prescription prescription, CancellationToken ct = default);
 }
