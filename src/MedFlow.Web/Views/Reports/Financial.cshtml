@@ -93,6 +93,10 @@
 <div class="card card-outline card-primary shadow-sm mb-3">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h3 class="card-title mb-0">Facturas</h3>
+        <a href="@Url.Action("ExportFinancialPdf", new { from = ViewBag.From, to = ViewBag.To, patientId = ViewBag.PatientId, paymentMethod = ViewBag.PaymentMethod })"
+           class="btn btn-outline-danger btn-sm mr-1" title="Exportar PDF" target="_blank">
+            <i class="fa fa-file-pdf-o"></i> PDF
+        </a>
         <a href="@Url.Action("ExportFinancialCsv", new { from = ViewBag.From, to = ViewBag.To, patientId = ViewBag.PatientId, paymentMethod = ViewBag.PaymentMethod })"
            class="btn btn-outline-success btn-sm" title="Exportar CSV">
             <i class="fa fa-file-excel-o"></i> CSV

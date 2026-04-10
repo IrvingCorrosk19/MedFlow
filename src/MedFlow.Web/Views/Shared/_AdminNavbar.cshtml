@@ -20,15 +20,77 @@
         <li class="nav-item d-none d-sm-inline-block mr-2">
             <span class="badge badge-light border text-muted small mf-tenant-pill" title="Contexto actual">@(TenantContext.TenantName ?? "MedFlow AI")</span>
         </li>
-        <li class="nav-item dropdown d-none d-md-block">
-            <a class="nav-link position-relative mf-nav-bell" href="#" data-toggle="dropdown" title="Notificaciones" aria-label="Notificaciones">
-                <i class="fa fa-bell-o"></i>
+        <li class="nav-item dropdown d-none d-md-block" id="navNotifDropdown">
+            <a class="nav-link position-relative mf-nav-bell" href="#" data-toggle="dropdown" title="Notificaciones" aria-label="Notificaciones" id="navBellBtn">
+                <i class="fa fa-bell-o" id="navBellIcon"></i>
+                <span class="badge badge-danger navbar-badge d-none" id="navNotifBadge" style="font-size:9px"></span>
             </a>
-            <div class="dropdown-menu dropdown-menu-right p-0 shadow border-0 mf-notif-menu" style="min-width: 280px;">
-                <div class="dropdown-header font-weight-bold border-bottom bg-light">Notificaciones</div>
-                <div class="p-3 text-muted small">Sin alertas nuevas. Las notificaciones del sistema aparecerán aquí.</div>
+            <div class="dropdown-menu dropdown-menu-right p-0 shadow border-0 mf-notif-menu" style="min-width: 300px;">
+                <div class="dropdown-header font-weight-bold border-bottom bg-light d-flex justify-content-between align-items-center">
+                    <span>Notificaciones</span>
+                    <small class="text-muted" id="navNotifTime"></small>
+                </div>
+                <div id="navNotifList" class="p-3 text-muted small">
+                    <i class="fa fa-spinner fa-spin mr-1"></i> Cargando…
+                </div>
+                <div class="dropdown-divider m-0"></div>
+                <a href="/Appointments" class="dropdown-item text-center small py-2">
+                    <i class="fa fa-calendar mr-1"></i> Ver todas las citas
+                </a>
             </div>
         </li>
         <partial name="_LoginPartial" />
     </ul>
 </nav>
+
+<script>
+    (function () {
+        var loaded = false;
+
+        function loadNotifications() {
+            fetch('/api/nav/notifications', { credentials: 'same-origin' })
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (data) {
+                    if (!data) return;
+                    var badge = document.getElementById('navNotifBadge');
+                    var icon = document.getElementById('navBellIcon');
+                    var list = document.getElementById('navNotifList');
+                    var time = document.getElementById('navNotifTime');
+
+                    if (data.count > 0) {
+                        badge.textContent = data.count > 9 ? '9+' : data.count;
+                        badge.classList.remove('d-none');
+                        icon.className = 'fa fa-bell text-warning';
+                    } else {
+                        badge.classList.add('d-none');
+                        icon.className = 'fa fa-bell-o';
+                    }
+
+                    time.textContent = new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
+
+                    if (data.items.length === 0) {
+                        list.innerHTML = '<span class="text-muted"><i class="fa fa-check-circle text-success mr-1"></i>Sin alertas pendientes.</span>';
+                    } else {
+                        list.innerHTML = data.items.map(function (n) {
+                            return '<a href="' + n.link + '" class="d-flex align-items-start py-2 border-bottom text-dark text-decoration-none">' +
+                                '<i class="' + n.icon + ' mt-1 mr-2 fa-fw"></i>' +
+                                '<span class="small">' + n.text + '</span>' +
+                                '</a>';
+                        }).join('');
+                    }
+                })
+                .catch(function () { });
+        }
+
+        // Load on first bell click
+        document.getElementById('navBellBtn').addEventListener('click', function () {
+            if (!loaded) { loaded = true; loadNotifications(); }
+        });
+
+        // Refresh every 5 minutes
+        setInterval(function () { loadNotifications(); }, 5 * 60 * 1000);
+
+        // Auto-load after 3s
+        setTimeout(function () { loadNotifications(); }, 3000);
+    })();
+</script>

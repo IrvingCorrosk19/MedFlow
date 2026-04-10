@@ -2,10 +2,12 @@ using MedFlow.Application.Interfaces;
 using MedFlow.Application.Reporting;
 using MedFlow.Application.Security;
 using MedFlow.Web.Authorization;
+using MedFlow.Web.Pdf;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using QuestPDF.Fluent;
 
 namespace MedFlow.Web.Controllers;
 
@@ -16,11 +18,19 @@ public class ReportsController : Controller
 {
     private readonly IExecutiveAnalyticsService _analytics;
     private readonly IApplicationDbContext _db;
+    private readonly IClinicSettingsService _clinicSettings;
+    private readonly ITenantContext _tenant;
 
-    public ReportsController(IExecutiveAnalyticsService analytics, IApplicationDbContext db)
+    public ReportsController(
+        IExecutiveAnalyticsService analytics,
+        IApplicationDbContext db,
+        IClinicSettingsService clinicSettings,
+        ITenantContext tenant)
     {
         _analytics = analytics;
         _db = db;
+        _clinicSettings = clinicSettings;
+        _tenant = tenant;
     }
 
     public async Task<IActionResult> Appointments(
@@ -254,6 +264,30 @@ public class ReportsController : Controller
             .ToArray();
 
         return File(bytes, "text/csv", $"financiero_{DateTime.UtcNow:yyyyMMdd}.csv");
+    }
+
+    [HttpGet]
+    [RequirePermission(PermissionCodes.ReportsView)]
+    public async Task<IActionResult> ExportFinancialPdf(
+        DateTime? from,
+        DateTime? to,
+        Guid? patientId,
+        int? paymentMethod,
+        CancellationToken cancellationToken)
+    {
+        if (!_tenant.TenantId.HasValue) return NotFound();
+
+        var vm = await _analytics.GetFinancialReportAsync(
+            new FinancialReportFilter(from, to, patientId, paymentMethod),
+            cancellationToken);
+
+        var settings = await _clinicSettings.GetAsync(_tenant.TenantId.Value, cancellationToken);
+
+        var doc = new FinancialReportPdfDocument(settings.Name, vm, from, to);
+        var bytes = doc.GeneratePdf();
+
+        return File(bytes, "application/pdf",
+            $"reporte-financiero-{DateTime.UtcNow:yyyyMMdd}.pdf");
     }
 
     private static string CsvField(string value)
