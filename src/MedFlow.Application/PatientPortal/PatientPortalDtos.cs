@@ -120,3 +120,14 @@ public sealed record PortalAppointmentRequestDto(
     TimeSpan EndTime,
     string? Reason);
 
+public sealed record PortalPrescriptionDto(
+    Guid Id,
+    DateTime IssuedAt,
+    string MedicationName,
+    string? Dosage,
+    string? Frequency,
+    string? Duration,
+    string? Instructions,
+    string? PrescriberName,
+    bool IsVoid);
+

@@ -76,6 +76,11 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a asp-controller="PatientPortal" asp-action="Prescriptions" class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Prescriptions" ? "active" : "")">
+                            <i class="fa fa-file-text-o nav-icon"></i><p>Mis Recetas</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a asp-controller="PatientPortal" asp-action="Notifications" class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Notifications" ? "active" : "")">
                             <i class="fa fa-bell nav-icon"></i><p>Notificaciones</p>
                         </a>

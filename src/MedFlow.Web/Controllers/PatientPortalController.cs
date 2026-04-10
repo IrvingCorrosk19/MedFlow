@@ -183,6 +183,38 @@ public class PatientPortalController : Controller
         return RedirectToAction(nameof(Profile));
     }
 
+    // ── Recetas ─────────────────────────────────────────────────────────────────
+
+    [HttpGet("prescriptions")]
+    public async Task<IActionResult> Prescriptions(CancellationToken ct)
+    {
+        var patientId = await GetPatientIdAsync(ct);
+        if (!patientId.HasValue) return View("NoAccess");
+
+        var prescriptions = await _portal.GetPrescriptionsAsync(patientId.Value, ct);
+
+        ViewData["Title"] = "Mis Recetas";
+        ViewData["Layout"] = "~/Views/Shared/_PatientLayout.cshtml";
+        return View(prescriptions);
+    }
+
+    [HttpGet("prescriptions/{id:guid}/pdf")]
+    public async Task<IActionResult> PrescriptionPdf(Guid id, CancellationToken ct)
+    {
+        var patientId = await GetPatientIdAsync(ct);
+        if (!patientId.HasValue) return View("NoAccess");
+
+        var tenantId = _tenant.TenantId;
+        if (!tenantId.HasValue) return NotFound();
+
+        // Verify the prescription belongs to this patient
+        var prescriptions = await _portal.GetPrescriptionsAsync(patientId.Value, ct);
+        if (!prescriptions.Any(p => p.Id == id)) return NotFound();
+
+        // Redirect to the existing prescription PDF endpoint
+        return RedirectToAction("Print", "Prescriptions", new { id });
+    }
+
     // ── Solicitar cita ──────────────────────────────────────────────────────────
 
     [HttpGet("appointments/request")]

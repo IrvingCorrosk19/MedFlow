@@ -1,0 +1,69 @@
+@using MedFlow.Application.PatientPortal
+@model IReadOnlyList<PortalPrescriptionDto>
+@{
+    ViewData["Title"] = "Mis Recetas";
+    Layout = "~/Views/Shared/_PatientLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="fa fa-file-text-o mr-2"></i>Mis Recetas</h4>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-light text-center py-5">
+        <i class="fa fa-file-text-o fa-3x text-muted mb-3 d-block"></i>
+        <h5 class="text-muted">Sin recetas disponibles</h5>
+        <p class="text-muted small">Aún no tienes recetas médicas registradas.</p>
+    </div>
+}
+else
+{
+    <div class="row">
+        @foreach (var rx in Model)
+        {
+            <div class="col-md-6 mb-3">
+                <div class="card card-outline card-primary shadow-sm h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0 font-weight-bold">@rx.MedicationName</h5>
+                        <small class="text-muted">@rx.IssuedAt.ToLocalTime().ToString("dd/MM/yyyy")</small>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row mb-0 small">
+                            @if (!string.IsNullOrWhiteSpace(rx.Dosage))
+                            {
+                                <dt class="col-5 text-muted">Dosis</dt>
+                                <dd class="col-7">@rx.Dosage</dd>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(rx.Frequency))
+                            {
+                                <dt class="col-5 text-muted">Frecuencia</dt>
+                                <dd class="col-7">@rx.Frequency</dd>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(rx.Duration))
+                            {
+                                <dt class="col-5 text-muted">Duración</dt>
+                                <dd class="col-7">@rx.Duration</dd>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(rx.Instructions))
+                            {
+                                <dt class="col-5 text-muted">Instrucciones</dt>
+                                <dd class="col-7">@rx.Instructions</dd>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(rx.PrescriberName))
+                            {
+                                <dt class="col-5 text-muted">Médico</dt>
+                                <dd class="col-7">@rx.PrescriberName</dd>
+                            }
+                        </dl>
+                    </div>
+                    <div class="card-footer">
+                        <a href="/portal/prescriptions/@rx.Id/pdf" class="btn btn-outline-danger btn-sm" target="_blank">
+                            <i class="fa fa-file-pdf-o mr-1"></i> Descargar PDF
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

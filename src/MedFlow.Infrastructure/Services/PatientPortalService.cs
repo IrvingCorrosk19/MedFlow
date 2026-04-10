@@ -283,6 +283,28 @@ public sealed class PatientPortalService : IPatientPortalService
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<PortalPrescriptionDto>> GetPrescriptionsAsync(
+        Guid patientId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _db.Prescriptions
+            .AsNoTracking()
+            .Include(p => p.MedicalRecord)
+            .Where(p => p.MedicalRecord != null && p.MedicalRecord.PatientId == patientId && !p.IsVoid && !p.IsDeleted)
+            .OrderByDescending(p => p.IssuedAt)
+            .Select(p => new PortalPrescriptionDto(
+                p.Id,
+                p.IssuedAt,
+                p.MedicationName,
+                p.Dosage,
+                p.Frequency,
+                p.Duration,
+                p.Instructions,
+                p.PrescriberName,
+                p.IsVoid))
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<(bool Success, string? Error)> RequestAppointmentAsync(
         Guid patientId,
         PortalAppointmentRequestDto dto,

@@ -85,6 +85,37 @@ public class MedicalRecordService : IMedicalRecordService
         return record;
     }
 
+    public async Task<IReadOnlyList<MedicalRecord>> SearchAsync(
+        string query,
+        Guid? patientId = null,
+        Guid? doctorId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var q = _context.MedicalRecords
+            .AsNoTracking()
+            .Include(m => m.Patient)
+            .Include(m => m.Doctor)
+            .Where(m => !m.IsDeleted);
+
+        if (patientId.HasValue)
+            q = q.Where(m => m.PatientId == patientId.Value);
+
+        if (doctorId.HasValue)
+            q = q.Where(m => m.DoctorId == doctorId.Value);
+
+        if (!string.IsNullOrWhiteSpace(query))
+        {
+            var s = query.Trim().ToLower();
+            q = q.Where(m =>
+                (m.ChiefComplaint != null && m.ChiefComplaint.ToLower().Contains(s)) ||
+                (m.Diagnosis != null && m.Diagnosis.ToLower().Contains(s)) ||
+                (m.TreatmentPlan != null && m.TreatmentPlan.ToLower().Contains(s)) ||
+                (m.ClinicalNotes != null && m.ClinicalNotes.ToLower().Contains(s)));
+        }
+
+        return await q.OrderByDescending(m => m.VisitDate).Take(200).ToListAsync(cancellationToken);
+    }
+
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var entity = await GetByIdAsync(id, false, cancellationToken);

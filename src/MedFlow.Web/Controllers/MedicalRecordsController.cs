@@ -332,6 +332,28 @@ public class MedicalRecordsController : Controller
         return entity;
     }
 
+    [HttpGet]
+    [RequirePermission(PermissionCodes.MedicalRecordsView)]
+    public async Task<IActionResult> Search(string? q, Guid? patientId, Guid? doctorId, CancellationToken cancellationToken)
+    {
+        ViewData["Title"] = "Búsqueda en historia clínica";
+        ViewData["PageSubtitle"] = "Busca en notas, diagnósticos y planes de tratamiento";
+        ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a href=\"" + Url.Action(nameof(Index)) + "\">Historia clínica</a></li><li class=\"breadcrumb-item active\">Búsqueda</li>";
+
+        if (string.IsNullOrWhiteSpace(q) && !patientId.HasValue && !doctorId.HasValue)
+        {
+            ViewBag.Q = q;
+            return View(Array.Empty<MedicalRecord>());
+        }
+
+        var results = await _medicalRecords.SearchAsync(q ?? "", patientId, doctorId, cancellationToken);
+
+        ViewBag.Q = q;
+        ViewBag.PatientId = patientId;
+        ViewBag.DoctorId = doctorId;
+        return View(results);
+    }
+
     private static List<Prescription> MapPrescriptions(MedicalRecordFormViewModel vm)
     {
         var list = new List<Prescription>();

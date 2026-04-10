@@ -1,0 +1,125 @@
+@model IReadOnlyList<MedFlow.Domain.Entities.MedicalRecord>
+@{
+    ViewData["Title"] = "Búsqueda en historia clínica";
+    var q = ViewBag.Q as string ?? "";
+}
+
+<div class="card card-outline card-primary shadow-sm mb-3">
+    <div class="card-header"><h3 class="card-title mb-0"><i class="fa fa-search mr-2"></i>Búsqueda clínica</h3></div>
+    <div class="card-body">
+        <form method="get" class="form-row align-items-end">
+            <div class="form-group col-md-8 mb-0">
+                <label class="small text-muted mb-0">Término de búsqueda</label>
+                <input type="search" name="q" value="@q" class="form-control"
+                       placeholder="Buscar en diagnóstico, queja principal, notas clínicas…"
+                       autofocus />
+                <small class="text-muted">Busca en: motivo consulta, diagnóstico, plan de tratamiento, notas clínicas</small>
+            </div>
+            <div class="form-group col-md-2 mb-0">
+                <button type="submit" class="btn btn-primary btn-block mt-3">
+                    <i class="fa fa-search mr-1"></i> Buscar
+                </button>
+            </div>
+            <div class="form-group col-auto mb-0 mt-3">
+                <a asp-action="Index" class="btn btn-outline-secondary" title="Limpiar">
+                    <i class="fa fa-times"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(q))
+{
+    <div class="mb-2">
+        <span class="text-muted small">
+            <strong>@Model.Count</strong> resultado(s) para "<em>@q</em>"
+        </span>
+    </div>
+
+    if (!Model.Any())
+    {
+        <div class="alert alert-light text-center py-5">
+            <i class="fa fa-search fa-3x text-muted mb-3 d-block"></i>
+            <h5 class="text-muted">Sin resultados</h5>
+            <p class="text-muted small">Intenta con otro término o revisa la ortografía.</p>
+        </div>
+    }
+    else
+    {
+        <div class="card card-outline card-secondary shadow-sm">
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0" id="tblSearch">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Paciente</th>
+                            <th>Doctor</th>
+                            <th>Motivo / Diagnóstico</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in Model)
+                        {
+                            <tr>
+                                <td class="text-nowrap">@r.VisitDate.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                                <td>@(r.Patient?.NombreCompleto ?? "—")</td>
+                                <td class="text-muted">@(r.Doctor?.FullName ?? "—")</td>
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(r.ChiefComplaint))
+                                    {
+                                        <div class="small"><strong>Motivo:</strong> @Highlight(r.ChiefComplaint, q)</div>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(r.Diagnosis))
+                                    {
+                                        <div class="small"><strong>Dx:</strong> @Highlight(r.Diagnosis, q)</div>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(r.ClinicalNotes) && r.ClinicalNotes.ToLower().Contains(q.ToLower()))
+                                    {
+                                        <div class="small text-muted"><i>En notas clínicas</i></div>
+                                    }
+                                </td>
+                                <td>
+                                    <a asp-action="Details" asp-route-id="@r.Id" class="btn btn-xs btn-default">
+                                        <i class="fa fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+}
+
+@functions {
+    private Microsoft.AspNetCore.Html.IHtmlContent Highlight(string text, string term)
+    {
+        if (string.IsNullOrWhiteSpace(term)) return new Microsoft.AspNetCore.Html.HtmlString(System.Net.WebUtility.HtmlEncode(text));
+        var idx = text.IndexOf(term, StringComparison.OrdinalIgnoreCase);
+        if (idx < 0) return new Microsoft.AspNetCore.Html.HtmlString(System.Net.WebUtility.HtmlEncode(text));
+        var before = System.Net.WebUtility.HtmlEncode(text[..idx]);
+        var match  = System.Net.WebUtility.HtmlEncode(text.Substring(idx, term.Length));
+        var after  = System.Net.WebUtility.HtmlEncode(text[(idx + term.Length)..]);
+        return new Microsoft.AspNetCore.Html.HtmlString($"{before}<mark>{match}</mark>{after}");
+    }
+}
+
+@section Scripts {
+    <script>
+        $(function () {
+            @if (Model.Count > 10)
+            {
+                <text>
+                $('#tblSearch').DataTable({
+                    pageLength: 25,
+                    order: [[0, 'desc']],
+                    language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' }
+                });
+                </text>
+            }
+        });
+    </script>
+}

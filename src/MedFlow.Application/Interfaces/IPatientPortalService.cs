@@ -24,4 +24,5 @@ public interface IPatientPortalService
     Task<Guid?> GetPatientIdByUserIdAsync(string userId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<PortalDoctorDto>> GetAvailableDoctorsAsync(Guid tenantId, CancellationToken cancellationToken = default);
     Task<(bool Success, string? Error)> RequestAppointmentAsync(Guid patientId, PortalAppointmentRequestDto dto, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<PortalPrescriptionDto>> GetPrescriptionsAsync(Guid patientId, CancellationToken cancellationToken = default);
 }
