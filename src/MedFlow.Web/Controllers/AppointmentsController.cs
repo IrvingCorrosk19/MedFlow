@@ -46,6 +46,56 @@ public class AppointmentsController : Controller
     }
 
     [RequirePermission(PermissionCodes.AppointmentsView)]
+    public async Task<IActionResult> Calendar(CancellationToken cancellationToken)
+    {
+        var doctors = await _doctorService.GetAllAsync(null, true, cancellationToken: cancellationToken);
+        ViewBag.Doctors = doctors;
+        ViewData["Title"] = "Calendario de citas";
+        ViewData["PageSubtitle"] = "Vista de agenda por semana/mes";
+        ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a href=\"" + Url.Action(nameof(Index)) + "\">Citas</a></li><li class=\"breadcrumb-item active\">Calendario</li>";
+        return View();
+    }
+
+    [RequirePermission(PermissionCodes.AppointmentsView)]
+    public async Task<IActionResult> CalendarFeed(DateTime start, DateTime end, Guid? doctorId, CancellationToken cancellationToken)
+    {
+        var appointments = await _appointmentService.GetAllAsync(start, end, doctorId, null, cancellationToken);
+
+        var events = appointments.Select(a =>
+        {
+            var color = a.Status switch
+            {
+                AppointmentStatus.Completed => "#28a745",
+                AppointmentStatus.Cancelled => "#dc3545",
+                AppointmentStatus.NoShow    => "#fd7e14",
+                AppointmentStatus.Confirmed => "#007bff",
+                _                           => "#6c757d"
+            };
+            var startDt = a.ScheduledDate.Date + a.StartTime;
+            var endDt   = a.ScheduledDate.Date + a.EndTime;
+            return new
+            {
+                id    = a.Id,
+                title = $"{a.Patient?.NombreCompleto ?? "—"} · {a.Doctor?.FullName ?? "—"}",
+                start = startDt.ToString("yyyy-MM-ddTHH:mm:ss"),
+                end   = endDt.ToString("yyyy-MM-ddTHH:mm:ss"),
+                color,
+                extendedProps = new
+                {
+                    patientName = a.Patient?.NombreCompleto ?? "—",
+                    doctorName  = a.Doctor?.FullName ?? "—",
+                    reason      = a.Reason ?? "—",
+                    room        = a.ConsultationRoom ?? "—",
+                    status      = a.Status.ToString(),
+                    detailsUrl  = Url.Action(nameof(Details), new { id = a.Id })
+                }
+            };
+        });
+
+        return Json(events);
+    }
+
+    [RequirePermission(PermissionCodes.AppointmentsView)]
     public async Task<IActionResult> Today(Guid? doctorId, int? status, CancellationToken cancellationToken)
     {
         var today = DateTime.Today;
@@ -78,13 +128,20 @@ public class AppointmentsController : Controller
     }
 
     [RequirePermission(PermissionCodes.AppointmentsCreate)]
-    public async Task<IActionResult> Create(CancellationToken cancellationToken)
+    public async Task<IActionResult> Create(DateTime? scheduledDate, CancellationToken cancellationToken)
     {
         var patients = await _patientService.GetAllAsync(null, true, cancellationToken: cancellationToken);
         var doctors = await _doctorService.GetAllAsync(null, true, cancellationToken: cancellationToken);
         ViewBag.Patients = patients;
         ViewBag.Doctors = doctors;
-        return View(new AppointmentViewModel { ScheduledDate = DateTime.Today });
+        var date = scheduledDate?.Date ?? DateTime.Today;
+        var time = scheduledDate.HasValue ? scheduledDate.Value.TimeOfDay : TimeSpan.FromHours(8);
+        return View(new AppointmentViewModel
+        {
+            ScheduledDate = date,
+            StartTime = time,
+            EndTime = time.Add(TimeSpan.FromMinutes(30))
+        });
     }
 
     [HttpPost]
@@ -216,6 +273,77 @@ public class AppointmentsController : Controller
             TempData["Success"] = "Cita registrada como no-show.";
         else
             TempData["Error"] = error ?? "No se pudo registrar el no-show.";
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    [RequirePermission(PermissionCodes.AppointmentsView)]
+    public async Task<IActionResult> ExportCsv(DateTime? from, DateTime? to, Guid? doctorId, Guid? patientId, CancellationToken cancellationToken = default)
+    {
+        var fromDate = from ?? DateTime.Today.AddDays(-30);
+        var toDate   = to   ?? DateTime.Today;
+        var appointments = await _appointmentService.GetAllAsync(fromDate, toDate, doctorId, patientId, cancellationToken);
+
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("Fecha,Hora inicio,Hora fin,Paciente,Doctor,Estado,Motivo,Consultorio");
+        foreach (var a in appointments)
+        {
+            sb.AppendLine(string.Join(",",
+                CsvQ(a.ScheduledDate.ToString("dd/MM/yyyy")),
+                CsvQ(a.StartTime.ToString(@"hh\:mm")),
+                CsvQ(a.EndTime.ToString(@"hh\:mm")),
+                CsvQ(a.Patient?.NombreCompleto ?? ""),
+                CsvQ(a.Doctor?.FullName ?? ""),
+                CsvQ(a.Status.ToString()),
+                CsvQ(a.Reason ?? ""),
+                CsvQ(a.ConsultationRoom ?? "")));
+        }
+
+        var bytes = System.Text.Encoding.UTF8.GetPreamble()
+            .Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
+        return File(bytes, "text/csv", $"citas_{fromDate:yyyyMMdd}_{toDate:yyyyMMdd}.csv");
+    }
+
+    private static string CsvQ(string v) =>
+        (v.Contains(',') || v.Contains('"') || v.Contains('\n'))
+            ? "\"" + v.Replace("\"", "\"\"") + "\""
+            : v;
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [RequirePermission(PermissionCodes.AppointmentsEdit)]
+    public async Task<IActionResult> Reschedule(Guid id, DateTime newDate, TimeSpan newStart, TimeSpan newEnd, CancellationToken cancellationToken = default)
+    {
+        var appointment = await _appointmentService.GetByIdAsync(id, cancellationToken);
+        if (appointment == null) return NotFound();
+
+        if (newEnd <= newStart)
+        {
+            TempData["Error"] = "La hora de fin debe ser posterior a la hora de inicio.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+        if (newDate.Date < DateTime.UtcNow.Date)
+        {
+            TempData["Error"] = "No se puede reagendar a una fecha pasada.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        var hasConflict = await _appointmentService.HasConflictAsync(
+            appointment.DoctorId, newDate, newStart, newEnd, id, cancellationToken);
+        if (hasConflict)
+        {
+            TempData["Error"] = "El doctor tiene otro turno en ese horario. Elija otra hora.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        appointment.ScheduledDate = newDate;
+        appointment.StartTime = newStart;
+        appointment.EndTime = newEnd;
+        var (success, error) = await _appointmentService.UpdateAsync(appointment, cancellationToken);
+        if (success)
+            TempData["Success"] = $"Cita reagendada al {newDate:dd/MM/yyyy} {newStart:hh\\:mm}.";
+        else
+            TempData["Error"] = error ?? "No se pudo reagendar la cita.";
+
         return RedirectToAction(nameof(Details), new { id });
     }
 

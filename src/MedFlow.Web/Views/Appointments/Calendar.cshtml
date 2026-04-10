@@ -1,0 +1,138 @@
+@using MedFlow.Domain.Entities
+@{
+    var doctors = ViewBag.Doctors as IReadOnlyList<Doctor> ?? Array.Empty<Doctor>();
+}
+
+<div class="card card-outline card-primary shadow-sm mb-3">
+    <div class="card-header d-flex flex-wrap align-items-center justify-content-between">
+        <h3 class="card-title mb-0"><i class="fa fa-calendar mr-2"></i>Calendario de citas</h3>
+        <div class="d-flex flex-wrap gap-2 mt-2 mt-sm-0">
+            <select id="filterDoctor" class="form-control form-control-sm mr-2" style="min-width:180px">
+                <option value="">Todos los doctores</option>
+                @foreach (var d in doctors)
+                {
+                    <option value="@d.Id">@d.FullName</option>
+                }
+            </select>
+            <a asp-action="Index" class="btn btn-default btn-sm mr-1"><i class="fa fa-list mr-1"></i>Vista tabla</a>
+            <a asp-action="Create" class="btn btn-primary btn-sm"><i class="fa fa-plus mr-1"></i>Nueva cita</a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="mb-3 d-flex flex-wrap align-items-center" style="gap:8px">
+            <span class="badge" style="background:#007bff;padding:5px 10px">Confirmada</span>
+            <span class="badge" style="background:#6c757d;padding:5px 10px">Programada</span>
+            <span class="badge" style="background:#28a745;padding:5px 10px">Completada</span>
+            <span class="badge" style="background:#fd7e14;padding:5px 10px">No-show</span>
+            <span class="badge" style="background:#dc3545;padding:5px 10px">Cancelada</span>
+        </div>
+        <div id="calendar"></div>
+    </div>
+</div>
+
+<!-- Modal detalle -->
+<div class="modal fade" id="eventModal" tabindex="-1" aria-labelledby="eventModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="eventModalLabel">Detalle de cita</h5>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <dl class="row small mb-0">
+                    <dt class="col-4 text-muted">Paciente</dt>
+                    <dd class="col-8" id="mdPatient"></dd>
+                    <dt class="col-4 text-muted">Doctor</dt>
+                    <dd class="col-8" id="mdDoctor"></dd>
+                    <dt class="col-4 text-muted">Motivo</dt>
+                    <dd class="col-8" id="mdReason"></dd>
+                    <dt class="col-4 text-muted">Consultorio</dt>
+                    <dd class="col-8" id="mdRoom"></dd>
+                    <dt class="col-4 text-muted">Estado</dt>
+                    <dd class="col-8" id="mdStatus"></dd>
+                </dl>
+            </div>
+            <div class="modal-footer">
+                <a id="mdDetailsLink" href="#" class="btn btn-primary btn-sm">
+                    <i class="fa fa-eye mr-1"></i>Ver detalle completo
+                </a>
+                <button type="button" class="btn btn-default btn-sm" data-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@@fullcalendar/core@6.1.11/locales/es.global.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var feedUrl = '@Url.Action("CalendarFeed")';
+
+            var calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
+                initialView: 'timeGridWeek',
+                locale: 'es',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+                },
+                buttonText: {
+                    today: 'Hoy',
+                    month: 'Mes',
+                    week: 'Semana',
+                    day: 'Día',
+                    list: 'Lista'
+                },
+                slotMinTime: '07:00:00',
+                slotMaxTime: '21:00:00',
+                height: 'auto',
+                nowIndicator: true,
+                allDaySlot: false,
+                events: function (info, successCallback, failureCallback) {
+                    var doctor = document.getElementById('filterDoctor').value;
+                    var url = feedUrl
+                        + '?start=' + encodeURIComponent(info.startStr.substring(0, 10))
+                        + '&end='   + encodeURIComponent(info.endStr.substring(0, 10));
+                    if (doctor) url += '&doctorId=' + encodeURIComponent(doctor);
+                    fetch(url)
+                        .then(function (r) { return r.json(); })
+                        .then(successCallback)
+                        .catch(failureCallback);
+                },
+                eventClick: function (info) {
+                    var p = info.event.extendedProps;
+                    document.getElementById('mdPatient').textContent    = p.patientName;
+                    document.getElementById('mdDoctor').textContent     = p.doctorName;
+                    document.getElementById('mdReason').textContent     = p.reason;
+                    document.getElementById('mdRoom').textContent       = p.room;
+                    document.getElementById('mdStatus').textContent     = p.status;
+                    document.getElementById('mdDetailsLink').href       = p.detailsUrl;
+                    document.getElementById('eventModalLabel').textContent =
+                        info.event.start.toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' })
+                        + ' — ' + p.patientName;
+                    $('#eventModal').modal('show');
+                },
+                selectable: true,
+                selectMirror: true,
+                select: function (info) {
+                    var dateStr = info.startStr.substring(0, 16); // "2026-04-10T09:00"
+                    var createUrl = '@Url.Action("Create")' + '?scheduledDate=' + encodeURIComponent(dateStr);
+                    window.location.href = createUrl;
+                },
+                dateClick: function (info) {
+                    var createUrl = '@Url.Action("Create")' + '?scheduledDate=' + encodeURIComponent(info.dateStr);
+                    window.location.href = createUrl;
+                },
+                eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false }
+            });
+
+            calendar.render();
+
+            document.getElementById('filterDoctor').addEventListener('change', function () {
+                calendar.refetchEvents();
+            });
+        });
+    </script>
+}
