@@ -254,7 +254,12 @@ public class AppointmentsController : Controller
         appointment.Status = AppointmentStatus.Completed;
         var (success, error) = await _appointmentService.UpdateAsync(appointment, cancellationToken);
         if (success)
+        {
             TempData["Success"] = "Cita marcada como completada.";
+            // Suggest creating invoice if patient doesn't already have an open one for this appointment
+            TempData["SuggestBilling"] = appointment.PatientId.ToString();
+            TempData["SuggestBillingAptId"] = appointment.Id.ToString();
+        }
         else
             TempData["Error"] = error ?? "No se pudo completar la cita.";
         return RedirectToAction(nameof(Details), new { id });

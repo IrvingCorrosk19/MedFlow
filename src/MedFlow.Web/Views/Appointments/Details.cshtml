@@ -5,6 +5,30 @@
     ViewData["PageSubtitle"] = $"{Model.ScheduledDate:dd/MM/yyyy} {Model.StartTime:hh\\:mm}";
     ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a href=\"" + Url.Action("Index") + "\">Citas</a></li><li class=\"breadcrumb-item active\">Detalle</li>";
     var canActuate = Model.Status == AppointmentStatus.Scheduled || Model.Status == AppointmentStatus.Confirmed;
+    var suggestBilling = TempData["SuggestBilling"]?.ToString();
+    var suggestAptId = TempData["SuggestBillingAptId"]?.ToString();
+}
+
+@if (!string.IsNullOrEmpty(suggestBilling))
+{
+    <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+        <i class="fa fa-check-circle mr-2"></i>
+        <strong>Cita completada.</strong> ¿Deseas generar una factura para este paciente?
+        <a asp-controller="BillingInvoices" asp-action="Create"
+           asp-route-patientId="@suggestBilling"
+           asp-route-appointmentId="@suggestAptId"
+           class="btn btn-sm btn-success ml-2">
+            <i class="fa fa-file-text-o mr-1"></i> Crear factura
+        </a>
+        <a asp-controller="MedicalRecords" asp-action="Create"
+           asp-route-patientId="@suggestBilling"
+           class="btn btn-sm btn-outline-success ml-1">
+            <i class="fa fa-stethoscope mr-1"></i> Nueva consulta
+        </a>
+        <button type="button" class="close" data-dismiss="alert">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
 }
 
 <div class="row">
