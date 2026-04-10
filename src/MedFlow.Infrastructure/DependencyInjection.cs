@@ -94,7 +94,18 @@ public static class DependencyInjection
         services.AddScoped<IAIInsightProcessorService, AIInsightProcessorService>();
         services.AddScoped<IOperationalCopilotService, OperationalCopilotService>();
         services.AddScoped<IOperationalSummaryService, OperationalSummaryService>();
-        services.AddScoped<Application.Interfaces.AI.Providers.IAIModelProvider, AI.Providers.NullAIModelProvider>();
+        // Use Anthropic Claude if API key is configured, otherwise use no-op provider
+        var anthropicKey = configuration["Anthropic:ApiKey"]
+            ?? Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY");
+        if (!string.IsNullOrWhiteSpace(anthropicKey))
+        {
+            services.AddHttpClient<Application.Interfaces.AI.Providers.IAIModelProvider,
+                AI.Providers.AnthropicAIModelProvider>();
+        }
+        else
+        {
+            services.AddScoped<Application.Interfaces.AI.Providers.IAIModelProvider, AI.Providers.NullAIModelProvider>();
+        }
         services.AddScoped<Application.Interfaces.AI.Providers.IInferenceProvider, AI.Providers.RuleBasedInferenceProvider>();
         services.AddScoped<Application.Interfaces.AI.Providers.IRiskScoringProvider, AI.Providers.RuleBasedRiskScoringProvider>();
         services.AddHostedService<AIInsightProcessorBackgroundService>();
