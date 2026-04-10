@@ -1,0 +1,82 @@
+@model (IReadOnlyList<MedFlow.Application.PatientPortal.PatientInvoiceListItemDto> Invoices, decimal BalanceDue, decimal TotalPaid)
+@using MedFlow.Domain.Enums
+@{
+    ViewData["Title"] = "Mis Facturas";
+    Layout = "~/Views/Shared/_PatientLayout.cshtml";
+}
+
+<!-- Banner estado de cuenta -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="info-box @(Model.BalanceDue > 0 ? "bg-warning" : "bg-success") shadow-sm">
+            <span class="info-box-icon"><i class="fa fa-exclamation-circle"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">Saldo Pendiente</span>
+                <span class="info-box-number">@Model.BalanceDue.ToString("N2")</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="info-box bg-info shadow-sm">
+            <span class="info-box-icon"><i class="fa fa-check-circle"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">Total Pagado</span>
+                <span class="info-box-number">@Model.TotalPaid.ToString("N2")</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fa fa-file-invoice mr-2"></i>Historial de Facturas</h3>
+    </div>
+    <div class="card-body p-0">
+        @if (!Model.Invoices.Any())
+        {
+            <div class="text-center py-5 text-muted">
+                <i class="fa fa-file-invoice fa-3x mb-3 d-block opacity-50"></i>
+                <p>No tienes facturas registradas.</p>
+            </div>
+        }
+        else
+        {
+            <table class="table table-hover mb-0">
+                <thead class="thead-light">
+                    <tr>
+                        <th>N° Factura</th>
+                        <th>Fecha</th>
+                        <th>Total</th>
+                        <th>Pagado</th>
+                        <th>Saldo</th>
+                        <th>Estado</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var inv in Model.Invoices)
+                    {
+                        var badge = inv.Status == InvoiceStatus.Paid ? "success"
+                            : inv.Status == InvoiceStatus.Cancelled ? "secondary"
+                            : inv.Status == InvoiceStatus.PartiallyPaid ? "warning" : "danger";
+                        <tr>
+                            <td class="font-weight-bold">@inv.InvoiceNumber</td>
+                            <td>@inv.IssueDate.ToString("dd/MM/yyyy")</td>
+                            <td>@inv.TotalAmount.ToString("N2")</td>
+                            <td class="text-success">@inv.AmountPaid.ToString("N2")</td>
+                            <td class="@(inv.BalanceDue > 0 ? "text-danger font-weight-bold" : "text-success")">
+                                @inv.BalanceDue.ToString("N2")
+                            </td>
+                            <td><span class="badge badge-@badge">@inv.Status</span></td>
+                            <td>
+                                <a asp-action="InvoiceDetails" asp-route-id="@inv.Id" class="btn btn-xs btn-outline-primary">
+                                    <i class="fa fa-eye"></i> Ver
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>

@@ -1,0 +1,173 @@
+@model MedFlow.Application.PatientPortal.PatientPortalDashboardDto
+@using MedFlow.Domain.Enums
+@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "~/Views/Shared/_PatientLayout.cshtml";
+}
+
+<!-- KPI Cards -->
+<div class="row">
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-info">
+            <div class="inner">
+                <h3>@Model.PendingAppointmentsCount</h3>
+                <p>Citas pendientes</p>
+            </div>
+            <div class="icon"><i class="fa fa-calendar-alt"></i></div>
+            <a asp-action="Appointments" class="small-box-footer">Ver citas <i class="fa fa-arrow-circle-right"></i></a>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box @(Model.BalanceDue > 0 ? "bg-warning" : "bg-success")">
+            <div class="inner">
+                <h3>@Model.BalanceDue.ToString("N2")</h3>
+                <p>Saldo pendiente</p>
+            </div>
+            <div class="icon"><i class="fa fa-file-invoice-dollar"></i></div>
+            <a asp-action="Invoices" class="small-box-footer">Ver facturas <i class="fa fa-arrow-circle-right"></i></a>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-secondary">
+            <div class="inner">
+                <h3>@Model.UnreadNotificationsCount</h3>
+                <p>Notificaciones nuevas</p>
+            </div>
+            <div class="icon"><i class="fa fa-bell"></i></div>
+            <a asp-action="Notifications" class="small-box-footer">Ver todas <i class="fa fa-arrow-circle-right"></i></a>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-primary">
+            <div class="inner">
+                <h3><i class="fa fa-user fa-sm"></i></h3>
+                <p>Mi perfil</p>
+            </div>
+            <div class="icon"><i class="fa fa-user-edit"></i></div>
+            <a asp-action="Profile" class="small-box-footer">Editar datos <i class="fa fa-arrow-circle-right"></i></a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Próxima cita -->
+    <div class="col-md-6">
+        <div class="card card-outline card-info shadow-sm">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fa fa-calendar-check mr-2"></i>Próxima cita</h3>
+            </div>
+            <div class="card-body">
+                @if (Model.NextAppointment != null)
+                {
+                    var appt = Model.NextAppointment;
+                    <div class="text-center py-2">
+                        <p class="mb-1 text-muted small">FECHA</p>
+                        <h4 class="font-weight-bold text-info mb-0">@appt.ScheduledDate.ToString("dddd, dd MMMM yyyy")</h4>
+                        <h5 class="text-muted">@appt.StartTime.ToString(@"hh\:mm") hrs</h5>
+                        <hr />
+                        <p class="mb-1"><i class="fa fa-user-md mr-2 text-muted"></i><strong>@appt.DoctorName</strong></p>
+                        @if (!string.IsNullOrWhiteSpace(appt.Speciality))
+                        {
+                            <p class="text-muted small mb-1">@appt.Speciality</p>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(appt.ConsultationRoom))
+                        {
+                            <p class="text-muted small"><i class="fa fa-door-open mr-1"></i>Sala: @appt.ConsultationRoom</p>
+                        }
+                        @if (appt.Status == AppointmentStatus.Confirmed)
+                        {
+                            <span class="badge badge-success px-3 py-2">✓ Confirmada</span>
+                        }
+                        else
+                        {
+                            <form asp-action="ConfirmAppointment" asp-route-id="@appt.Id" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-success btn-sm">
+                                    <i class="fa fa-check mr-1"></i>Confirmar asistencia
+                                </button>
+                            </form>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center text-muted py-4">
+                        <i class="fa fa-calendar-times fa-3x mb-3 d-block opacity-50"></i>
+                        <p>No tienes citas próximas.</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Última factura -->
+    <div class="col-md-6">
+        <div class="card card-outline card-warning shadow-sm">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fa fa-file-invoice mr-2"></i>Último estado de cuenta</h3>
+                <div class="card-tools">
+                    <a asp-action="Invoices" class="btn btn-sm btn-outline-warning">Ver todas</a>
+                </div>
+            </div>
+            <div class="card-body">
+                @if (Model.LastInvoice != null)
+                {
+                    var inv = Model.LastInvoice;
+                    var badge = inv.Status == InvoiceStatus.Paid ? "success"
+                        : inv.Status == InvoiceStatus.Cancelled ? "secondary" : "warning";
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5 text-muted">Factura</dt>
+                        <dd class="col-sm-7 font-weight-bold">@inv.InvoiceNumber</dd>
+                        <dt class="col-sm-5 text-muted">Fecha</dt>
+                        <dd class="col-sm-7">@inv.IssueDate.ToString("dd/MM/yyyy")</dd>
+                        <dt class="col-sm-5 text-muted">Total</dt>
+                        <dd class="col-sm-7">@inv.TotalAmount.ToString("N2")</dd>
+                        <dt class="col-sm-5 text-muted">Saldo</dt>
+                        <dd class="col-sm-7 @(inv.BalanceDue > 0 ? "text-danger font-weight-bold" : "text-success")">
+                            @inv.BalanceDue.ToString("N2")
+                        </dd>
+                        <dt class="col-sm-5 text-muted">Estado</dt>
+                        <dd class="col-sm-7"><span class="badge badge-@badge">@inv.Status</span></dd>
+                    </dl>
+                }
+                else
+                {
+                    <div class="text-center text-muted py-4">
+                        <i class="fa fa-check-circle fa-3x mb-3 d-block text-success opacity-50"></i>
+                        <p>No tienes facturas pendientes.</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Notificaciones recientes -->
+@if (Model.RecentNotifications.Any())
+{
+    <div class="card card-outline card-secondary shadow-sm">
+        <div class="card-header">
+            <h3 class="card-title"><i class="fa fa-bell mr-2"></i>Notificaciones recientes</h3>
+            <div class="card-tools">
+                <a asp-action="Notifications" class="btn btn-sm btn-outline-secondary">Ver todas</a>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <ul class="list-group list-group-flush">
+                @foreach (var n in Model.RecentNotifications.Take(5))
+                {
+                    <li class="list-group-item @(!n.IsRead ? "font-weight-bold" : "")">
+                        <div class="d-flex justify-content-between">
+                            <span>@(!n.IsRead ? "🔵 " : "")@n.Title</span>
+                            <small class="text-muted">@n.CreatedAt.ToLocalTime().ToString("dd/MM HH:mm")</small>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(n.Message))
+                        {
+                            <small class="text-muted d-block">@n.Message</small>
+                        }
+                    </li>
+                }
+            </ul>
+        </div>
+    </div>
+}

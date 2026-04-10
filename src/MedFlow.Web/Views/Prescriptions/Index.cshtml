@@ -1,0 +1,85 @@
+@model IReadOnlyList<MedFlow.Domain.Entities.Prescription>
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="card card-outline card-success">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fa fa-medkit mr-1"></i> Recetas emitidas</h3>
+                <div class="card-tools">
+                    <span class="badge badge-success badge-pill">@Model.Count recetas</span>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                @if (!Model.Any())
+                {
+                    <div class="p-4 text-center text-muted">
+                        <i class="fa fa-medkit fa-3x mb-3 d-block"></i>
+                        No hay recetas registradas.
+                    </div>
+                }
+                else
+                {
+                    <table class="table table-hover table-striped mb-0">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Paciente</th>
+                                <th>Médico</th>
+                                <th>Medicamento</th>
+                                <th>Estado</th>
+                                <th class="text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var rx in Model)
+                            {
+                                var patient = rx.MedicalRecord?.Patient;
+                                var doctor = rx.MedicalRecord?.Doctor;
+                                <tr>
+                                    <td>@rx.IssuedAt.ToString("dd/MM/yyyy")</td>
+                                    <td>
+                                        @if (patient != null)
+                                        {
+                                            <a asp-controller="Patients" asp-action="Details" asp-route-id="@patient.Id">
+                                                @patient.NombreCompleto
+                                            </a>
+                                        }
+                                    </td>
+                                    <td>@(doctor?.FullName ?? "—")</td>
+                                    <td>
+                                        <strong>@rx.MedicationName</strong>
+                                        @if (!string.IsNullOrWhiteSpace(rx.Dosage))
+                                        {
+                                            <small class="text-muted"> — @rx.Dosage</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (rx.IsVoid)
+                                        {
+                                            <span class="badge badge-danger">Anulada</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-success">Activa</span>
+                                        }
+                                    </td>
+                                    <td class="text-right">
+                                        <a asp-action="Details" asp-route-id="@rx.Id" class="btn btn-xs btn-default" title="Ver detalle">
+                                            <i class="fa fa-eye"></i>
+                                        </a>
+                                        <a asp-action="Print" asp-route-id="@rx.Id" class="btn btn-xs btn-primary" title="Descargar PDF" target="_blank">
+                                            <i class="fa fa-file-pdf-o"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+    </div>
+</div>

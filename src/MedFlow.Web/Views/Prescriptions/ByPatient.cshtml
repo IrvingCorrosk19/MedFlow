@@ -1,0 +1,145 @@
+@model IReadOnlyList<MedFlow.Domain.Entities.Prescription>
+@using MedFlow.Domain.Entities
+@{
+    var patient = ViewBag.Patient as Patient;
+    ViewData["PageTitle"] = "Recetas — " + (patient?.NombreCompleto ?? "");
+}
+
+<div class="card card-outline card-success shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title font-weight-bold mb-0">
+            <i class="fa fa-pills mr-2 text-success"></i>Recetas de @patient?.NombreCompleto
+        </h3>
+        <a asp-controller="Patients" asp-action="Details" asp-route-id="@patient?.Id" class="btn btn-default btn-sm">
+            <i class="fa fa-arrow-left mr-1"></i>Volver al paciente
+        </a>
+    </div>
+    <div class="card-body p-0">
+        @if (!Model.Any())
+        {
+            <div class="p-5 text-center text-muted">
+                <i class="fa fa-pills fa-3x mb-3 d-block text-success opacity-50"></i>
+                <p class="mb-0">No hay recetas registradas para este paciente.</p>
+                <small>Las recetas se generan automáticamente al crear una consulta con medicamentos.</small>
+            </div>
+        }
+        else
+        {
+            <table class="table table-hover mb-0">
+                <thead class="thead-light">
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Medicamento(s)</th>
+                        <th>Médico</th>
+                        <th>Estado</th>
+                        <th>Impresiones</th>
+                        <th class="text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        // Agrupar por MedicalRecord para mostrar una fila por consulta
+                        var groups = Model.GroupBy(r => r.MedicalRecordId).ToList();
+                    }
+                    @foreach (var group in groups)
+                    {
+                        var first = group.First();
+                        var doctor = first.MedicalRecord?.Doctor;
+                        var doctorName = doctor != null
+                            ? $"Dr. {doctor.FullName}"
+                            : (first.PrescriberName ?? "—");
+                        var isVoid = group.All(r => r.IsVoid);
+                        var count = group.Count();
+
+                        <tr>
+                            <td>
+                                <span class="font-weight-medium">@first.IssuedAt.ToLocalTime().ToString("dd/MM/yyyy")</span><br />
+                                <small class="text-muted">@first.IssuedAt.ToLocalTime().ToString("HH:mm")</small>
+                            </td>
+                            <td>
+                                <strong>@first.MedicationName</strong>
+                                @if (count > 1)
+                                {
+                                    <span class="badge badge-secondary ml-1">+@(count - 1) más</span>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(first.Dosage))
+                                {
+                                    <br /><small class="text-muted">@first.Dosage — @first.Frequency</small>
+                                }
+                            </td>
+                            <td>@doctorName</td>
+                            <td>
+                                @if (isVoid)
+                                {
+                                    <span class="badge badge-danger">Anulada</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-success">Activa</span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                <span class="badge badge-light border">@group.Sum(r => r.PrintCount)</span>
+                            </td>
+                            <td class="text-right">
+                                <a asp-action="Details" asp-route-id="@first.Id" class="btn btn-xs btn-outline-primary">
+                                    <i class="fa fa-eye"></i> Ver
+                                </a>
+                                @if (!isVoid)
+                                {
+                                    <a asp-action="Print" asp-route-id="@first.Id" class="btn btn-xs btn-outline-success" target="_blank">
+                                        <i class="fa fa-file-pdf"></i> PDF
+                                    </a>
+                                    <button type="button" class="btn btn-xs btn-outline-danger btn-void-rx"
+                                            data-id="@first.Id" data-patient="@patient?.Id">
+                                        <i class="fa fa-ban"></i> Anular
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+<!-- Modal anular receta -->
+<div class="modal fade" id="modalVoid" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fa fa-ban mr-2"></i>Anular Receta</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <form asp-action="Void" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="voidId" />
+                <input type="hidden" name="patientId" value="@patient?.Id" />
+                <div class="modal-body">
+                    <p class="text-muted">Ingresa el motivo de la anulación:</p>
+                    <div class="form-group">
+                        <label>Motivo <span class="text-danger">*</span></label>
+                        <textarea name="reason" class="form-control" rows="3" required
+                                  placeholder="Ej: Error en el medicamento, ajuste de dosis..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger"><i class="fa fa-ban mr-1"></i>Anular receta</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.btn-void-rx').forEach(btn => {
+            btn.addEventListener('click', function () {
+                document.getElementById('voidId').value = this.dataset.id;
+                $('#modalVoid').modal('show');
+            });
+        });
+    </script>
+}

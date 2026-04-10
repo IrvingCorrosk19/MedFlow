@@ -1,0 +1,143 @@
+@inject MedFlow.Application.Interfaces.ITenantContext TenantContext
+@{
+    var brandName = TenantContext.TenantName ?? "MedFlow";
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@(ViewData["Title"] ?? "Portal del Paciente") — @brandName</title>
+    <link rel="stylesheet" href="~/lib/font-awesome/css/font-awesome.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap4/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/adminlte/css/adminlte.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <style>
+        .patient-sidebar { background: linear-gradient(180deg, #1a3c5e 0%, #2c5f8a 100%); }
+        .patient-sidebar .nav-link { color: rgba(255,255,255,0.75) !important; border-radius: 6px; margin-bottom: 2px; }
+        .patient-sidebar .nav-link:hover, .patient-sidebar .nav-link.active { background: rgba(255,255,255,0.15) !important; color: #fff !important; }
+        .patient-sidebar .nav-link i { width: 20px; }
+        .patient-brand { background: #1a3c5e !important; color: #fff !important; }
+        .content-wrapper { background: #f4f6f8; }
+    </style>
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed">
+<div class="wrapper">
+
+    <!-- Navbar -->
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light border-bottom">
+        <ul class="navbar-nav">
+            <li class="nav-item"><a class="nav-link" data-widget="pushmenu" href="#"><i class="fa fa-bars"></i></a></li>
+        </ul>
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+                <span class="nav-link text-muted small">
+                    <i class="fa fa-user-circle mr-1 text-primary"></i>@User.Identity?.Name
+                </span>
+            </li>
+            <li class="nav-item">
+                <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="nav-link btn btn-link text-danger">
+                        <i class="fa fa-sign-out-alt mr-1"></i>Salir
+                    </button>
+                </form>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Sidebar -->
+    <aside class="main-sidebar patient-sidebar sidebar-dark-primary elevation-4">
+        <a asp-controller="PatientPortal" asp-action="Dashboard" class="brand-link patient-brand">
+            <span class="brand-text font-weight-bold"><i class="fa fa-heartbeat mr-2"></i>@brandName</span>
+        </a>
+        <div class="sidebar">
+            <div class="user-panel mt-2 pb-2 mb-2 d-flex align-items-center border-bottom border-secondary">
+                <div class="info">
+                    <span class="d-block text-white small">Mi Portal</span>
+                </div>
+            </div>
+            <nav class="mt-2">
+                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview">
+                    <li class="nav-item">
+                        <a asp-controller="PatientPortal" asp-action="Dashboard" class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Dashboard" ? "active" : "")">
+                            <i class="fa fa-home nav-icon"></i><p>Dashboard</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a asp-controller="PatientPortal" asp-action="Appointments" class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Appointments" ? "active" : "")">
+                            <i class="fa fa-calendar-alt nav-icon"></i><p>Mis Citas</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a asp-controller="PatientPortal" asp-action="Invoices" class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Invoices" ? "active" : "")">
+                            <i class="fa fa-file-invoice-dollar nav-icon"></i><p>Mis Facturas</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a asp-controller="PatientPortal" asp-action="Notifications" class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Notifications" ? "active" : "")">
+                            <i class="fa fa-bell nav-icon"></i><p>Notificaciones</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a asp-controller="PatientPortal" asp-action="Profile" class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Profile" ? "active" : "")">
+                            <i class="fa fa-user-edit nav-icon"></i><p>Mi Perfil</p>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </aside>
+
+    <!-- Content -->
+    <div class="content-wrapper">
+        <div class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1 class="m-0 font-weight-bold" style="font-size:1.4rem;">
+                            @(ViewData["Title"] ?? "Portal del Paciente")
+                        </h1>
+                    </div>
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-right">
+                            <li class="breadcrumb-item"><a asp-controller="PatientPortal" asp-action="Dashboard">Inicio</a></li>
+                            <li class="breadcrumb-item active">@(ViewData["Title"])</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="content">
+            <div class="container-fluid">
+                @if (TempData["Success"] != null)
+                {
+                    <div class="alert alert-success alert-dismissible fade show">
+                        <i class="fa fa-check-circle mr-2"></i>@TempData["Success"]
+                        <button type="button" class="close" data-dismiss="alert">&times;</button>
+                    </div>
+                }
+                @if (TempData["Error"] != null)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show">
+                        <i class="fa fa-exclamation-circle mr-2"></i>@TempData["Error"]
+                        <button type="button" class="close" data-dismiss="alert">&times;</button>
+                    </div>
+                }
+                @RenderBody()
+            </div>
+        </div>
+    </div>
+
+    <footer class="main-footer text-center">
+        <small class="text-muted">Portal del Paciente — @brandName &copy; @DateTime.Now.Year</small>
+    </footer>
+</div>
+
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/bootstrap4/js/bootstrap.bundle.min.js"></script>
+<script src="~/lib/adminlte/js/adminlte.min.js"></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

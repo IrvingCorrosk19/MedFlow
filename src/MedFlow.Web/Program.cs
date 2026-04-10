@@ -309,4 +309,5 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 app.Run();

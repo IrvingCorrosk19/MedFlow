@@ -126,6 +126,7 @@ public static class DependencyInjection
         services.AddScoped<INotificationTemplateService, NotificationTemplateService>();
         services.AddScoped<INotificationPreferenceService, NotificationPreferenceService>();
         services.AddScoped<IPatientPortalService, PatientPortalService>();
+        services.AddScoped<IPrescriptionService, Services.PrescriptionService>();
         services.AddScoped<IPatientPortalEnableService, PatientPortalEnableService>();
         services.AddScoped<IPushDeviceTokenService, PushDeviceTokenService>();
         services.AddScoped<ITenantGuardService, TenantGuardService>();

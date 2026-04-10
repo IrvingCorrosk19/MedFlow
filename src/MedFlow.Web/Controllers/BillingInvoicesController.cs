@@ -3,11 +3,13 @@ using MedFlow.Application.Security;
 using MedFlow.Domain.Entities;
 using MedFlow.Domain.Enums;
 using MedFlow.Web.Authorization;
+using MedFlow.Web.Pdf;
 using MedFlow.Web.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using QuestPDF.Fluent;
 
 namespace MedFlow.Web.Controllers;
 
@@ -20,19 +22,25 @@ public class BillingInvoicesController : Controller
     private readonly IPatientService _patients;
     private readonly IAppointmentService _appointments;
     private readonly IDoctorService _doctors;
+    private readonly IClinicSettingsService _clinicSettings;
+    private readonly ITenantContext _tenant;
 
     public BillingInvoicesController(
         IBillingInvoiceService billing,
         IPaymentService payments,
         IPatientService patients,
         IAppointmentService appointments,
-        IDoctorService doctors)
+        IDoctorService doctors,
+        IClinicSettingsService clinicSettings,
+        ITenantContext tenant)
     {
         _billing = billing;
         _payments = payments;
         _patients = patients;
         _appointments = appointments;
         _doctors = doctors;
+        _clinicSettings = clinicSettings;
+        _tenant = tenant;
     }
 
     [RequirePermission(PermissionCodes.BillingView)]
@@ -268,5 +276,43 @@ public class BillingInvoicesController : Controller
         else
             TempData["Success"] = "Factura cancelada.";
         return RedirectToAction(nameof(Details), new { id });
+    }
+
+    [HttpGet]
+    [RequirePermission(PermissionCodes.BillingView)]
+    public async Task<IActionResult> DownloadPdf(Guid id, CancellationToken cancellationToken = default)
+    {
+        var invoice = await _billing.GetByIdAsync(id, cancellationToken);
+        if (invoice == null) return NotFound();
+        if (!_tenant.TenantId.HasValue) return NotFound();
+
+        var settings = await _clinicSettings.GetAsync(_tenant.TenantId.Value, cancellationToken);
+
+        var items = invoice.Items.Select(i => new InvoiceLineItem(
+            Description: i.Description ?? "Servicio",
+            Quantity: i.Quantity,
+            UnitPrice: i.UnitPrice,
+            Subtotal: i.TotalLineAmount
+        )).ToList();
+
+        var doc = new InvoicePdfDocument(
+            clinicName: settings.Name,
+            clinicAddress: settings.Address,
+            clinicPhone: settings.Phone,
+            clinicTaxId: settings.TaxId,
+            invoiceNumber: invoice.InvoiceNumber,
+            invoiceDate: invoice.IssueDate,
+            patientName: invoice.Patient?.NombreCompleto ?? "—",
+            patientDocument: invoice.Patient?.NumeroDocumento,
+            items: items,
+            subtotal: invoice.Subtotal,
+            taxAmount: invoice.TaxAmount,
+            discount: invoice.DiscountAmount,
+            total: invoice.TotalAmount,
+            status: invoice.Status.ToString()
+        );
+
+        var bytes = doc.GeneratePdf();
+        return File(bytes, "application/pdf", $"factura-{invoice.InvoiceNumber}.pdf");
     }
 }

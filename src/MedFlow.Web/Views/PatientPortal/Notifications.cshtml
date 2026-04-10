@@ -1,0 +1,75 @@
+@model IReadOnlyList<MedFlow.Application.PatientPortal.PatientNotificationItemDto>
+@{
+    ViewData["Title"] = "Notificaciones";
+    Layout = "~/Views/Shared/_PatientLayout.cshtml";
+}
+
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fa fa-bell mr-2"></i>Mis Notificaciones</h3>
+    </div>
+    <div class="card-body p-0">
+        @if (!Model.Any())
+        {
+            <div class="text-center py-5 text-muted">
+                <i class="fa fa-bell-slash fa-3x mb-3 d-block opacity-50"></i>
+                <p>No tienes notificaciones.</p>
+            </div>
+        }
+        else
+        {
+            <ul class="list-group list-group-flush">
+                @foreach (var n in Model)
+                {
+                    <li class="list-group-item @(!n.IsRead ? "list-group-item-light font-weight-bold" : "")"
+                        id="notif-@n.Id">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                @if (!n.IsRead)
+                                {
+                                    <span class="badge badge-primary mr-2">Nueva</span>
+                                }
+                                <span>@n.Title</span>
+                                @if (!string.IsNullOrWhiteSpace(n.Message))
+                                {
+                                    <p class="mb-0 mt-1 text-muted small font-weight-normal">@n.Message</p>
+                                }
+                            </div>
+                            <div class="text-right ml-3" style="min-width:100px;">
+                                <small class="text-muted d-block">@n.CreatedAt.ToLocalTime().ToString("dd/MM HH:mm")</small>
+                                @if (!n.IsRead)
+                                {
+                                    <button class="btn btn-xs btn-outline-secondary mt-1 btn-mark-read"
+                                            data-id="@n.Id">
+                                        Marcar leída
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.btn-mark-read').forEach(btn => {
+            btn.addEventListener('click', async function () {
+                const id = this.dataset.id;
+                const resp = await fetch(`/portal/notifications/${id}/read`, {
+                    method: 'POST',
+                    headers: { 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '' }
+                });
+                if ((await resp.json()).ok) {
+                    const li = document.getElementById('notif-' + id);
+                    li.classList.remove('list-group-item-light', 'font-weight-bold');
+                    this.closest('.text-right').querySelector('.btn-mark-read')?.remove();
+                    li.querySelector('.badge.badge-primary')?.remove();
+                }
+            });
+        });
+    </script>
+    <form style="display:none">@Html.AntiForgeryToken()</form>
+}

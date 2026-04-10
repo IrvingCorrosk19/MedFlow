@@ -1,0 +1,169 @@
+@model (IReadOnlyList<MedFlow.Application.PatientPortal.PatientAppointmentListItemDto> Upcoming, IReadOnlyList<MedFlow.Application.PatientPortal.PatientAppointmentListItemDto> History)
+@using MedFlow.Domain.Enums
+@{
+    ViewData["Title"] = "Mis Citas";
+    Layout = "~/Views/Shared/_PatientLayout.cshtml";
+}
+
+<ul class="nav nav-tabs mb-4" id="apptTabs">
+    <li class="nav-item">
+        <a class="nav-link active" data-toggle="tab" href="#upcoming">
+            <i class="fa fa-calendar-alt mr-1"></i>Próximas
+            <span class="badge badge-info ml-1">@Model.Upcoming.Count</span>
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" data-toggle="tab" href="#history">
+            <i class="fa fa-history mr-1"></i>Historial
+        </a>
+    </li>
+</ul>
+
+<div class="tab-content">
+    <!-- Próximas -->
+    <div class="tab-pane fade show active" id="upcoming">
+        @if (!Model.Upcoming.Any())
+        {
+            <div class="card shadow-sm">
+                <div class="card-body text-center py-5 text-muted">
+                    <i class="fa fa-calendar-times fa-3x mb-3 d-block opacity-50"></i>
+                    <p>No tienes citas programadas.</p>
+                </div>
+            </div>
+        }
+        else
+        {
+            @foreach (var appt in Model.Upcoming)
+            {
+                var badge = appt.Status == AppointmentStatus.Confirmed ? "success"
+                    : appt.Status == AppointmentStatus.Cancelled ? "danger" : "info";
+                <div class="card shadow-sm mb-3">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-2 text-center">
+                                <div class="bg-info text-white rounded p-2">
+                                    <div style="font-size:1.4rem;font-weight:bold;">@appt.ScheduledDate.Day</div>
+                                    <div style="font-size:0.8rem;">@appt.ScheduledDate.ToString("MMM yyyy")</div>
+                                    <div style="font-size:0.85rem;">@appt.StartTime.ToString(@"hh\:mm")</div>
+                                </div>
+                            </div>
+                            <div class="col-md-7">
+                                <h5 class="mb-1 font-weight-bold">@appt.DoctorName</h5>
+                                @if (!string.IsNullOrWhiteSpace(appt.Speciality))
+                                {
+                                    <small class="text-muted">@appt.Speciality</small>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(appt.Reason))
+                                {
+                                    <p class="mb-0 text-muted small mt-1"><i class="fa fa-info-circle mr-1"></i>@appt.Reason</p>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(appt.ConsultationRoom))
+                                {
+                                    <p class="mb-0 text-muted small"><i class="fa fa-door-open mr-1"></i>Sala: @appt.ConsultationRoom</p>
+                                }
+                            </div>
+                            <div class="col-md-3 text-right">
+                                <span class="badge badge-@badge mb-2 d-block">@appt.Status</span>
+                                @if (appt.Status != AppointmentStatus.Cancelled && appt.Status != AppointmentStatus.Confirmed)
+                                {
+                                    <form asp-action="ConfirmAppointment" asp-route-id="@appt.Id" method="post" class="mb-1">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-success btn-sm btn-block">
+                                            <i class="fa fa-check mr-1"></i>Confirmar
+                                        </button>
+                                    </form>
+                                }
+                                @if (appt.Status != AppointmentStatus.Cancelled)
+                                {
+                                    <button type="button" class="btn btn-outline-danger btn-sm btn-block btn-cancel-appt"
+                                            data-id="@appt.Id">
+                                        <i class="fa fa-times mr-1"></i>Cancelar
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+
+    <!-- Historial -->
+    <div class="tab-pane fade" id="history">
+        @if (!Model.History.Any())
+        {
+            <div class="card shadow-sm">
+                <div class="card-body text-center py-5 text-muted">
+                    <p>No hay citas en el historial.</p>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="card shadow-sm">
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Médico</th>
+                                <th>Motivo</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var appt in Model.History)
+                            {
+                                var badge = appt.Status == AppointmentStatus.Completed ? "success"
+                                    : appt.Status == AppointmentStatus.Cancelled ? "secondary" : "info";
+                                <tr>
+                                    <td>@appt.ScheduledDate.ToString("dd/MM/yyyy") @appt.StartTime.ToString(@"hh\:mm")</td>
+                                    <td>@appt.DoctorName<br /><small class="text-muted">@appt.Speciality</small></td>
+                                    <td>@(appt.Reason ?? "—")</td>
+                                    <td><span class="badge badge-@badge">@appt.Status</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Modal cancelar -->
+<div class="modal fade" id="modalCancel" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Cancelar Cita</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <form id="frmCancel" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <p class="text-muted">¿Estás seguro de que deseas cancelar esta cita?</p>
+                    <div class="form-group">
+                        <label>Motivo (opcional)</label>
+                        <input type="text" name="reason" class="form-control" placeholder="Ej: No puedo asistir ese día" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Volver</button>
+                    <button type="submit" class="btn btn-danger">Cancelar cita</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.btn-cancel-appt').forEach(btn => {
+            btn.addEventListener('click', function () {
+                document.getElementById('frmCancel').action = '/portal/appointments/' + this.dataset.id + '/cancel';
+                $('#modalCancel').modal('show');
+            });
+        });
+    </script>
+}

@@ -152,6 +152,12 @@
                                     </a>
                                 </li>
                                 <li class="nav-item">
+                                    <a asp-controller="Appointments" asp-action="Calendar" class="nav-link @Active("Appointments","Calendar")">
+                                        <i class="fa fa-calendar nav-icon"></i>
+                                        <p>Calendario</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
                                     <a asp-controller="Appointments" asp-action="Today" class="nav-link @Active("Appointments","Today")">
                                         <i class="fa fa-calendar-check-o nav-icon"></i>
                                         <p>Hoy <span class="badge badge-primary badge-sm ml-1">HOY</span></p>
@@ -165,11 +171,25 @@
                 @* Historia clínica — Admin, SuperAdmin, Doctor *@
                 @if (canSeeHistoria)
                 {
-                    <li class="nav-item">
-                        <a asp-controller="MedicalRecords" asp-action="Index" class="nav-link @Active("MedicalRecords")">
+                    <li class="nav-item has-treeview @(Active("MedicalRecords") != "" || Active("Prescriptions") != "" ? "menu-open" : "")">
+                        <a href="#" class="nav-link @(Active("MedicalRecords") != "" || Active("Prescriptions") != "" ? "active" : "")">
                             <i class="nav-icon fa fa-file-text-o"></i>
-                            <p>Historia clínica</p>
+                            <p>Historia clínica <i class="right fa fa-angle-left"></i></p>
                         </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a asp-controller="MedicalRecords" asp-action="Index" class="nav-link @Active("MedicalRecords")">
+                                    <i class="fa fa-stethoscope nav-icon"></i>
+                                    <p>Consultas</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a asp-controller="Prescriptions" asp-action="Index" class="nav-link @Active("Prescriptions","Index")">
+                                    <i class="fa fa-medkit nav-icon"></i>
+                                    <p>Recetas</p>
+                                </a>
+                            </li>
+                        </ul>
                     </li>
                 }
 

@@ -1,0 +1,103 @@
+@model MedFlow.Application.PatientPortal.PatientProfileDto
+@{
+    ViewData["Title"] = "Mi Perfil";
+    Layout = "~/Views/Shared/_PatientLayout.cshtml";
+}
+
+<div class="row">
+    <!-- Datos no editables -->
+    <div class="col-md-4">
+        <div class="card card-outline card-primary shadow-sm">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <span class="fa-stack fa-3x text-primary">
+                        <i class="fa fa-circle fa-stack-2x opacity-10" style="opacity:0.1;"></i>
+                        <i class="fa fa-user fa-stack-1x"></i>
+                    </span>
+                </div>
+                <h4 class="font-weight-bold">@Model.PrimerNombre @Model.PrimerApellido</h4>
+                @if (!string.IsNullOrWhiteSpace(Model.SegundoNombre) || !string.IsNullOrWhiteSpace(Model.SegundoApellido))
+                {
+                    <p class="text-muted">@Model.SegundoNombre @Model.SegundoApellido</p>
+                }
+            </div>
+            <div class="card-footer p-0">
+                <dl class="p-3 mb-0">
+                    @if (Model.FechaNacimiento.HasValue)
+                    {
+                        <dt class="text-muted small">Fecha de nacimiento</dt>
+                        <dd>@Model.FechaNacimiento.Value.ToString("dd/MM/yyyy")</dd>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model.TipoDocumento))
+                    {
+                        <dt class="text-muted small">@Model.TipoDocumento</dt>
+                        <dd>@(Model.NumeroDocumento ?? "—")</dd>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model.Sexo))
+                    {
+                        <dt class="text-muted small">Sexo</dt>
+                        <dd>@Model.Sexo</dd>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model.Alergias))
+                    {
+                        <dt class="text-muted small text-danger"><i class="fa fa-exclamation-triangle mr-1"></i>Alergias</dt>
+                        <dd class="text-danger">@Model.Alergias</dd>
+                    }
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <!-- Datos editables -->
+    <div class="col-md-8">
+        <div class="card card-outline card-success shadow-sm">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fa fa-user-edit mr-2"></i>Actualizar mis datos</h3>
+            </div>
+            <form asp-action="UpdateProfile" method="post">
+                @Html.AntiForgeryToken()
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Teléfono</label>
+                                <input type="tel" name="Telefono" value="@Model.Telefono" class="form-control" placeholder="+1 000 000 0000" />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Correo electrónico</label>
+                                <input type="email" name="Correo" value="@Model.Correo" class="form-control" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Dirección</label>
+                        <input type="text" name="Direccion" value="@Model.Direccion" class="form-control" />
+                    </div>
+                    <hr />
+                    <h6 class="font-weight-bold mb-3"><i class="fa fa-phone-alt mr-2 text-muted"></i>Contacto de emergencia</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Nombre</label>
+                                <input type="text" name="ContactoEmergenciaNombre" value="@Model.ContactoEmergenciaNombre" class="form-control" />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Teléfono</label>
+                                <input type="tel" name="ContactoEmergenciaTelefono" value="@Model.ContactoEmergenciaTelefono" class="form-control" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fa fa-save mr-2"></i>Guardar cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
