@@ -92,7 +92,7 @@ public class BankAccountsController : Controller
             Name = account.Name,
             BankName = account.BankName,
             AccountNumber = account.AccountNumber,
-            Currency = account.Currency,
+            Currency = account.Currency ?? "USD",
             OpeningBalance = account.OpeningBalance,
             AccountId = account.AccountId,
             IsActive = account.IsActive

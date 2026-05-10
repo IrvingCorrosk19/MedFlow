@@ -20,7 +20,7 @@ public class SecurityHeadersMiddlewareTests
         {
             EnableSecurityHeaders = enabled,
             RequireHttps = requireHttps,
-            ContentSecurityPolicy = csp
+            ContentSecurityPolicy = csp ?? ""
         });
     }
 

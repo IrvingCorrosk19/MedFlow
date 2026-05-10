@@ -79,6 +79,7 @@ public sealed record PatientProfileUpdateDto(
 
 public sealed record PatientAppointmentListItemDto(
     Guid Id,
+    Guid DoctorId,
     DateTime ScheduledDate,
     TimeSpan StartTime,
     string DoctorName,

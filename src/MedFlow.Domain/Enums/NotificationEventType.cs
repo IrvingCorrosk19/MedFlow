@@ -12,5 +12,7 @@ public enum NotificationEventType
     TenantSuspendedNotice = 7,
     TenantReactivated = 8,
     TrialEndingReminder = 9,
+    TwoFactorEnabled = 10,
+    TwoFactorDisabled = 11,
     Custom = 99
 }

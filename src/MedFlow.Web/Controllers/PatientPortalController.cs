@@ -1,6 +1,8 @@
 using MedFlow.Application.Interfaces;
 using MedFlow.Application.PatientPortal;
+using MedFlow.Infrastructure.Identity;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -12,11 +14,16 @@ public class PatientPortalController : Controller
 {
     private readonly IPatientPortalService _portal;
     private readonly ITenantContext _tenant;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    public PatientPortalController(IPatientPortalService portal, ITenantContext tenant)
+    public PatientPortalController(
+        IPatientPortalService portal,
+        ITenantContext tenant,
+        UserManager<ApplicationUser> userManager)
     {
         _portal = portal;
         _tenant = tenant;
+        _userManager = userManager;
     }
 
     private string? CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -273,6 +280,58 @@ public class PatientPortalController : Controller
         TempData["Error"] = err ?? "No fue posible procesar tu solicitud.";
         ViewData["Title"] = "Solicitar Cita";
         ViewData["Layout"] = "~/Views/Shared/_PatientLayout.cshtml";
+        return View();
+    }
+
+    // ── Cambio de contraseña ──────────────────────────────────────────────────
+
+    [HttpGet("change-password")]
+    public IActionResult ChangePassword()
+    {
+        ViewData["Title"] = "Cambiar contraseña";
+        ViewData["Layout"] = "~/Views/Shared/_PatientLayout.cshtml";
+        return View();
+    }
+
+    [HttpPost("change-password")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ChangePassword(
+        string currentPassword, string newPassword, string confirmPassword,
+        CancellationToken ct)
+    {
+        ViewData["Title"] = "Cambiar contraseña";
+        ViewData["Layout"] = "~/Views/Shared/_PatientLayout.cshtml";
+
+        if (string.IsNullOrWhiteSpace(currentPassword) || string.IsNullOrWhiteSpace(newPassword))
+        {
+            ViewBag.Error = "Todos los campos son obligatorios.";
+            return View();
+        }
+
+        if (newPassword != confirmPassword)
+        {
+            ViewBag.Error = "La nueva contraseña y la confirmación no coinciden.";
+            return View();
+        }
+
+        if (newPassword.Length < 6)
+        {
+            ViewBag.Error = "La contraseña debe tener al menos 6 caracteres.";
+            return View();
+        }
+
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null) return View("NoAccess");
+
+        var result = await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
+        if (result.Succeeded)
+        {
+            TempData["Success"] = "Contraseña actualizada correctamente.";
+            return RedirectToAction(nameof(Profile));
+        }
+
+        ViewBag.Error = result.Errors.FirstOrDefault()?.Description
+            ?? "No se pudo actualizar la contraseña. Verifica que la contraseña actual sea correcta.";
         return View();
     }
 

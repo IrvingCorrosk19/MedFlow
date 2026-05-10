@@ -1,3 +1,6 @@
+using MedFlow.Application.Interfaces;
+using MedFlow.Application.Notifications;
+using MedFlow.Domain.Enums;
 using MedFlow.Infrastructure.Identity;
 using MedFlow.Web.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -14,6 +17,8 @@ public class TwoFactorController : Controller
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly UrlEncoder _urlEncoder;
+    private readonly INotificationDispatchService _notifications;
+    private readonly ITenantContext _tenant;
 
     private const string AuthenticatorUriFormat =
         "otpauth://totp/{0}:{1}?secret={2}&issuer={0}&digits=6";
@@ -21,11 +26,15 @@ public class TwoFactorController : Controller
     public TwoFactorController(
         UserManager<ApplicationUser> userManager,
         SignInManager<ApplicationUser> signInManager,
-        UrlEncoder urlEncoder)
+        UrlEncoder urlEncoder,
+        INotificationDispatchService notifications,
+        ITenantContext tenant)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _urlEncoder = urlEncoder;
+        _notifications = notifications;
+        _tenant = tenant;
     }
 
     public async Task<IActionResult> Index()
@@ -84,6 +93,8 @@ public class TwoFactorController : Controller
         await _userManager.SetTwoFactorEnabledAsync(user, true);
         await _signInManager.RefreshSignInAsync(user);
 
+        _ = Dispatch2faNotificationAsync(user, NotificationEventType.TwoFactorEnabled);
+
         var recoveryCodes = await _userManager.GenerateNewTwoFactorRecoveryCodesAsync(user, 10);
         TempData["RecoveryCodes"] = recoveryCodes?.ToArray();
         TempData["Success"] = "La autenticación de dos factores está habilitada.";
@@ -111,6 +122,9 @@ public class TwoFactorController : Controller
 
         await _userManager.SetTwoFactorEnabledAsync(user, false);
         await _signInManager.RefreshSignInAsync(user);
+
+        _ = Dispatch2faNotificationAsync(user, NotificationEventType.TwoFactorDisabled);
+
         TempData["Success"] = "La autenticación de dos factores ha sido desactivada.";
         return RedirectToAction(nameof(Index));
     }
@@ -131,6 +145,26 @@ public class TwoFactorController : Controller
         var codes = await _userManager.GenerateNewTwoFactorRecoveryCodesAsync(user, 10);
         TempData["RecoveryCodes"] = codes?.ToArray();
         return RedirectToAction(nameof(ShowRecoveryCodes));
+    }
+
+    private async Task Dispatch2faNotificationAsync(ApplicationUser user, NotificationEventType eventType)
+    {
+        try
+        {
+            if (!_tenant.TenantId.HasValue) return;
+            var email = await _userManager.GetEmailAsync(user) ?? user.UserName ?? "";
+            var payload = new Dictionary<string, object>
+            {
+                ["user_name"] = user.UserName ?? email,
+                ["user_email"] = email,
+                ["event"] = eventType == NotificationEventType.TwoFactorEnabled ? "activada" : "desactivada",
+                ["timestamp"] = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm") + " UTC"
+            };
+            await _notifications.DispatchAsync(new DispatchRequest(
+                _tenant.TenantId.Value, eventType, payload,
+                RecipientEmail: email, RelatedEntityType: "User", RelatedEntityId: user.Id));
+        }
+        catch { /* best-effort */ }
     }
 
     private async Task<EnableAuthenticatorViewModel> BuildEnableAuthenticatorViewModelAsync(ApplicationUser user)

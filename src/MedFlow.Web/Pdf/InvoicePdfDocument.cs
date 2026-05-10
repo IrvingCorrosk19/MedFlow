@@ -24,7 +24,6 @@ public sealed class InvoicePdfDocument : IDocument
     private readonly string _status;
 
     private static readonly string HeaderColor = "#1a3c5e";
-    private static readonly string AccentColor = "#2980b9";
 
     public InvoicePdfDocument(
         string clinicName, string? clinicAddress, string? clinicPhone, string? clinicTaxId,

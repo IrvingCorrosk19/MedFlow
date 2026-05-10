@@ -130,7 +130,7 @@ public sealed class PatientPortalService : IPatientPortalService
                 && a.Status != AppointmentStatus.Cancelled && a.Status != AppointmentStatus.NoShow)
             .Include(a => a.Doctor)
             .OrderBy(a => a.ScheduledDate).ThenBy(a => a.StartTime)
-            .Select(a => new PatientAppointmentListItemDto(a.Id, a.ScheduledDate, a.StartTime, a.Doctor.FirstName + " " + a.Doctor.LastName, a.Doctor.Speciality, a.Status, a.Reason, a.ConsultationRoom))
+            .Select(a => new PatientAppointmentListItemDto(a.Id, a.DoctorId, a.ScheduledDate, a.StartTime, a.Doctor.FirstName + " " + a.Doctor.LastName, a.Doctor.Speciality, a.Status, a.Reason, a.ConsultationRoom))
             .ToListAsync(cancellationToken);
     }
 
@@ -142,7 +142,7 @@ public sealed class PatientPortalService : IPatientPortalService
             .Include(a => a.Doctor)
             .OrderByDescending(a => a.ScheduledDate).ThenByDescending(a => a.StartTime)
             .Take(take)
-            .Select(a => new PatientAppointmentListItemDto(a.Id, a.ScheduledDate, a.StartTime, a.Doctor.FirstName + " " + a.Doctor.LastName, a.Doctor.Speciality, a.Status, a.Reason, a.ConsultationRoom))
+            .Select(a => new PatientAppointmentListItemDto(a.Id, a.DoctorId, a.ScheduledDate, a.StartTime, a.Doctor.FirstName + " " + a.Doctor.LastName, a.Doctor.Speciality, a.Status, a.Reason, a.ConsultationRoom))
             .ToListAsync(cancellationToken);
     }
 
@@ -153,7 +153,7 @@ public sealed class PatientPortalService : IPatientPortalService
             .Include(x => x.Doctor)
             .FirstOrDefaultAsync(cancellationToken);
         if (a == null) return null;
-        return new PatientAppointmentListItemDto(a.Id, a.ScheduledDate, a.StartTime, a.Doctor.FullName, a.Doctor.Speciality, a.Status, a.Reason, a.ConsultationRoom);
+        return new PatientAppointmentListItemDto(a.Id, a.DoctorId, a.ScheduledDate, a.StartTime, a.Doctor.FullName, a.Doctor.Speciality, a.Status, a.Reason, a.ConsultationRoom);
     }
 
     public async Task<bool> ConfirmAppointmentAsync(Guid patientId, Guid appointmentId, CancellationToken cancellationToken = default)

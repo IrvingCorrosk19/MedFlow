@@ -90,6 +90,74 @@ public class MobileAppointmentsController : ControllerBase
         var ok = await _portal.CancelAppointmentAsync(patientId.Value, id, body?.Reason, ct);
         return ok ? Ok(new { success = true }) : NotFound();
     }
+
+    /// <summary>Request a new appointment from the mobile app.</summary>
+    [HttpPost("request")]
+    [ProducesResponseType(201)]
+    [ProducesResponseType(400)]
+    public async Task<IActionResult> RequestAppointment([FromBody] MobileAppointmentRequestBody body, CancellationToken ct)
+    {
+        if (body is null)
+            return BadRequest(new { error = "Request body is required." });
+
+        var patientId = await GetPatientIdAsync(ct);
+        if (!patientId.HasValue)
+            return Unauthorized();
+
+        if (!DateTime.TryParse(body.DesiredDate, out var date))
+            return BadRequest(new { error = "Invalid date format. Use yyyy-MM-dd." });
+
+        if (!TimeSpan.TryParse(body.StartTime, out var start) || !TimeSpan.TryParse(body.EndTime, out var end))
+            return BadRequest(new { error = "Invalid time format. Use HH:mm." });
+
+        var dto = new PortalAppointmentRequestDto(body.DoctorId, date, start, end, body.Reason);
+        var (ok, err) = await _portal.RequestAppointmentAsync(patientId.Value, dto, ct);
+
+        if (!ok)
+            return BadRequest(new { error = err });
+
+        return StatusCode(201, new { success = true, message = "Appointment request submitted." });
+    }
+
+    /// <summary>Reschedule an existing appointment.</summary>
+    [HttpPut("{id:guid}/reschedule")]
+    [ProducesResponseType(200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> Reschedule(Guid id, [FromBody] MobileRescheduleBody body, CancellationToken ct)
+    {
+        if (body is null)
+            return BadRequest(new { error = "Request body is required." });
+
+        var patientId = await GetPatientIdAsync(ct);
+        if (!patientId.HasValue)
+            return Unauthorized();
+
+        // Verify the appointment belongs to this patient
+        var existing = await _portal.GetAppointmentAsync(patientId.Value, id, ct);
+        if (existing == null)
+            return NotFound();
+
+        if (!DateTime.TryParse(body.NewDate, out var newDate))
+            return BadRequest(new { error = "Invalid date format. Use yyyy-MM-dd." });
+
+        if (!TimeSpan.TryParse(body.NewStartTime, out var newStart) || !TimeSpan.TryParse(body.NewEndTime, out var newEnd))
+            return BadRequest(new { error = "Invalid time format. Use HH:mm." });
+
+        // Re-use RequestAppointmentAsync with same doctor but new date/time
+        var dto = new PortalAppointmentRequestDto(existing.DoctorId, newDate, newStart, newEnd, existing.Reason);
+
+        // Cancel original then create new
+        await _portal.CancelAppointmentAsync(patientId.Value, id, "Reagendada desde app móvil", ct);
+        var (ok, err) = await _portal.RequestAppointmentAsync(patientId.Value, dto, ct);
+
+        if (!ok)
+            return BadRequest(new { error = err });
+
+        return Ok(new { success = true, message = "Appointment rescheduled." });
+    }
 }
 
 public record CancelAppointmentRequest(string? Reason);
+public record MobileAppointmentRequestBody(Guid DoctorId, string DesiredDate, string StartTime, string EndTime, string? Reason);
+public record MobileRescheduleBody(string NewDate, string NewStartTime, string NewEndTime);

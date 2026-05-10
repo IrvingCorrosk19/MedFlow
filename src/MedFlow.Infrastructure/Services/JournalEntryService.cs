@@ -61,7 +61,7 @@ public class JournalEntryService : IJournalEntryService
             j.FiscalPeriod?.Name ?? "-",
             j.Description, j.Reference, j.Status, j.Origin,
             j.TotalDebit, j.TotalCredit,
-            userMap.TryGetValue(j.CreatedByUserId, out var n) ? n : j.CreatedByUserId)).ToList();
+            (userMap.TryGetValue(j.CreatedByUserId, out var n) ? n : null) ?? j.CreatedByUserId)).ToList();
     }
 
     public async Task<JournalEntryDetailDto?> GetDetailAsync(Guid id, Guid tenantId, CancellationToken ct = default)

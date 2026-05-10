@@ -46,7 +46,8 @@
                     <div class="form-group row">
                         <label asp-for="MedicationName" class="col-sm-3 col-form-label"></label>
                         <div class="col-sm-9">
-                            <input asp-for="MedicationName" class="form-control" placeholder="Ej: Amoxicilina 500mg" />
+                            <input asp-for="MedicationName" class="form-control" id="medicationInput"
+                                   placeholder="Ej: Amoxicilina 500mg" autocomplete="off" />
                             <span asp-validation-for="MedicationName" class="text-danger"></span>
                         </div>
                     </div>
@@ -143,5 +144,83 @@
         if ($('[data-valmsg-summary]').find('li').length > 0) {
             $('#valSummary').show();
         }
+
+        // ── Medication autocomplete ─────────────────────────────────────────
+        const MEDICATIONS = [
+            'Acetaminofén 500mg','Acetaminofén 1g','Ácido acetilsalicílico 100mg','Ácido acetilsalicílico 500mg',
+            'Ácido fólico 5mg','Ácido valproico 500mg','Albendazol 400mg','Amlodipino 5mg','Amlodipino 10mg',
+            'Amoxicilina 250mg','Amoxicilina 500mg','Amoxicilina 875mg','Amoxicilina + Ácido clavulánico 875/125mg',
+            'Ampicilina 500mg','Atenolol 50mg','Atenolol 100mg','Atorvastatina 10mg','Atorvastatina 20mg',
+            'Atorvastatina 40mg','Azitromicina 250mg','Azitromicina 500mg','Betametasona 4mg/mL inyectable',
+            'Captopril 25mg','Captopril 50mg','Carvedilol 6.25mg','Carvedilol 25mg','Cetirizina 10mg',
+            'Ciprofloxacino 250mg','Ciprofloxacino 500mg','Claritromicina 250mg','Claritromicina 500mg',
+            'Clindamicina 150mg','Clindamicina 300mg','Clonazepam 0.5mg','Clonazepam 2mg',
+            'Dexametasona 4mg','Dexametasona 8mg','Diazepam 5mg','Diclofenaco 50mg','Diclofenaco 75mg',
+            'Digoxina 0.25mg','Enalapril 5mg','Enalapril 10mg','Enalapril 20mg','Eritromicina 500mg',
+            'Espironolactona 25mg','Espironolactona 100mg','Esomeprazol 20mg','Esomeprazol 40mg',
+            'Fenitoína 100mg','Fluconazol 150mg','Fluoxetina 20mg','Furosemida 40mg',
+            'Glibenclamida 5mg','Hidroclorotiazida 12.5mg','Hidroclorotiazida 25mg',
+            'Ibuprofeno 200mg','Ibuprofeno 400mg','Ibuprofeno 600mg','Ibuprofeno 800mg',
+            'Insulina NPH 100 UI/mL','Insulina Regular 100 UI/mL','Insulina Glargina 100 UI/mL',
+            'Ketorolaco 10mg','Ketorolaco 30mg inyectable','Levofloxacino 500mg','Levofloxacino 750mg',
+            'Levotiroxina 25mcg','Levotiroxina 50mcg','Levotiroxina 100mcg','Lisinopril 5mg',
+            'Lisinopril 10mg','Lisinopril 20mg','Loratadina 10mg','Losartán 25mg','Losartán 50mg',
+            'Losartán 100mg','Lorazepam 1mg','Lorazepam 2mg','Metformina 500mg','Metformina 850mg',
+            'Metformina 1000mg','Metoclopramida 10mg','Metoprolol 25mg','Metoprolol 50mg',
+            'Metronidazol 250mg','Metronidazol 500mg','Nifedipino 10mg','Nifedipino 30mg',
+            'Omeprazol 20mg','Omeprazol 40mg','Ondansetrón 4mg','Ondansetrón 8mg',
+            'Pantoprazol 20mg','Pantoprazol 40mg','Paracetamol 500mg','Paracetamol 1g',
+            'Prednisona 5mg','Prednisona 20mg','Prednisona 50mg','Ranitidina 150mg','Ranitidina 300mg',
+            'Salbutamol 100mcg inhalador','Salbutamol jarabe 2mg/5mL','Sertralina 50mg','Sertralina 100mg',
+            'Simvastatina 20mg','Simvastatina 40mg','Tramadol 50mg','Tramadol 100mg',
+            'Trimethoprim/Sulfametoxazol 80/400mg','Trimethoprim/Sulfametoxazol 160/800mg',
+            'Valsartán 80mg','Valsartán 160mg','Warfarina 2mg','Warfarina 5mg'
+        ];
+
+        (function () {
+            var $input = $('#medicationInput');
+            var $drop = $('<ul id="medDrop" class="list-group shadow-sm" style="position:absolute;z-index:9999;max-height:220px;overflow-y:auto;display:none;min-width:100%;"></ul>');
+            $input.parent().css('position', 'relative').append($drop);
+
+            function filter(q) {
+                var lq = q.toLowerCase().trim();
+                if (!lq) { $drop.hide(); return; }
+                var matches = MEDICATIONS.filter(function (m) { return m.toLowerCase().indexOf(lq) >= 0; }).slice(0, 10);
+                if (!matches.length) { $drop.hide(); return; }
+                $drop.html('');
+                matches.forEach(function (m) {
+                    var idx = m.toLowerCase().indexOf(lq);
+                    var hi = m.substring(0, idx) + '<strong>' + m.substring(idx, idx + lq.length) + '</strong>' + m.substring(idx + lq.length);
+                    $('<li class="list-group-item list-group-item-action py-1 px-2" style="cursor:pointer;font-size:.9rem;">')
+                        .html(hi).data('val', m)
+                        .on('mousedown', function (e) { e.preventDefault(); $input.val($(this).data('val')); $drop.hide(); })
+                        .appendTo($drop);
+                });
+                $drop.show();
+            }
+
+            $input.on('input', function () { filter(this.value); });
+            $input.on('keydown', function (e) {
+                if (!$drop.is(':visible')) return;
+                var $items = $drop.find('li');
+                var $active = $items.filter('.active');
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    var $next = $active.length ? $active.removeClass('active').next() : $items.first();
+                    $next.addClass('active');
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    var $prev = $active.length ? $active.removeClass('active').prev() : $items.last();
+                    $prev.addClass('active');
+                } else if (e.key === 'Enter' && $active.length) {
+                    e.preventDefault();
+                    $input.val($active.data('val'));
+                    $drop.hide();
+                } else if (e.key === 'Escape') {
+                    $drop.hide();
+                }
+            });
+            $input.on('blur', function () { setTimeout(function () { $drop.hide(); }, 150); });
+        })();
     </script>
 }

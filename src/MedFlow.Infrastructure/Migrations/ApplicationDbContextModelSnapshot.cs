@@ -844,6 +844,9 @@ namespace MedFlow.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsYearlyClosed")
+                        .HasColumnType("boolean");
+
                     b.Property<int>("Month")
                         .HasColumnType("integer");
 
@@ -866,6 +869,9 @@ namespace MedFlow.Infrastructure.Migrations
 
                     b.Property<int>("Year")
                         .HasColumnType("integer");
+
+                    b.Property<DateTime?>("YearlyClosedAt")
+                        .HasColumnType("timestamp without time zone");
 
                     b.HasKey("Id");
 
