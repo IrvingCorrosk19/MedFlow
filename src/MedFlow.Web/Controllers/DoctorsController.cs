@@ -12,10 +12,19 @@ namespace MedFlow.Web.Controllers;
 public class DoctorsController : Controller
 {
     private readonly IDoctorService _doctorService;
+    private readonly ITenantContext _tenant;
 
-    public DoctorsController(IDoctorService doctorService)
+    public DoctorsController(IDoctorService doctorService, ITenantContext tenant)
     {
         _doctorService = doctorService;
+        _tenant = tenant;
+    }
+
+    private string PageSubtitleWithTenant(string line)
+    {
+        if (_tenant.TenantName != null && !string.IsNullOrWhiteSpace(_tenant.TenantCode))
+            return $"{line} · {_tenant.TenantName} ({_tenant.TenantCode})";
+        return line;
     }
 
     [RequirePermission(PermissionCodes.DoctorsView)]
@@ -32,6 +41,10 @@ public class DoctorsController : Controller
 
         if (!string.IsNullOrWhiteSpace(specialty))
             doctors = doctors.Where(d => d.Speciality == specialty).ToList();
+
+        ViewData["Title"] = "Doctores";
+        ViewData["PageSubtitle"] = PageSubtitleWithTenant("Directorio médico");
+        ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item active\">Doctores</li>";
 
         ViewBag.Search = search;
         ViewBag.IsActive = isActive;
@@ -80,11 +93,24 @@ public class DoctorsController : Controller
     {
         var doctor = await _doctorService.GetByIdAsync(id, cancellationToken);
         if (doctor == null) return NotFound();
+
+        ViewData["Title"] = "Detalle de doctor";
+        ViewData["PageSubtitle"] = PageSubtitleWithTenant(doctor.FullName ?? "");
+        ViewData["Breadcrumb"] =
+            "<li class=\"breadcrumb-item\"><a href=\"" + Url.Action(nameof(Index)) + "\">Doctores</a></li><li class=\"breadcrumb-item active\">Detalle</li>";
+
         return View(doctor);
     }
 
     [RequirePermission(PermissionCodes.DoctorsCreate)]
-    public IActionResult Create() => View(new DoctorViewModel());
+    public IActionResult Create()
+    {
+        ViewData["Title"] = "Nuevo doctor";
+        ViewData["PageSubtitle"] = PageSubtitleWithTenant("Registro de personal médico");
+        ViewData["Breadcrumb"] =
+            "<li class=\"breadcrumb-item\"><a href=\"" + Url.Action(nameof(Index)) + "\">Doctores</a></li><li class=\"breadcrumb-item active\">Nuevo</li>";
+        return View(new DoctorViewModel());
+    }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
@@ -101,6 +127,7 @@ public class DoctorsController : Controller
                 {
                     ModelState.AddModelError(nameof(model.LicenseNumber),
                         "Ya existe un doctor con ese número de licencia médica.");
+                    SetCreateViewData();
                     return View(model);
                 }
             }
@@ -110,12 +137,14 @@ public class DoctorsController : Controller
             if (created == null)
             {
                 ModelState.AddModelError(string.Empty, err ?? "No se pudo registrar el doctor.");
+                SetCreateViewData();
                 return View(model);
             }
 
             TempData["Success"] = "Doctor registrado correctamente.";
             return RedirectToAction(nameof(Index));
         }
+        SetCreateViewData();
         return View(model);
     }
 
@@ -124,6 +153,7 @@ public class DoctorsController : Controller
     {
         var doctor = await _doctorService.GetByIdAsync(id, cancellationToken);
         if (doctor == null) return NotFound();
+        SetEditViewData();
         return View(MapToViewModel(doctor));
     }
 
@@ -143,6 +173,7 @@ public class DoctorsController : Controller
                 {
                     ModelState.AddModelError(nameof(model.LicenseNumber),
                         "Ya existe un doctor con ese número de licencia médica.");
+                    SetEditViewData();
                     return View(model);
                 }
             }
@@ -155,6 +186,7 @@ public class DoctorsController : Controller
             TempData["Success"] = "Doctor actualizado correctamente.";
             return RedirectToAction(nameof(Index));
         }
+        SetEditViewData();
         return View(model);
     }
 
@@ -211,4 +243,20 @@ public class DoctorsController : Controller
         Notes = entity.Notes,
         IsActive = entity.IsActive
     };
+
+    private void SetCreateViewData()
+    {
+        ViewData["Title"] = "Nuevo doctor";
+        ViewData["PageSubtitle"] = PageSubtitleWithTenant("Registro de personal médico");
+        ViewData["Breadcrumb"] =
+            "<li class=\"breadcrumb-item\"><a href=\"" + Url.Action(nameof(Index)) + "\">Doctores</a></li><li class=\"breadcrumb-item active\">Nuevo</li>";
+    }
+
+    private void SetEditViewData()
+    {
+        ViewData["Title"] = "Editar doctor";
+        ViewData["PageSubtitle"] = PageSubtitleWithTenant("Actualización de información profesional");
+        ViewData["Breadcrumb"] =
+            "<li class=\"breadcrumb-item\"><a href=\"" + Url.Action(nameof(Index)) + "\">Doctores</a></li><li class=\"breadcrumb-item active\">Editar</li>";
+    }
 }

@@ -24,7 +24,7 @@ public class AppointmentConflictTests
         var notifications = new Mock<INotificationDispatchService>();
         notifications.Setup(n => n.DispatchAsync(It.IsAny<MedFlow.Application.Notifications.DispatchRequest>(), It.IsAny<CancellationToken>()))
                      .ReturnsAsync(new MedFlow.Application.Interfaces.DispatchResult(true, Array.Empty<Guid>(), Array.Empty<string>()));
-        return new AppointmentService(db, tenant.Object, limits.Object, eventLog.Object, audit.Object, notifications.Object);
+        return new AppointmentService(db, tenant.Object, MockClinicalUserScope.NoDoctorRestriction(), limits.Object, eventLog.Object, audit.Object, notifications.Object);
     }
 
     private static Appointment MakeAppointment(TimeSpan start, TimeSpan end, AppointmentStatus status = AppointmentStatus.Scheduled)

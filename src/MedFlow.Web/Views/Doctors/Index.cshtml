@@ -1,9 +1,4 @@
 @model IReadOnlyList<MedFlow.Domain.Entities.Doctor>
-@{
-    ViewData["Title"] = "Doctores";
-    ViewData["PageSubtitle"] = "Directorio médico de la clínica";
-    ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item active\">Doctores</li>";
-}
 
 <div class="card card-outline card-primary shadow-sm">
     <div class="card-header d-flex flex-wrap align-items-center justify-content-between">
@@ -102,7 +97,7 @@
                 responsive: true,
                 pageLength: 25,
                 order: [[0, 'asc']],
-                language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
+                language: { url: '/lib/datatables/es-ES.json' },
                 columnDefs: [{ orderable: false, targets: 'no-sort' }]
             });
         });

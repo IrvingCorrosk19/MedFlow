@@ -32,6 +32,7 @@ public class DataSeeder
         // Asegura datos clínicos mínimos para que flujos UI E2E (citas/consultas) no fallen
         // por ausencia de doctores activos en el tenant demo.
         await SeedDemoActiveDoctorsAsync(context, logger);
+        await LinkSeedDoctorUserToDoctorProfileAsync(context, userManager, logger);
 
         // Siembra el catálogo de cuentas contables en tenants que aún no lo tienen.
         await SeedDefaultChartOfAccountsForExistingTenantsAsync(context, logger);
@@ -888,6 +889,8 @@ public class DataSeeder
             logger.LogInformation("Seed QA: contraseña y rol actualizados {Email} → {Role}", seed.Email, seed.RoleName);
         }
 
+        await TryLinkQaDoctorUserToDoctorProfileAsync(context, logger);
+
         await SeedQaPatientPortalPatientAsync(context, tenantId, logger);
     }
 
@@ -948,6 +951,88 @@ public class DataSeeder
 
         await context.SaveChangesAsync();
         logger.LogInformation("Seed Demo: doctor activo creado para flujos E2E.");
+    }
+
+    /// <summary>Vincula el usuario demo <c>doctor@medflow.ai</c> a una ficha <see cref="Doctor"/> para alcance clínico por rol.</summary>
+    private static async Task LinkSeedDoctorUserToDoctorProfileAsync(
+        ApplicationDbContext context,
+        UserManager<ApplicationUser> userManager,
+        ILogger logger)
+    {
+        var tenantId = await context.Tenants.IgnoreQueryFilters()
+            .Where(t => t.Code == "demo" && !t.IsDeleted)
+            .Select(t => t.Id)
+            .FirstOrDefaultAsync();
+        if (tenantId == Guid.Empty)
+            return;
+
+        var user = await userManager.FindByEmailAsync("doctor@medflow.ai");
+        if (user == null)
+            return;
+
+        if (await context.Doctors.IgnoreQueryFilters()
+                .AnyAsync(d => d.UserId == user.Id && d.TenantId == tenantId))
+            return;
+
+        var slot = await context.Doctors.IgnoreQueryFilters()
+            .Where(d => d.TenantId == tenantId && !d.IsDeleted && d.UserId == null)
+            .OrderBy(d => d.CreatedAt)
+            .FirstOrDefaultAsync();
+        if (slot == null)
+        {
+            logger.LogWarning("Seed: no hay ficha Doctor libre para doctor@medflow.ai.");
+            return;
+        }
+
+        slot.UserId = user.Id;
+        await context.SaveChangesAsync();
+        logger.LogInformation("Seed: usuario doctor@medflow.ai vinculado a ficha Dr. {First} {Last}.", slot.FirstName, slot.LastName);
+    }
+
+    /// <summary>Vincula <c>qa.doctor@medflow.local</c> o crea una ficha médica si ya están ocupadas las del demo.</summary>
+    private static async Task TryLinkQaDoctorUserToDoctorProfileAsync(ApplicationDbContext context, ILogger logger)
+    {
+        var tenantId = await context.Tenants.IgnoreQueryFilters()
+            .Where(t => t.Code == "demo" && !t.IsDeleted)
+            .Select(t => t.Id)
+            .FirstOrDefaultAsync();
+        if (tenantId == Guid.Empty)
+            return;
+
+        var user = await context.Users.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Email == "qa.doctor@medflow.local");
+        if (user == null)
+            return;
+
+        if (await context.Doctors.IgnoreQueryFilters()
+                .AnyAsync(d => d.UserId == user.Id && d.TenantId == tenantId))
+            return;
+
+        var slot = await context.Doctors.IgnoreQueryFilters()
+            .Where(d => d.TenantId == tenantId && !d.IsDeleted && d.UserId == null)
+            .OrderBy(d => d.CreatedAt)
+            .FirstOrDefaultAsync();
+
+        if (slot != null)
+        {
+            slot.UserId = user.Id;
+            await context.SaveChangesAsync();
+            logger.LogInformation("Seed QA: qa.doctor@medflow.local vinculado a ficha Dr. {First} {Last}.", slot.FirstName, slot.LastName);
+            return;
+        }
+
+        context.Doctors.Add(new Doctor
+        {
+            TenantId = tenantId,
+            FirstName = "QA",
+            LastName = "Médico",
+            Speciality = "Medicina general",
+            UserId = user.Id,
+            IsActive = true,
+            Notes = "Ficha creada para usuario QA solo-médico"
+        });
+        await context.SaveChangesAsync();
+        logger.LogInformation("Seed QA: ficha Doctor creada y vinculada a qa.doctor@medflow.local.");
     }
 
     /// <summary>

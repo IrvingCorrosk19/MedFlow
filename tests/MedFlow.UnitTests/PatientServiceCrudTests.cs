@@ -23,7 +23,7 @@ public class PatientServiceCrudTests
         var limits = new Mock<ISubscriptionLimitService>();
         var eventLog = new Mock<IEventLogService>();
         var audit = new Mock<IAuditLogService>();
-        var svc = new PatientService(db, tenant.Object, limits.Object, eventLog.Object, audit.Object);
+        var svc = new PatientService(db, tenant.Object, MockClinicalUserScope.NoDoctorRestriction(), limits.Object, eventLog.Object, audit.Object);
         return (svc, db, limits, audit, eventLog);
     }
 

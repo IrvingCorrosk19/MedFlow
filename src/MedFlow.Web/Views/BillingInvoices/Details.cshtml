@@ -203,7 +203,7 @@
 @section Scripts {
     <script>
         $(function () {
-            $('#tblPay').DataTable({ paging: false, searching: false, info: false, language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' } });
+            $('#tblPay').DataTable({ paging: false, searching: false, info: false, language: { url: '/lib/datatables/es-ES.json' } });
             $('.btn-cancel-inv').on('click', function () {
                 Swal.fire({ title: '¿Cancelar factura?', text: 'No podrá registrar pagos después.', icon: 'warning', showCancelButton: true, confirmButtonText: 'Sí, cancelar' }).then(function (r) {
                     if (r.isConfirmed) $('#frmCancelInv').submit();

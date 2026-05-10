@@ -130,7 +130,7 @@
 @section Scripts {
     <script>
         $(function () {
-            $('#tblC').DataTable({ order: [[0, 'desc']], pageLength: 50, language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' } });
+            $('#tblC').DataTable({ order: [[0, 'desc']], pageLength: 50, language: { url: '/lib/datatables/es-ES.json' } });
             $(document).on('click', '.btn-del-mov', function () {
                 var f = $(this).closest('form');
                 Swal.fire({ title: '¿Eliminar movimiento?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Sí, eliminar', cancelButtonText: 'Cancelar' })

@@ -21,10 +21,19 @@ public sealed class AccountController : Controller
 
     [HttpGet]
     [AllowAnonymous]
-    public IActionResult Login(string? returnUrl = null)
+    public async Task<IActionResult> Login(string? returnUrl = null)
     {
         if (User.Identity?.IsAuthenticated == true)
         {
+            var user = await _userManager.GetUserAsync(User);
+            if (user != null)
+            {
+                var roles = await _userManager.GetRolesAsync(user);
+                var staffRoles = roles.Where(static r => !string.Equals(r, "Patient", StringComparison.OrdinalIgnoreCase)).ToList();
+                if (roles.Count > 0 && staffRoles.Count == 0)
+                    return RedirectToAction("Index", "Home", new { area = "PatientPortal" });
+            }
+
             if (Url.IsLocalUrl(returnUrl))
                 return LocalRedirect(returnUrl);
             return RedirectToAction("Index", "Dashboard");
@@ -57,12 +66,15 @@ public sealed class AccountController : Controller
             if (user != null)
             {
                 var roles = await _userManager.GetRolesAsync(user);
-                if (roles.Count == 1 && roles.Any(r => string.Equals(r, "Patient", StringComparison.OrdinalIgnoreCase)))
+                // Solo rol Patient (sin Admin/Doctor/etc.): no usar login de personal — evita redirect al Dashboard y bucle 403.
+                var staffRoles = roles.Where(static r => !string.Equals(r, "Patient", StringComparison.OrdinalIgnoreCase)).ToList();
+                var hasPatient = roles.Any(static r => string.Equals(r, "Patient", StringComparison.OrdinalIgnoreCase));
+                if (roles.Count > 0 && hasPatient && staffRoles.Count == 0)
                 {
                     await _signInManager.SignOutAsync();
-                    ModelState.AddModelError(string.Empty,
-                        "Use el portal del paciente (/PatientPortal/Auth/Login) para iniciar sesión con esta cuenta.");
-                    return View(model);
+                    TempData["PortalLoginHint"] =
+                        "Las cuentas de paciente deben entrar por el Portal del paciente. Use la misma contraseña en la siguiente pantalla.";
+                    return RedirectToAction("Login", "Auth", new { area = "PatientPortal" });
                 }
             }
 

@@ -1,7 +1,20 @@
 # ANÁLISIS DE FALTANTES POR MÓDULO — MedFlow
 
 > Auditoría funcional y técnica. Solo faltantes reales encontrados en código.
-> Fecha de análisis: 2026-04-02
+> Fecha de análisis original: **2026-04-02**.  
+> **Última revisión frente al código: 2026-05-10.** Las secciones numeradas más abajo conservan el texto de esa auditoría; contrastar siempre con esta tabla y con el repositorio antes de priorizar trabajo.
+
+---
+
+## Estado sincronizado con el código (2026-05-10)
+
+| Módulo | Cubierto en código (resumen) |
+|--------|-------------------------------|
+| **Dashboard** | Selector de días (7–90), `days` acotado en controlador, try/catch con vista cuando `Model == null`, mensaje de error y botón Reintentar, exportación CSV, KPIs con enlaces, timestamps relativos en actividad reciente, enlaces en próximas citas |
+| **Pacientes** | `[RequirePermission]` en Details/Edit, filtros por documento/teléfono/edad, búsqueda que incluye observaciones y alergias, import/export CSV, unicidad de número de documento por tenant en alta/edición, borrado con bloqueo por citas futuras no canceladas/completadas/no-show y por facturas con saldo, **SetActive** desde listado, estado vacío con CTA, enlaces `tel:` / `mailto:` |
+| **Doctores** | Acciones del controlador con `[RequirePermission]` (ver `DoctorsController`) |
+
+Backlog típico de producto que este documento histórico sigue mencionando y que **no** se re-auditó línea a línea en esta fecha: Excel/PDF nativos en dashboard, rango from/to personalizado, auto-refresh del dashboard, hoja de impresión para gráficos, IA en el dashboard principal, auditoría de cambios por paciente, vista consolidada “360°” del paciente, gestión visual de horarios del doctor, calendario tipo agenda para citas, etc.
 
 ---
 

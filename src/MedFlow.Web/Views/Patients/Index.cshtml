@@ -1,9 +1,5 @@
 @model IReadOnlyList<MedFlow.Domain.Entities.Patient>
-@{
-    ViewData["Title"] = "Pacientes";
-    ViewData["PageSubtitle"] = "Directorio de pacientes de la clínica";
-    ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item active\">Pacientes</li>";
-}
+@using System.Linq
 
 <div class="card card-outline card-primary shadow-sm">
     <div class="card-header d-flex flex-wrap align-items-center justify-content-between">
@@ -26,8 +22,8 @@
     <div class="card-body border-bottom bg-light">
         <form method="get" class="form-row align-items-end">
             <div class="form-group col-md-4 col-lg-3 mb-2">
-                <label class="small text-muted mb-0">Nombre / correo</label>
-                <input type="search" name="search" value="@ViewBag.Search" class="form-control form-control-sm" placeholder="Nombre o correo…" />
+                <label class="small text-muted mb-0">Nombre / correo / notas</label>
+                <input type="search" name="search" value="@ViewBag.Search" class="form-control form-control-sm" placeholder="Nombre, correo, observaciones…" />
             </div>
             <div class="form-group col-md-3 col-lg-2 mb-2">
                 <label class="small text-muted mb-0">Nro. documento</label>
@@ -59,92 +55,122 @@
             </div>
         </form>
     </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table id="tblPacientes" class="table table-hover table-striped mb-0 text-nowrap">
-                <thead class="thead-light">
-                    <tr>
-                        <th>Paciente</th>
-                        <th>Documento</th>
-                        <th>Teléfono</th>
-                        <th>Correo</th>
-                        <th class="text-center">Estado</th>
-                        <th class="text-right no-sort">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var p in Model)
-                    {
-                        <tr>
-                            <td class="font-weight-medium">@p.NombreCompleto</td>
-                            <td>
-                                @if (!string.IsNullOrEmpty(p.TipoDocumento) || !string.IsNullOrEmpty(p.NumeroDocumento))
-                                {
-                                    <span>@(string.Join(" ", new[] { p.TipoDocumento, p.NumeroDocumento }.Where(s => !string.IsNullOrWhiteSpace(s))))</span>
-                                }
-                                else
-                                {
-                                    <span class="text-muted">—</span>
-                                }
-                            </td>
-                            <td>
-                                @if (!string.IsNullOrEmpty(p.Telefono))
-                                {
-                                    <a href="tel:@p.Telefono">@p.Telefono</a>
-                                }
-                                else
-                                {
-                                    <span>—</span>
-                                }
-                            </td>
-                            <td>
-                                @if (!string.IsNullOrEmpty(p.Correo))
-                                {
-                                    <a href="mailto:@p.Correo">@p.Correo</a>
-                                }
-                                else
-                                {
-                                    <span>—</span>
-                                }
-                            </td>
-                            <td class="text-center">
-                                @if (p.IsActive)
-                                {
-                                    <span class="badge badge-success">Activo</span>
-                                }
-                                else
-                                {
-                                    <span class="badge badge-secondary">Inactivo</span>
-                                }
-                            </td>
-                            <td class="text-right text-nowrap">
-                                <a asp-action="Details" asp-route-id="@p.Id" class="btn btn-sm btn-info" title="Ver" aria-label="Ver detalle"><i class="fa fa-eye"></i></a>
-                                <a asp-action="Edit" asp-route-id="@p.Id" class="btn btn-sm btn-primary" title="Editar" aria-label="Editar"><i class="fa fa-edit"></i></a>
-                                <form asp-action="Delete" asp-route-id="@p.Id" method="post" class="d-inline" data-confirm-delete>
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar" aria-label="Eliminar"><i class="fa fa-trash"></i></button>
-                                </form>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+    @if (!Model.Any())
+    {
+        <div class="card-body text-center py-5">
+            <p class="text-muted mb-1">No hay pacientes en este listado.</p>
+            <p class="small text-muted mb-3">Pruebe otros filtros o registre el primer paciente de la clínica.</p>
+            <a asp-action="Create" class="btn btn-primary"><i class="fa fa-user-plus"></i> Nuevo paciente</a>
         </div>
-    </div>
+    }
+    else
+    {
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table id="tblPacientes" class="table table-hover table-striped mb-0 text-nowrap">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Paciente</th>
+                            <th>Documento</th>
+                            <th>Teléfono</th>
+                            <th>Correo</th>
+                            <th class="text-center">Estado</th>
+                            <th class="text-right no-sort">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in Model)
+                        {
+                            <tr>
+                                <td class="font-weight-medium">@p.NombreCompleto</td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(p.TipoDocumento) || !string.IsNullOrEmpty(p.NumeroDocumento))
+                                    {
+                                        <span>@(string.Join(" ", new[] { p.TipoDocumento, p.NumeroDocumento }.Where(s => !string.IsNullOrWhiteSpace(s))))</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(p.Telefono))
+                                    {
+                                        <a href="tel:@p.Telefono">@p.Telefono</a>
+                                    }
+                                    else
+                                    {
+                                        <span>—</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(p.Correo))
+                                    {
+                                        <a href="mailto:@p.Correo">@p.Correo</a>
+                                    }
+                                    else
+                                    {
+                                        <span>—</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @if (p.IsActive)
+                                    {
+                                        <span class="badge badge-success">Activo</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-secondary">Inactivo</span>
+                                    }
+                                </td>
+                                <td class="text-right text-nowrap">
+                                    <a asp-action="Details" asp-route-id="@p.Id" class="btn btn-sm btn-info" title="Ver" aria-label="Ver detalle"><i class="fa fa-eye"></i></a>
+                                    <a asp-action="Edit" asp-route-id="@p.Id" class="btn btn-sm btn-primary" title="Editar" aria-label="Editar"><i class="fa fa-edit"></i></a>
+                                    @if (p.IsActive)
+                                    {
+                                        <form asp-action="SetActive" asp-route-id="@p.Id" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="active" value="false" />
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary" title="Desactivar" aria-label="Desactivar" onclick="return confirm('¿Marcar este paciente como inactivo?');"><i class="fa fa-user-times"></i></button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <form asp-action="SetActive" asp-route-id="@p.Id" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="active" value="true" />
+                                            <button type="submit" class="btn btn-sm btn-outline-success" title="Reactivar" aria-label="Reactivar"><i class="fa fa-check-circle"></i></button>
+                                        </form>
+                                    }
+                                    <form asp-action="Delete" asp-route-id="@p.Id" method="post" class="d-inline" data-confirm-delete>
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar" aria-label="Eliminar"><i class="fa fa-trash"></i></button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
 </div>
 
 @section Scripts {
+    @if (Model.Any())
+    {
     <script>
         $(function () {
             $('#tblPacientes').DataTable({
                 responsive: true,
                 pageLength: 25,
                 order: [],
-                language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
+                language: { url: '/lib/datatables/es-ES.json' },
                 columnDefs: [
                     { orderable: false, targets: 'no-sort' }
                 ]
             });
         });
     </script>
+    }
 }

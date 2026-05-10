@@ -2,6 +2,7 @@ using MedFlow.Application.Interfaces;
 using MedFlow.Application.Notifications;
 using MedFlow.Domain.Entities;
 using MedFlow.Domain.Enums;
+using MedFlow.Infrastructure.Tenancy;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
 
@@ -11,6 +12,7 @@ public class AppointmentService : IAppointmentService
 {
     private readonly IApplicationDbContext _context;
     private readonly ITenantContext _tenant;
+    private readonly IClinicalUserScope _clinicalScope;
     private readonly ISubscriptionLimitService _limits;
     private readonly IEventLogService _eventLog;
     private readonly IAuditLogService _audit;
@@ -19,6 +21,7 @@ public class AppointmentService : IAppointmentService
     public AppointmentService(
         IApplicationDbContext context,
         ITenantContext tenant,
+        IClinicalUserScope clinicalScope,
         ISubscriptionLimitService limits,
         IEventLogService eventLog,
         IAuditLogService audit,
@@ -26,16 +29,28 @@ public class AppointmentService : IAppointmentService
     {
         _context = context;
         _tenant = tenant;
+        _clinicalScope = clinicalScope;
         _limits = limits;
         _eventLog = eventLog;
         _audit = audit;
         _notifications = notifications;
     }
 
+    private async Task<IQueryable<Appointment>> ApplySoloDoctorAppointmentsAsync(IQueryable<Appointment> query, CancellationToken cancellationToken)
+    {
+        var (restrict, docId) = await _clinicalScope.GetDoctorDataScopeAsync(cancellationToken).ConfigureAwait(false);
+        if (!restrict)
+            return query;
+        if (!docId.HasValue)
+            return query.Where(a => false);
+        return query.Where(a => a.DoctorId == docId.Value);
+    }
+
     public async Task<Appointment?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await _context.Appointments
-            .AsNoTracking()
+        var query = ClinicalOperationalTenantScope.ApplyToAppointments(_tenant, _context.Appointments.AsNoTracking());
+        query = await ApplySoloDoctorAppointmentsAsync(query, cancellationToken).ConfigureAwait(false);
+        return await query
             .Include(a => a.Patient)
             .Include(a => a.Doctor)
             .FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
@@ -43,8 +58,9 @@ public class AppointmentService : IAppointmentService
 
     public async Task<IReadOnlyList<Appointment>> GetByDateAsync(DateTime date, CancellationToken cancellationToken = default)
     {
-        return await _context.Appointments
-            .AsNoTracking()
+        var baseQ = ClinicalOperationalTenantScope.ApplyToAppointments(_tenant, _context.Appointments.AsNoTracking());
+        baseQ = await ApplySoloDoctorAppointmentsAsync(baseQ, cancellationToken).ConfigureAwait(false);
+        return await baseQ
             .Include(a => a.Patient)
             .Include(a => a.Doctor)
             .Where(a => a.ScheduledDate == date && !a.IsDeleted)
@@ -54,11 +70,11 @@ public class AppointmentService : IAppointmentService
 
     public async Task<IReadOnlyList<Appointment>> GetAllAsync(DateTime? from = null, DateTime? to = null, Guid? doctorId = null, Guid? patientId = null, CancellationToken cancellationToken = default)
     {
-        var query = _context.Appointments
-            .AsNoTracking()
+        var query = ClinicalOperationalTenantScope.ApplyToAppointments(_tenant, _context.Appointments.AsNoTracking())
             .Include(a => a.Patient)
             .Include(a => a.Doctor)
             .Where(a => !a.IsDeleted);
+        query = await ApplySoloDoctorAppointmentsAsync(query, cancellationToken).ConfigureAwait(false);
 
         if (from.HasValue)
             query = query.Where(a => a.ScheduledDate >= from.Value);
@@ -77,6 +93,10 @@ public class AppointmentService : IAppointmentService
         var tid = appointment.TenantId != Guid.Empty ? appointment.TenantId : _tenant.TenantId;
         if (!tid.HasValue)
             return (false, "No se pudo determinar la clínica para validar límites del plan.");
+
+        var (scopeDoctor, linkedDoctorId) = await _clinicalScope.GetDoctorDataScopeAsync(cancellationToken).ConfigureAwait(false);
+        if (scopeDoctor && (!linkedDoctorId.HasValue || appointment.DoctorId != linkedDoctorId.Value))
+            return (false, "No puede crear citas para otro médico.");
 
         var limit = await _limits.CanCreateAppointmentAsync(tid.Value, cancellationToken);
         if (!limit.Allowed)
@@ -136,6 +156,10 @@ public class AppointmentService : IAppointmentService
 
     public async Task<(bool Success, string? Error)> UpdateAsync(Appointment appointment, CancellationToken cancellationToken = default)
     {
+        var (scopeDoctor, linkedDoctorId) = await _clinicalScope.GetDoctorDataScopeAsync(cancellationToken).ConfigureAwait(false);
+        if (scopeDoctor && (!linkedDoctorId.HasValue || appointment.DoctorId != linkedDoctorId.Value))
+            return (false, "No puede gestionar citas de otro médico.");
+
         var conflict = await HasConflictAsync(appointment.DoctorId, appointment.ScheduledDate, appointment.StartTime, appointment.EndTime, appointment.Id, cancellationToken);
         if (conflict)
             return (false, "Ya existe una cita en ese horario para el doctor seleccionado.");
@@ -199,10 +223,11 @@ public class AppointmentService : IAppointmentService
 
     public async Task<bool> HasConflictAsync(Guid doctorId, DateTime date, TimeSpan start, TimeSpan end, Guid? excludeId = null, CancellationToken cancellationToken = default)
     {
-        var query = _context.Appointments
+        var query = ClinicalOperationalTenantScope.ApplyToAppointments(_tenant, _context.Appointments)
             .Where(a => a.DoctorId == doctorId && a.ScheduledDate == date
                         && !a.IsDeleted && a.Status != AppointmentStatus.Cancelled
                         && start < a.EndTime && end > a.StartTime);
+        query = await ApplySoloDoctorAppointmentsAsync(query, cancellationToken).ConfigureAwait(false);
 
         if (excludeId.HasValue)
             query = query.Where(a => a.Id != excludeId.Value);

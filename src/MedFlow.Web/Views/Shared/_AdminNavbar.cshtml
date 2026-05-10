@@ -20,7 +20,16 @@
     </form>
     <ul class="navbar-nav ml-auto align-items-center">
         <li class="nav-item d-none d-sm-inline-block mr-2">
-            <span class="badge badge-light border text-muted small mf-tenant-pill" title="Contexto actual">@(TenantContext.TenantName ?? "MedFlow AI")</span>
+            @{
+                var tenantBadgeTitle = TenantContext.TenantName ?? "MedFlow AI";
+                if (User?.IsInRole("SuperAdmin") == true && TenantContext.TenantCode != null)
+                    tenantBadgeTitle += " — Datos clínicos de esta clínica (cambiar: cabecera X-Tenant-Code o subdominio).";
+            }
+            <span class="badge badge-light border text-muted small mf-tenant-pill" title="@tenantBadgeTitle">@(TenantContext.TenantName ?? "MedFlow AI")</span>
+            @if (User?.IsInRole("SuperAdmin") == true && !string.IsNullOrEmpty(TenantContext.TenantCode))
+            {
+                <span class="badge badge-secondary font-weight-normal small ml-1 d-none d-xl-inline-block" title="Código del tenant resuelto">@TenantContext.TenantCode</span>
+            }
         </li>
         <li class="nav-item dropdown d-none d-md-block" id="navNotifDropdown">
             <a class="nav-link position-relative mf-nav-bell" href="#" data-toggle="dropdown" title="Notificaciones" aria-label="Notificaciones" id="navBellBtn">

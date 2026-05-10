@@ -195,7 +195,7 @@ public class TenantIsolationTests
         MedFlow.Infrastructure.Persistence.ApplicationDbContext db, Guid tenantId)
     {
         var tenant = Tenant(tenantId);
-        return new PatientService(db, tenant, new Mock<ISubscriptionLimitService>().Object,
+        return new PatientService(db, tenant, MockClinicalUserScope.NoDoctorRestriction(), new Mock<ISubscriptionLimitService>().Object,
             new Mock<IEventLogService>().Object, new Mock<IAuditLogService>().Object);
     }
 
@@ -203,7 +203,7 @@ public class TenantIsolationTests
         MedFlow.Infrastructure.Persistence.ApplicationDbContext db, Guid tenantId)
     {
         var tenant = Tenant(tenantId);
-        return new DoctorService(db, tenant, new Mock<ISubscriptionLimitService>().Object);
+        return new DoctorService(db, tenant, MockClinicalUserScope.NoDoctorRestriction(), new Mock<ISubscriptionLimitService>().Object);
     }
 
     private static AppointmentService AppointmentSvc(
@@ -213,7 +213,7 @@ public class TenantIsolationTests
         var notifications = new Mock<INotificationDispatchService>();
         notifications.Setup(n => n.DispatchAsync(It.IsAny<MedFlow.Application.Notifications.DispatchRequest>(), It.IsAny<CancellationToken>()))
                      .ReturnsAsync(new MedFlow.Application.Interfaces.DispatchResult(true, Array.Empty<Guid>(), Array.Empty<string>()));
-        return new AppointmentService(db, tenant, new Mock<ISubscriptionLimitService>().Object,
+        return new AppointmentService(db, tenant, MockClinicalUserScope.NoDoctorRestriction(), new Mock<ISubscriptionLimitService>().Object,
             new Mock<IEventLogService>().Object, new Mock<IAuditLogService>().Object, notifications.Object);
     }
 

@@ -30,6 +30,7 @@ public static class DependencyInjection
 
         services.AddHttpContextAccessor();
         services.AddScoped<ITenantContext, TenantContext>();
+        services.AddScoped<IClinicalUserScope, ClinicalUserScope>();
 
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseNpgsql(connectionString, npgsql =>

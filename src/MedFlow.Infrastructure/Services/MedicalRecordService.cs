@@ -7,10 +7,22 @@ namespace MedFlow.Infrastructure.Services;
 public class MedicalRecordService : IMedicalRecordService
 {
     private readonly IApplicationDbContext _context;
+    private readonly IClinicalUserScope _clinicalScope;
 
-    public MedicalRecordService(IApplicationDbContext context)
+    public MedicalRecordService(IApplicationDbContext context, IClinicalUserScope clinicalScope)
     {
         _context = context;
+        _clinicalScope = clinicalScope;
+    }
+
+    private async Task<IQueryable<MedicalRecord>> ApplySoloDoctorMedicalRecordsAsync(IQueryable<MedicalRecord> query, CancellationToken cancellationToken)
+    {
+        var (restrict, docId) = await _clinicalScope.GetDoctorDataScopeAsync(cancellationToken).ConfigureAwait(false);
+        if (!restrict)
+            return query;
+        if (!docId.HasValue)
+            return query.Where(m => false);
+        return query.Where(m => m.DoctorId == docId.Value);
     }
 
     public async Task<MedicalRecord?> GetByIdAsync(Guid id, bool includeDeleted = false, CancellationToken cancellationToken = default)
@@ -27,17 +39,22 @@ public class MedicalRecordService : IMedicalRecordService
         if (includeDeleted)
             q = q.IgnoreQueryFilters();
 
+        q = await ApplySoloDoctorMedicalRecordsAsync(q, cancellationToken).ConfigureAwait(false);
+
         return await q.FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
     }
 
     public async Task<IReadOnlyList<MedicalRecord>> GetHistoryByPatientAsync(Guid patientId, CancellationToken cancellationToken = default)
     {
-        return await _context.MedicalRecords
+        var q = _context.MedicalRecords
             .AsNoTracking()
             .Include(m => m.Doctor)
             .Include(m => m.Prescriptions)
             .Include(m => m.Attachments)
-            .Where(m => m.PatientId == patientId)
+            .Where(m => m.PatientId == patientId);
+        q = await ApplySoloDoctorMedicalRecordsAsync(q, cancellationToken).ConfigureAwait(false);
+
+        return await q
             .OrderByDescending(m => m.VisitDate)
             .ThenByDescending(m => m.CreatedAt)
             .ToListAsync(cancellationToken);
@@ -45,6 +62,10 @@ public class MedicalRecordService : IMedicalRecordService
 
     public async Task<MedicalRecord> CreateAsync(MedicalRecord record, IReadOnlyList<Prescription>? prescriptions, CancellationToken cancellationToken = default)
     {
+        var (restrict, linkedDoctorId) = await _clinicalScope.GetDoctorDataScopeAsync(cancellationToken).ConfigureAwait(false);
+        if (restrict && (!linkedDoctorId.HasValue || record.DoctorId != linkedDoctorId.Value))
+            throw new UnauthorizedAccessException("No puede registrar historias clínicas fuera de su perfil de médico.");
+
         await _context.MedicalRecords.AddAsync(record, cancellationToken);
         if (prescriptions != null && prescriptions.Count > 0)
         {
@@ -60,6 +81,10 @@ public class MedicalRecordService : IMedicalRecordService
 
     public async Task<MedicalRecord> UpdateAsync(MedicalRecord record, IReadOnlyList<Prescription>? prescriptions, CancellationToken cancellationToken = default)
     {
+        var (restrict, linkedDoctorId) = await _clinicalScope.GetDoctorDataScopeAsync(cancellationToken).ConfigureAwait(false);
+        if (restrict && (!linkedDoctorId.HasValue || record.DoctorId != linkedDoctorId.Value))
+            throw new UnauthorizedAccessException("No puede modificar historias clínicas fuera de su perfil de médico.");
+
         record.UpdatedAt = DateTime.UtcNow;
         _context.MedicalRecords.Update(record);
 
@@ -96,6 +121,7 @@ public class MedicalRecordService : IMedicalRecordService
             .Include(m => m.Patient)
             .Include(m => m.Doctor)
             .Where(m => !m.IsDeleted);
+        q = await ApplySoloDoctorMedicalRecordsAsync(q, cancellationToken).ConfigureAwait(false);
 
         if (patientId.HasValue)
             q = q.Where(m => m.PatientId == patientId.Value);

@@ -1,28 +1,48 @@
-@model MedFlow.Application.Reporting.ExecutiveDashboardVm
+@model MedFlow.Application.Reporting.ExecutiveDashboardVm?
+@using System.Linq
 @using System.Text.Json
+@using MedFlow.Application.Reporting
 @using MedFlow.Web.Models.Ui
 @{
-    var j = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
-    var chartPayload = new
+    var showFinancial = ViewBag.ShowFinancialDashboard as bool? ?? false;
+    string chartJson = "{}";
+    List<ExecutiveAlertVm> executiveAlerts = new();
+    List<ActivityItemVm> recentActivity = new();
+    if (Model != null)
     {
-        appointmentsByDayLabels = Model.AppointmentsByDay.Select(x => x.Date.ToString("dd/MM")).ToList(),
-        appointmentsByDayData = Model.AppointmentsByDay.Select(x => x.Count).ToList(),
-        statusLabels = Model.AppointmentsByStatus.Select(x => x.Name).ToList(),
-        statusData = Model.AppointmentsByStatus.Select(x => x.Count).ToList(),
-        revenueLabels = Model.RevenueByDay.Select(x => x.Date.ToString("dd/MM")).ToList(),
-        revenueData = Model.RevenueByDay.Select(x => (double)x.Amount).ToList(),
-        monthLabels = Model.NewPatientsByMonth.Select(x => $"{x.Month:00}/{x.Year}").ToList(),
-        newPatientsData = Model.NewPatientsByMonth.Select(x => x.Count).ToList(),
-        payMethodLabels = Model.PaymentsByMethod.Select(x => x.Name).ToList(),
-        payMethodData = Model.PaymentsByMethod.Select(x => (double)x.Amount).ToList(),
-        cancelLabels = Model.CancellationsByDay.Select(x => x.Date.ToString("dd/MM")).ToList(),
-        cancelData = Model.CancellationsByDay.Select(x => x.Count).ToList(),
-        topSpecLabels = Model.TopSpecialitiesByAppointments.Select(x => x.Name).ToList(),
-        topSpecData = Model.TopSpecialitiesByAppointments.Select(x => x.Count).ToList(),
-        topDocLabels = Model.TopDoctorsByAppointments.Select(x => x.Name).ToList(),
-        topDocData = Model.TopDoctorsByAppointments.Select(x => x.Count).ToList()
-    };
-    var chartJson = JsonSerializer.Serialize(chartPayload, j);
+        var j = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+        var chartPayload = new
+        {
+            appointmentsByDayLabels = Model.AppointmentsByDay.Select(x => x.Date.ToString("dd/MM")).ToList(),
+            appointmentsByDayData = Model.AppointmentsByDay.Select(x => x.Count).ToList(),
+            statusLabels = Model.AppointmentsByStatus.Select(x => x.Name).ToList(),
+            statusData = Model.AppointmentsByStatus.Select(x => x.Count).ToList(),
+            revenueLabels = showFinancial ? Model.RevenueByDay.Select(x => x.Date.ToString("dd/MM")).ToList() : new List<string>(),
+            revenueData = showFinancial ? Model.RevenueByDay.Select(x => (double)x.Amount).ToList() : new List<double>(),
+            monthLabels = Model.NewPatientsByMonth.Select(x => $"{x.Month:00}/{x.Year}").ToList(),
+            newPatientsData = Model.NewPatientsByMonth.Select(x => x.Count).ToList(),
+            payMethodLabels = showFinancial ? Model.PaymentsByMethod.Select(x => x.Name).ToList() : new List<string>(),
+            payMethodData = showFinancial ? Model.PaymentsByMethod.Select(x => (double)x.Amount).ToList() : new List<double>(),
+            cancelLabels = Model.CancellationsByDay.Select(x => x.Date.ToString("dd/MM")).ToList(),
+            cancelData = Model.CancellationsByDay.Select(x => x.Count).ToList(),
+            topSpecLabels = Model.TopSpecialitiesByAppointments.Select(x => x.Name).ToList(),
+            topSpecData = Model.TopSpecialitiesByAppointments.Select(x => x.Count).ToList(),
+            topDocLabels = Model.TopDoctorsByAppointments.Select(x => x.Name).ToList(),
+            topDocData = Model.TopDoctorsByAppointments.Select(x => x.Count).ToList()
+        };
+        chartJson = JsonSerializer.Serialize(chartPayload, j);
+
+        executiveAlerts = showFinancial
+            ? Model.ExecutiveAlerts.ToList()
+            : Model.ExecutiveAlerts.Where(a =>
+                !a.Message.Contains("factura", StringComparison.OrdinalIgnoreCase) &&
+                !a.Message.Contains("saldo", StringComparison.OrdinalIgnoreCase) &&
+                !a.Message.Contains("cartera", StringComparison.OrdinalIgnoreCase)).ToList();
+
+        recentActivity = showFinancial
+            ? Model.RecentActivity.ToList()
+            : Model.RecentActivity.Where(a => !a.IconClass.Contains("money", StringComparison.OrdinalIgnoreCase)).ToList();
+    }
 }
 
 <div class="mb-3">
@@ -34,6 +54,14 @@
         </a>
     }
 </div>
+
+@if (Model == null)
+{
+    <div class="alert alert-danger">@(ViewData["ErrorMessage"] as string ?? "No se pudieron cargar los datos del dashboard.")</div>
+    <p><a asp-action="Index" class="btn btn-primary" asp-route-days="@ViewBag.Days">Reintentar</a></p>
+}
+else
+{
 
 <div class="row mb-3 medflow-dashboard-toolbar">
     <div class="col-12 d-flex flex-wrap justify-content-between align-items-center">
@@ -67,6 +95,8 @@
     <partial name="Components/_StatCard" model='new StatCardModel { IconClass = "fa fa-user-md", ColorClass = "bg-success", Value = Model.DoctorKpis.ActiveCount.ToString(), Label = "Doctores activos", FooterUrl = Url.Action("Doctors", "Reports"), FooterText = "Reporte doctores" }' />
     <partial name="Components/_StatCard" model='new StatCardModel { IconClass = "fa fa-trophy", ColorClass = "bg-warning", Value = Model.DoctorKpis.TopDoctorAppointmentCount.ToString(), Label = "Top doctor (14 d): " + (Model.DoctorKpis.TopDoctorByAppointmentsName ?? "—") }' />
 </div>
+@if (showFinancial)
+{
 <div class="row">
     <partial name="Components/_StatCard" model='new StatCardModel { IconClass = "fa fa-line-chart", ColorClass = "bg-info", Value = Model.DoctorKpis.TopSpecialityAppointmentCount.ToString(), Label = "Demanda especialidad: " + (Model.DoctorKpis.TopSpecialityName ?? "—") }' />
     <partial name="Components/_StatCard" model='new StatCardModel { IconClass = "fa fa-file-text-o", ColorClass = "bg-navy", Value = Model.FinanceKpis.BillingToday.ToString("N2"), Label = "Facturación hoy", FooterUrl = Url.Action("Index", "BillingInvoices"), FooterText = "Ver facturas" }' />
@@ -78,6 +108,13 @@
     <partial name="Components/_StatCard" model='new StatCardModel { IconClass = "fa fa-hourglass-half", ColorClass = "bg-danger", Value = Model.FinanceKpis.InvoicesPendingOrPartial.ToString(), Label = "Facturas pendientes / parcial", FooterUrl = Url.Action("Index", "BillingInvoices"), FooterText = "Ver facturas" }' />
     <partial name="Components/_StatCard" model='new StatCardModel { IconClass = "fa fa-check-square", ColorClass = "bg-teal", Value = Model.FinanceKpis.InvoicesPaid.ToString(), Label = "Facturas pagadas", FooterUrl = Url.Action("Index", "BillingInvoices"), FooterText = "Ver facturas" }' />
 </div>
+}
+else
+{
+<div class="row">
+    <partial name="Components/_StatCard" model='new StatCardModel { IconClass = "fa fa-line-chart", ColorClass = "bg-info", Value = Model.DoctorKpis.TopSpecialityAppointmentCount.ToString(), Label = "Demanda especialidad: " + (Model.DoctorKpis.TopSpecialityName ?? "—") }' />
+</div>
+}
 
 <div class="row">
     <div class="col-lg-6">
@@ -92,12 +129,15 @@
             <div class="card-body" style="height:280px"><canvas id="chartAptStatus"></canvas></div>
         </div>
     </div>
+    @if (showFinancial)
+    {
     <div class="col-lg-6">
         <div class="card card-outline card-success shadow-sm">
             <div class="card-header"><h3 class="card-title">Ingresos por día (pagos)</h3></div>
             <div class="card-body" style="height:280px"><canvas id="chartRevenue"></canvas></div>
         </div>
     </div>
+    }
     <div class="col-lg-6">
         <div class="card card-outline card-primary shadow-sm">
             <div class="card-header"><h3 class="card-title">Pacientes nuevos por mes (12 meses)</h3></div>
@@ -116,12 +156,15 @@
             <div class="card-body" style="height:280px"><canvas id="chartTopDoc"></canvas></div>
         </div>
     </div>
+    @if (showFinancial)
+    {
     <div class="col-lg-6">
         <div class="card card-outline card-dark shadow-sm">
             <div class="card-header"><h3 class="card-title">Pagos por método</h3></div>
             <div class="card-body" style="height:280px"><canvas id="chartPayMethod"></canvas></div>
         </div>
     </div>
+    }
     <div class="col-lg-6">
         <div class="card card-outline card-danger shadow-sm">
             <div class="card-header"><h3 class="card-title">Cancelaciones por día</h3></div>
@@ -135,7 +178,7 @@
         <div class="card card-outline card-warning shadow-sm">
             <div class="card-header"><h3 class="card-title"><i class="fa fa-exclamation-triangle"></i> Alertas ejecutivas</h3></div>
             <ul class="list-group list-group-flush">
-                @foreach (var a in Model.ExecutiveAlerts)
+                @foreach (var a in executiveAlerts)
                 {
                     var cls = a.Severity == "danger" ? "list-group-item-danger" : a.Severity == "warning" ? "list-group-item-warning" : a.Severity == "success" ? "list-group-item-success" : "list-group-item-light";
                     var icon = a.Severity == "danger" ? "fa fa-times-circle text-danger" : a.Severity == "warning" ? "fa fa-exclamation-circle text-warning" : a.Severity == "success" ? "fa fa-check-circle text-success" : "fa fa-info-circle text-muted";
@@ -151,7 +194,7 @@
         <div class="card card-outline card-secondary shadow-sm">
             <div class="card-header"><h3 class="card-title"><i class="fa fa-bolt"></i> Actividad reciente</h3></div>
             <ul class="list-unstyled mb-0 p-3 pt-0" style="max-height:360px;overflow-y:auto">
-                @foreach (var act in Model.RecentActivity)
+                @foreach (var act in recentActivity)
                 {
                     <li class="media mb-2 pb-2 border-bottom">
                         <span class="mr-2"><i class="@act.IconClass"></i></span>
@@ -202,7 +245,11 @@
     </div>
 </div>
 
+}
+
 @section Scripts {
+    @if (Model != null)
+    {
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="~/js/dashboard/executive-dashboard.js" asp-append-version="true"></script>
     <script>
@@ -231,4 +278,5 @@
             });
         });
     </script>
+    }
 }

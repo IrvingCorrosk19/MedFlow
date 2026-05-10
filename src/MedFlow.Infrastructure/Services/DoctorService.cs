@@ -1,6 +1,7 @@
 using MedFlow.Application.Common;
 using MedFlow.Application.Interfaces;
 using MedFlow.Domain.Entities;
+using MedFlow.Infrastructure.Tenancy;
 using Microsoft.EntityFrameworkCore;
 
 namespace MedFlow.Infrastructure.Services;
@@ -9,20 +10,36 @@ public class DoctorService : IDoctorService
 {
     private readonly IApplicationDbContext _context;
     private readonly ITenantContext _tenant;
+    private readonly IClinicalUserScope _clinicalScope;
     private readonly ISubscriptionLimitService _limits;
 
-    public DoctorService(IApplicationDbContext context, ITenantContext tenant, ISubscriptionLimitService limits)
+    public DoctorService(
+        IApplicationDbContext context,
+        ITenantContext tenant,
+        IClinicalUserScope clinicalScope,
+        ISubscriptionLimitService limits)
     {
         _context = context;
         _tenant = tenant;
+        _clinicalScope = clinicalScope;
         _limits = limits;
+    }
+
+    private async Task<IQueryable<Doctor>> ApplySoloDoctorDirectoryAsync(IQueryable<Doctor> query, CancellationToken cancellationToken)
+    {
+        var (restrict, docId) = await _clinicalScope.GetDoctorDataScopeAsync(cancellationToken).ConfigureAwait(false);
+        if (!restrict)
+            return query;
+        if (!docId.HasValue)
+            return query.Where(d => false);
+        return query.Where(d => d.Id == docId.Value);
     }
 
     public async Task<Doctor?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await _context.Doctors
-            .AsNoTracking()
-            .FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
+        var query = ClinicalOperationalTenantScope.ApplyToDoctors(_tenant, _context.Doctors.AsNoTracking());
+        query = await ApplySoloDoctorDirectoryAsync(query, cancellationToken).ConfigureAwait(false);
+        return await query.FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
     }
 
     public async Task<IReadOnlyList<Doctor>> GetAllAsync(string? search = null, bool? isActive = null, int page = 1, int pageSize = 100, CancellationToken cancellationToken = default)
@@ -30,7 +47,8 @@ public class DoctorService : IDoctorService
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 500);
 
-        var query = _context.Doctors.AsNoTracking().AsQueryable();
+        var query = ClinicalOperationalTenantScope.ApplyToDoctors(_tenant, _context.Doctors.AsNoTracking().AsQueryable());
+        query = await ApplySoloDoctorDirectoryAsync(query, cancellationToken).ConfigureAwait(false);
 
         if (isActive.HasValue)
             query = query.Where(d => d.IsActive == isActive.Value);
@@ -56,7 +74,8 @@ public class DoctorService : IDoctorService
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 500);
 
-        var query = _context.Doctors.AsNoTracking().AsQueryable();
+        var query = ClinicalOperationalTenantScope.ApplyToDoctors(_tenant, _context.Doctors.AsNoTracking().AsQueryable());
+        query = await ApplySoloDoctorDirectoryAsync(query, cancellationToken).ConfigureAwait(false);
 
         if (isActive.HasValue)
             query = query.Where(d => d.IsActive == isActive.Value);
@@ -78,6 +97,10 @@ public class DoctorService : IDoctorService
 
     public async Task<(Doctor? Doctor, string? Error)> CreateAsync(Doctor doctor, CancellationToken cancellationToken = default)
     {
+        var (restrict, _) = await _clinicalScope.GetDoctorDataScopeAsync(cancellationToken).ConfigureAwait(false);
+        if (restrict)
+            return (null, "No puede registrar otros médicos en el sistema.");
+
         var tid = doctor.TenantId != Guid.Empty ? doctor.TenantId : _tenant.TenantId;
         if (!tid.HasValue)
             return (null, "No se pudo determinar la clínica para validar límites del plan.");
@@ -96,6 +119,10 @@ public class DoctorService : IDoctorService
 
     public async Task<Doctor> UpdateAsync(Doctor doctor, CancellationToken cancellationToken = default)
     {
+        var (restrict, linkedDoctorId) = await _clinicalScope.GetDoctorDataScopeAsync(cancellationToken).ConfigureAwait(false);
+        if (restrict && (!linkedDoctorId.HasValue || doctor.Id != linkedDoctorId.Value))
+            throw new UnauthorizedAccessException("No puede modificar la ficha de otro médico.");
+
         doctor.UpdatedAt = DateTime.UtcNow;
         _context.Doctors.Update(doctor);
         await _context.SaveChangesAsync(cancellationToken);
@@ -104,6 +131,10 @@ public class DoctorService : IDoctorService
 
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
+        var (restrict, linkedDoctorId) = await _clinicalScope.GetDoctorDataScopeAsync(cancellationToken).ConfigureAwait(false);
+        if (restrict)
+            throw new UnauthorizedAccessException("No puede eliminar médicos del directorio.");
+
         var doctor = await GetByIdAsync(id, cancellationToken);
         if (doctor == null) return;
 

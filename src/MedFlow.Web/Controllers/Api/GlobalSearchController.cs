@@ -1,5 +1,8 @@
 using MedFlow.Application.Interfaces;
+using MedFlow.Domain.Entities;
 using MedFlow.Domain.Enums;
+using MedFlow.Infrastructure.Tenancy;
+using MedFlow.Web.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,18 +13,20 @@ namespace MedFlow.Web.Controllers.Api;
 /// Global search across patients, appointments, and invoices.
 /// Powers the navbar search box.
 /// </summary>
-[Authorize]
+[Authorize(Roles = MedFlowStaffRoles.List)]
 [Route("api/search")]
 [ApiController]
 public class GlobalSearchController : ControllerBase
 {
     private readonly IApplicationDbContext _db;
     private readonly ITenantContext _tenant;
+    private readonly IClinicalUserScope _clinicalScope;
 
-    public GlobalSearchController(IApplicationDbContext db, ITenantContext tenant)
+    public GlobalSearchController(IApplicationDbContext db, ITenantContext tenant, IClinicalUserScope clinicalScope)
     {
         _db = db;
         _tenant = tenant;
+        _clinicalScope = clinicalScope;
     }
 
     [HttpGet]
@@ -34,17 +39,29 @@ public class GlobalSearchController : ControllerBase
         var tid = _tenant.TenantId.Value;
         var term = q.Trim().ToLower();
 
+        var (doctorScoped, linkedDoctorId) = await _clinicalScope.GetDoctorDataScopeAsync(ct);
+
         var results = new List<object>();
 
         // Search patients (name, document)
-        var patients = await _db.Patients
+        IQueryable<Patient> patientQuery = _db.Patients
             .AsNoTracking()
             .Where(p => p.TenantId == tid && !p.IsDeleted
                 && (p.PrimerNombre.ToLower().Contains(term)
                     || p.PrimerApellido.ToLower().Contains(term)
                     || (p.NumeroDocumento != null && p.NumeroDocumento.Contains(term))
                     || (p.SegundoNombre != null && p.SegundoNombre.ToLower().Contains(term))
-                    || (p.SegundoApellido != null && p.SegundoApellido.ToLower().Contains(term))))
+                    || (p.SegundoApellido != null && p.SegundoApellido.ToLower().Contains(term))));
+
+        if (doctorScoped)
+        {
+            if (!linkedDoctorId.HasValue)
+                patientQuery = patientQuery.Where(p => false);
+            else
+                patientQuery = ClinicalDoctorPatientFilter.Apply(_db, linkedDoctorId.Value, patientQuery);
+        }
+
+        var patients = await patientQuery
             .OrderBy(p => p.PrimerApellido)
             .Take(5)
             .Select(p => new
@@ -59,8 +76,8 @@ public class GlobalSearchController : ControllerBase
 
         results.AddRange(patients);
 
-        // Search invoices (invoice number)
-        if (term.Length >= 3)
+        // Search invoices (invoice number) — usuarios solo-médico no ven facturas aquí
+        if (!doctorScoped && term.Length >= 3)
         {
             var invoices = await _db.BillingInvoices
                 .AsNoTracking()
@@ -84,7 +101,7 @@ public class GlobalSearchController : ControllerBase
 
         // Search upcoming appointments by patient name
         var now = DateTime.UtcNow;
-        var appointments = await _db.Appointments
+        var aptQuery = _db.Appointments
             .AsNoTracking()
             .Include(a => a.Patient)
             .Include(a => a.Doctor)
@@ -93,7 +110,17 @@ public class GlobalSearchController : ControllerBase
                 && a.ScheduledDate >= now
                 && a.Patient != null
                 && (a.Patient.PrimerNombre.ToLower().Contains(term)
-                    || a.Patient.PrimerApellido.ToLower().Contains(term)))
+                    || a.Patient.PrimerApellido.ToLower().Contains(term)));
+
+        if (doctorScoped)
+        {
+            if (!linkedDoctorId.HasValue)
+                aptQuery = aptQuery.Where(a => false);
+            else
+                aptQuery = aptQuery.Where(a => a.DoctorId == linkedDoctorId.Value);
+        }
+
+        var appointments = await aptQuery
             .OrderBy(a => a.ScheduledDate)
             .Take(3)
             .Select(a => new

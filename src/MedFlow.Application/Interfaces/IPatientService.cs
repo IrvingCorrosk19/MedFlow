@@ -24,5 +24,6 @@ public interface IPatientService
         CancellationToken cancellationToken = default);
     Task<(Patient? Patient, string? Error)> CreateAsync(Patient patient, CancellationToken cancellationToken = default);
     Task<Patient> UpdateAsync(Patient patient, CancellationToken cancellationToken = default);
+    Task<bool> SetActiveAsync(Guid id, bool isActive, CancellationToken cancellationToken = default);
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
 }

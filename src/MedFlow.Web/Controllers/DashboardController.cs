@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using MedFlow.Application.Interfaces;
 using MedFlow.Application.Reporting;
 using MedFlow.Application.Security;
@@ -12,15 +13,25 @@ namespace MedFlow.Web.Controllers;
 public class DashboardController : Controller
 {
     private readonly IExecutiveAnalyticsService _analytics;
+    private readonly IPermissionChecker _permissionChecker;
 
-    public DashboardController(IExecutiveAnalyticsService analytics)
+    public DashboardController(IExecutiveAnalyticsService analytics, IPermissionChecker permissionChecker)
     {
         _analytics = analytics;
+        _permissionChecker = permissionChecker;
+    }
+
+    private async Task<bool> UserCanViewFinancialAsync(CancellationToken cancellationToken)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId)) return false;
+        return await _permissionChecker.UserHasPermissionAsync(userId, PermissionCodes.BillingView, cancellationToken);
     }
 
     public async Task<IActionResult> ExportCsv(int days = 14, CancellationToken cancellationToken = default)
     {
         var clampedDays = Math.Clamp(days, 1, 365);
+        var showFinancial = await UserCanViewFinancialAsync(cancellationToken);
         var model = await _analytics.GetExecutiveDashboardAsync(new ExecutiveDashboardFilter(clampedDays), cancellationToken);
         if (model == null) return NotFound();
 
@@ -37,20 +48,28 @@ public class DashboardController : Controller
         sb.AppendLine($"Pacientes,Total registrados,{model.PatientKpis.TotalRegistered}");
         sb.AppendLine($"Pacientes,Nuevos este mes,{model.PatientKpis.NewThisMonth}");
         sb.AppendLine($"Pacientes,Atendidos hoy,{model.PatientKpis.DistinctAttendedToday}");
-        sb.AppendLine($"Finanzas,Facturado hoy,{model.FinanceKpis.BillingToday}");
-        sb.AppendLine($"Finanzas,Cobrado hoy,{model.FinanceKpis.PaymentsToday}");
-        sb.AppendLine($"Finanzas,Facturado mes,{model.FinanceKpis.BillingMonth}");
-        sb.AppendLine($"Finanzas,Saldo pendiente,{model.FinanceKpis.TotalOutstanding}");
+        if (showFinancial)
+        {
+            sb.AppendLine($"Finanzas,Facturado hoy,{model.FinanceKpis.BillingToday}");
+            sb.AppendLine($"Finanzas,Cobrado hoy,{model.FinanceKpis.PaymentsToday}");
+            sb.AppendLine($"Finanzas,Facturado mes,{model.FinanceKpis.BillingMonth}");
+            sb.AppendLine($"Finanzas,Saldo pendiente,{model.FinanceKpis.TotalOutstanding}");
+        }
+
         sb.AppendLine();
         sb.AppendLine("Citas por día (período)");
         sb.AppendLine("Fecha,Citas");
         foreach (var r in model.AppointmentsByDay)
             sb.AppendLine($"{r.Date:dd/MM/yyyy},{r.Count}");
-        sb.AppendLine();
-        sb.AppendLine("Ingresos por día (período)");
-        sb.AppendLine("Fecha,Monto");
-        foreach (var r in model.RevenueByDay)
-            sb.AppendLine($"{r.Date:dd/MM/yyyy},{r.Amount}");
+
+        if (showFinancial)
+        {
+            sb.AppendLine();
+            sb.AppendLine("Ingresos por día (período)");
+            sb.AppendLine("Fecha,Monto");
+            foreach (var r in model.RevenueByDay)
+                sb.AppendLine($"{r.Date:dd/MM/yyyy},{r.Amount}");
+        }
 
         var bytes = System.Text.Encoding.UTF8.GetPreamble().Concat(
             System.Text.Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
@@ -65,6 +84,7 @@ public class DashboardController : Controller
 
         var clampedDays = Math.Clamp(days, 1, 365);
         ViewBag.Days = clampedDays;
+        ViewBag.ShowFinancialDashboard = await UserCanViewFinancialAsync(cancellationToken);
 
         try
         {

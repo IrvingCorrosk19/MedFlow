@@ -1,9 +1,4 @@
 @model MedFlow.Web.ViewModels.DoctorViewModel
-@{
-    ViewData["Title"] = "Editar doctor";
-    ViewData["PageSubtitle"] = "Actualización de información profesional";
-    ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a href=\"" + Url.Action("Index") + "\">Doctores</a></li><li class=\"breadcrumb-item active\">Editar</li>";
-}
 
 <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
     <input type="hidden" asp-for="Id" />

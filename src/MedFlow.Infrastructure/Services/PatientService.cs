@@ -1,6 +1,8 @@
 using MedFlow.Application.Common;
 using MedFlow.Application.Interfaces;
 using MedFlow.Domain.Entities;
+using MedFlow.Domain.Enums;
+using MedFlow.Infrastructure.Tenancy;
 using Microsoft.EntityFrameworkCore;
 
 namespace MedFlow.Infrastructure.Services;
@@ -9,6 +11,7 @@ public class PatientService : IPatientService
 {
     private readonly IApplicationDbContext _context;
     private readonly ITenantContext _tenant;
+    private readonly IClinicalUserScope _clinicalScope;
     private readonly ISubscriptionLimitService _limits;
     private readonly IEventLogService _eventLog;
     private readonly IAuditLogService _audit;
@@ -16,22 +19,34 @@ public class PatientService : IPatientService
     public PatientService(
         IApplicationDbContext context,
         ITenantContext tenant,
+        IClinicalUserScope clinicalScope,
         ISubscriptionLimitService limits,
         IEventLogService eventLog,
         IAuditLogService audit)
     {
         _context = context;
         _tenant = tenant;
+        _clinicalScope = clinicalScope;
         _limits = limits;
         _eventLog = eventLog;
         _audit = audit;
     }
 
+    private async Task<IQueryable<Patient>> ApplyDoctorDirectoryAsync(IQueryable<Patient> query, CancellationToken cancellationToken)
+    {
+        var (restrict, docId) = await _clinicalScope.GetDoctorDataScopeAsync(cancellationToken).ConfigureAwait(false);
+        if (!restrict)
+            return query;
+        if (!docId.HasValue)
+            return query.Where(p => false);
+        return ClinicalDoctorPatientFilter.Apply(_context, docId.Value, query);
+    }
+
     public async Task<Patient?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await _context.Patients
-            .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
+        var query = ClinicalOperationalTenantScope.ApplyToPatients(_tenant, _context.Patients.AsNoTracking());
+        query = await ApplyDoctorDirectoryAsync(query, cancellationToken).ConfigureAwait(false);
+        return await query.FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
     }
 
     public async Task<IReadOnlyList<Patient>> GetAllAsync(
@@ -49,7 +64,8 @@ public class PatientService : IPatientService
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 500);
 
-        var query = _context.Patients.AsNoTracking().AsQueryable();
+        var query = ClinicalOperationalTenantScope.ApplyToPatients(_tenant, _context.Patients.AsNoTracking().AsQueryable());
+        query = await ApplyDoctorDirectoryAsync(query, cancellationToken).ConfigureAwait(false);
 
         if (isActive.HasValue)
             query = query.Where(p => p.IsActive == isActive.Value);
@@ -61,7 +77,9 @@ public class PatientService : IPatientService
                 (p.PrimerNombre + " " + (p.SegundoNombre ?? "") + " " + p.PrimerApellido + " " + (p.SegundoApellido ?? "")).ToLower().Contains(s) ||
                 (p.NumeroDocumento != null && p.NumeroDocumento.ToLower().Contains(s)) ||
                 (p.Correo != null && p.Correo.ToLower().Contains(s)) ||
-                (p.Telefono != null && p.Telefono.Contains(search)));
+                (p.Telefono != null && p.Telefono.Contains(search)) ||
+                (p.Observaciones != null && p.Observaciones.ToLower().Contains(s)) ||
+                (p.Alergias != null && p.Alergias.ToLower().Contains(s)));
         }
 
         if (!string.IsNullOrWhiteSpace(documento))
@@ -115,7 +133,8 @@ public class PatientService : IPatientService
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 500);
 
-        var query = _context.Patients.AsNoTracking().AsQueryable();
+        var query = ClinicalOperationalTenantScope.ApplyToPatients(_tenant, _context.Patients.AsNoTracking().AsQueryable());
+        query = await ApplyDoctorDirectoryAsync(query, cancellationToken).ConfigureAwait(false);
 
         if (isActive.HasValue)
             query = query.Where(p => p.IsActive == isActive.Value);
@@ -127,7 +146,9 @@ public class PatientService : IPatientService
                 (p.PrimerNombre + " " + (p.SegundoNombre ?? "") + " " + p.PrimerApellido + " " + (p.SegundoApellido ?? "")).ToLower().Contains(s) ||
                 (p.NumeroDocumento != null && p.NumeroDocumento.ToLower().Contains(s)) ||
                 (p.Correo != null && p.Correo.ToLower().Contains(s)) ||
-                (p.Telefono != null && p.Telefono.Contains(search)));
+                (p.Telefono != null && p.Telefono.Contains(search)) ||
+                (p.Observaciones != null && p.Observaciones.ToLower().Contains(s)) ||
+                (p.Alergias != null && p.Alergias.ToLower().Contains(s)));
         }
 
         var ordered = query
@@ -153,6 +174,16 @@ public class PatientService : IPatientService
             return (null, msg);
         }
 
+        if (!string.IsNullOrWhiteSpace(patient.NumeroDocumento))
+        {
+            var nd = patient.NumeroDocumento.Trim().ToLower();
+            var dup = await _context.Patients.AsNoTracking().AnyAsync(p =>
+                !p.IsDeleted && p.TenantId == tid.Value && p.NumeroDocumento != null &&
+                p.NumeroDocumento.Trim().ToLower() == nd, cancellationToken);
+            if (dup)
+                return (null, "Ya existe un paciente con ese número de documento en esta clínica.");
+        }
+
         await _context.Patients.AddAsync(patient, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
 
@@ -169,6 +200,16 @@ public class PatientService : IPatientService
 
     public async Task<Patient> UpdateAsync(Patient patient, CancellationToken cancellationToken = default)
     {
+        if (!string.IsNullOrWhiteSpace(patient.NumeroDocumento))
+        {
+            var nd = patient.NumeroDocumento.Trim().ToLower();
+            var dup = await _context.Patients.AsNoTracking().AnyAsync(p =>
+                !p.IsDeleted && p.TenantId == patient.TenantId && p.Id != patient.Id &&
+                p.NumeroDocumento != null && p.NumeroDocumento.Trim().ToLower() == nd, cancellationToken);
+            if (dup)
+                throw new InvalidOperationException("Ya existe otro paciente con ese número de documento en esta clínica.");
+        }
+
         patient.UpdatedAt = DateTime.UtcNow;
         _context.Patients.Update(patient);
         await _context.SaveChangesAsync(cancellationToken);
@@ -177,10 +218,40 @@ public class PatientService : IPatientService
         return patient;
     }
 
+    public async Task<bool> SetActiveAsync(Guid id, bool isActive, CancellationToken cancellationToken = default)
+    {
+        var patient = await GetByIdAsync(id, cancellationToken);
+        if (patient == null)
+            return false;
+
+        patient.IsActive = isActive;
+        patient.UpdatedAt = DateTime.UtcNow;
+        _context.Patients.Update(patient);
+        await _context.SaveChangesAsync(cancellationToken);
+        await _audit.LogAsync(new AuditLogWriteDto("Update", "Patients", nameof(Patient), id.ToString(),
+            isActive ? "Paciente reactivado" : "Paciente desactivado"), cancellationToken);
+        return true;
+    }
+
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var patient = await GetByIdAsync(id, cancellationToken);
         if (patient == null) return;
+
+        var todayUtc = DateTime.UtcNow.Date;
+        var futureApt = await _context.Appointments.AsNoTracking()
+            .AnyAsync(a => !a.IsDeleted && a.PatientId == id &&
+                a.Status != AppointmentStatus.Cancelled &&
+                a.Status != AppointmentStatus.Completed &&
+                a.Status != AppointmentStatus.NoShow &&
+                a.ScheduledDate >= todayUtc, cancellationToken);
+        if (futureApt)
+            throw new InvalidOperationException("No se puede eliminar: el paciente tiene citas futuras no canceladas.");
+
+        var pendingInv = await _context.BillingInvoices.AsNoTracking()
+            .AnyAsync(i => !i.IsDeleted && i.PatientId == id && i.BalanceDue > 0.01m, cancellationToken);
+        if (pendingInv)
+            throw new InvalidOperationException("No se puede eliminar: hay facturas con saldo pendiente.");
 
         patient.IsDeleted = true;
         patient.IsActive = false;

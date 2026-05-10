@@ -78,7 +78,7 @@
 $(function () {
     $('#tblAccounts').DataTable({
         order: [[0, 'asc']], pageLength: 50,
-        language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' }
+        language: { url: '/lib/datatables/es-ES.json' }
     });
     $(document).on('click', '.btn-del', function () {
         var f = $(this).closest('form');

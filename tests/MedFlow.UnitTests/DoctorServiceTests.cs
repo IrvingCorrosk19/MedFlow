@@ -18,7 +18,7 @@ public class DoctorServiceTests
         var tenant = new Mock<ITenantContext>();
         tenant.Setup(t => t.TenantId).Returns(TenantId);
         var limits = new Mock<ISubscriptionLimitService>();
-        return (new DoctorService(db, tenant.Object, limits.Object), db, limits);
+        return (new DoctorService(db, tenant.Object, MockClinicalUserScope.NoDoctorRestriction(), limits.Object), db, limits);
     }
 
     // ── Create ─────────────────────────────────────────────────────────────

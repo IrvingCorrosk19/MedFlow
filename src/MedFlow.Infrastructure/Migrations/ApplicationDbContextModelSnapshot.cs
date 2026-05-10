@@ -954,6 +954,9 @@ namespace MedFlow.Infrastructure.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp without time zone");
 
+                    b.Property<string>("UpdatedByUserId")
+                        .HasColumnType("text");
+
                     b.HasKey("Id");
 
                     b.HasIndex("FiscalPeriodId");
@@ -1703,6 +1706,12 @@ namespace MedFlow.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsVoid")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("IssuedAt")
+                        .HasColumnType("timestamp without time zone");
+
                     b.Property<Guid>("MedicalRecordId")
                         .HasColumnType("uuid");
 
@@ -1711,11 +1720,23 @@ namespace MedFlow.Infrastructure.Migrations
                         .HasMaxLength(300)
                         .HasColumnType("character varying(300)");
 
+                    b.Property<string>("PrescriberLicense")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PrescriberName")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PrintCount")
+                        .HasColumnType("integer");
+
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("VoidReason")
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 

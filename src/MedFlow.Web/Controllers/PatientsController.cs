@@ -14,11 +14,16 @@ public class PatientsController : Controller
 {
     private readonly IPatientService _patientService;
     private readonly IPatientPortalEnableService _portalEnable;
+    private readonly ITenantContext _tenant;
 
-    public PatientsController(IPatientService patientService, IPatientPortalEnableService portalEnable)
+    public PatientsController(
+        IPatientService patientService,
+        IPatientPortalEnableService portalEnable,
+        ITenantContext tenant)
     {
         _patientService = patientService;
         _portalEnable = portalEnable;
+        _tenant = tenant;
     }
 
     [RequirePermission(PermissionCodes.PatientsView)]
@@ -29,7 +34,9 @@ public class PatientsController : Controller
         CancellationToken cancellationToken)
     {
         ViewData["Title"] = "Pacientes";
-        ViewData["PageSubtitle"] = "Directorio de pacientes de la clínica";
+        ViewData["PageSubtitle"] = _tenant.TenantName != null && !string.IsNullOrWhiteSpace(_tenant.TenantCode)
+            ? $"Directorio de pacientes · {_tenant.TenantName} ({_tenant.TenantCode})"
+            : "Directorio de pacientes de la clínica";
         ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item active\">Pacientes</li>";
 
         var patients = await _patientService.GetAllAsync(
@@ -352,10 +359,17 @@ public class PatientsController : Controller
             var patient = await _patientService.GetByIdAsync(id, cancellationToken);
             if (patient == null) return NotFound();
 
-            MapToEntity(model, patient);
-            await _patientService.UpdateAsync(patient, cancellationToken);
-            TempData["Success"] = "Paciente actualizado correctamente.";
-            return RedirectToAction(nameof(Index));
+            try
+            {
+                MapToEntity(model, patient);
+                await _patientService.UpdateAsync(patient, cancellationToken);
+                TempData["Success"] = "Paciente actualizado correctamente.";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (InvalidOperationException ex)
+            {
+                ModelState.AddModelError(string.Empty, ex.Message);
+            }
         }
 
         ViewData["Title"] = "Editar paciente";
@@ -382,6 +396,18 @@ public class PatientsController : Controller
                 : "No se pudo eliminar el paciente: " + ex.Message;
             return RedirectToAction(nameof(Details), new { id });
         }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [RequirePermission(PermissionCodes.PatientsEdit)]
+    public async Task<IActionResult> SetActive(Guid id, bool active, CancellationToken cancellationToken)
+    {
+        if (!await _patientService.SetActiveAsync(id, active, cancellationToken))
+            return NotFound();
+
+        TempData["Success"] = active ? "Paciente reactivado correctamente." : "Paciente marcado como inactivo.";
+        return RedirectToAction(nameof(Index));
     }
 
     [HttpPost]

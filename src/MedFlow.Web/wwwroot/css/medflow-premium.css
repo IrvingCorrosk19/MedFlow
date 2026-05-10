@@ -1,0 +1,107 @@
+/* MedFlow — capa premium (Stripe/Linear-inspired): refuerza tokens existentes en medflow-theme.css */
+/* Objetivo: menos “AdminLTE genérico”, más profundidad, motion suave, lectura clara. */
+
+:root {
+  --mf-glass: rgba(255, 255, 255, 0.72);
+  --mf-glass-border: rgba(226, 232, 240, 0.9);
+  --mf-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --mf-focus-ring: 0 0 0 3px rgba(37, 99, 235, 0.35);
+}
+
+/* Tipografía: jerarquía de página */
+.content-header h1 {
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+.content-header .text-muted.small {
+  letter-spacing: 0.01em;
+}
+
+/* Tarjetas: sombra suave + borde limpio (premium SaaS) */
+.medflow-skin .card {
+  border-radius: var(--mf-radius, 10px);
+  border-color: var(--mf-border);
+  box-shadow: var(--mf-shadow);
+  transition: box-shadow 0.25s var(--mf-ease-out), transform 0.2s var(--mf-ease-out);
+}
+.medflow-skin .card:hover {
+  box-shadow: var(--mf-shadow-md);
+}
+.medflow-skin .card.card-outline {
+  background: var(--mf-surface);
+}
+
+/* Tablas: menos ruido, filas más legibles */
+.medflow-skin .table thead th {
+  font-weight: 600;
+  font-size: 0.8125rem;
+  text-transform: none;
+  letter-spacing: 0.01em;
+  color: var(--mf-text-muted);
+  border-bottom-width: 1px;
+}
+.medflow-skin .table-hover tbody tr:hover {
+  background-color: rgba(37, 99, 235, 0.04);
+}
+
+/* Sidebar / navbar: ligera sensación “glass” sin romper AdminLTE */
+.medflow-skin .main-header.navbar {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background: var(--mf-glass) !important;
+  border-bottom: 1px solid var(--mf-glass-border);
+}
+.medflow-skin .main-sidebar {
+  box-shadow: 4px 0 24px rgba(15, 23, 42, 0.06);
+}
+.medflow-skin .nav-sidebar .nav-link {
+  border-radius: var(--mf-radius-sm, 8px);
+  margin: 1px 0.5rem;
+  transition: background-color 0.2s var(--mf-ease-out), color 0.2s var(--mf-ease-out);
+}
+.medflow-skin .nav-sidebar .nav-link.active {
+  font-weight: 600;
+}
+
+/* Botones secundarios: tacto moderno */
+.medflow-skin .btn-default,
+.medflow-skin .btn-outline-secondary {
+  border-radius: var(--mf-radius-sm, 8px);
+  font-weight: 500;
+}
+
+/* Focus visible accesible */
+.medflow-skin a:focus-visible,
+.medflow-skin button:focus-visible,
+.medflow-skin .btn:focus-visible {
+  outline: none;
+  box-shadow: var(--mf-focus-ring);
+}
+
+/* Contenedor principal: respiración */
+.medflow-skin .content-wrapper > .content > .container-fluid {
+  padding-bottom: 2rem;
+}
+
+/* Modo oscuro preparado (activar con <html data-theme="dark"> desde futura preferencia usuario) */
+html[data-theme="dark"] .medflow-skin {
+  --mf-surface: #0f172a;
+  --mf-surface-2: #1e293b;
+  --mf-border: #334155;
+  --mf-text: #f1f5f9;
+  --mf-text-muted: #94a3b8;
+  --mf-glass: rgba(15, 23, 42, 0.85);
+  --mf-glass-border: rgba(51, 65, 85, 0.9);
+}
+html[data-theme="dark"] .medflow-skin .content-wrapper {
+  background: var(--mf-surface-2);
+}
+html[data-theme="dark"] .medflow-skin .card {
+  background: var(--mf-surface);
+  color: var(--mf-text);
+}
+
+/* Reduce parpadeo en navegación (percepción de velocidad) */
+.medflow-skin .content-wrapper {
+  min-height: calc(100vh - 3.5rem);
+}

@@ -13,11 +13,37 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Hosting;
 
 // Npgsql: permite DateTime con Kind=Local/Unspecified; los convierte a UTC para timestamptz
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
+LogDatabaseConnectionDiagnostics(builder.Environment, builder.Configuration);
+
+static void LogDatabaseConnectionDiagnostics(IHostEnvironment env, ConfigurationManager config)
+{
+    var cs = config.GetConnectionString("DefaultConnection");
+    Console.WriteLine($"[MedFlow] Entorno: {env.EnvironmentName} (appsettings.Development.json solo si Development)");
+    if (!string.Equals(env.EnvironmentName, "Development", StringComparison.OrdinalIgnoreCase))
+    {
+        Console.WriteLine("[MedFlow] Aviso: sin Development no se carga appsettings.Development.json — usa perfil launch 'http' o ASPNETCORE_ENVIRONMENT=Development.");
+    }
+
+    if (string.IsNullOrEmpty(cs))
+    {
+        Console.WriteLine("[MedFlow] ConnectionStrings:DefaultConnection ausente.");
+        return;
+    }
+
+    foreach (var seg in cs.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+    {
+        if (seg.StartsWith("Password=", StringComparison.OrdinalIgnoreCase))
+            Console.WriteLine("[MedFlow]   … Password=***");
+        else
+            Console.WriteLine($"[MedFlow]   … {seg}");
+    }
+}
 
 static SameSiteMode ParseSameSite(string? value) => value?.ToLowerInvariant() switch
 {

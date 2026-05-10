@@ -1,10 +1,7 @@
 @model MedFlow.Domain.Entities.Doctor
 @using System.Text.Json
+@inject MedFlow.Application.Interfaces.ITenantContext TenantContext
 @{
-    ViewData["Title"] = "Detalle de doctor";
-    ViewData["PageSubtitle"] = Model.FullName;
-    ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item\"><a href=\"" + Url.Action("Index") + "\">Doctores</a></li><li class=\"breadcrumb-item active\">Detalle</li>";
-
     // Parse working hours JSON
     List<dynamic>? schedule = null;
     if (!string.IsNullOrWhiteSpace(Model.WorkingHours))
@@ -25,6 +22,21 @@
             </div>
             <div class="card-body">
                 <dl class="row mb-0">
+                    <dt class="col-5 text-muted small">Clínica</dt>
+                    <dd class="col-7">
+                        @if (!string.IsNullOrWhiteSpace(TenantContext.TenantName))
+                        {
+                            <span>@TenantContext.TenantName</span>
+                            @if (!string.IsNullOrWhiteSpace(TenantContext.TenantCode))
+                            {
+                                <span class="text-muted">(@TenantContext.TenantCode)</span>
+                            }
+                        }
+                        else
+                        {
+                            <span class="text-muted">—</span>
+                        }
+                    </dd>
                     <dt class="col-5 text-muted small">Especialidad</dt>
                     <dd class="col-7">@(string.IsNullOrWhiteSpace(Model.Speciality) ? "—" : Model.Speciality)</dd>
                     <dt class="col-5 text-muted small">Licencia médica</dt>
