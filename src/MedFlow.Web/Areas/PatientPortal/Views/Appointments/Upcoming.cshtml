@@ -3,7 +3,14 @@
     ViewData["Title"] = "Mis Citas";
     var options = ViewData["Options"] as MedFlow.Application.Options.PatientPortalOptions;
 }
-<h2 class="mb-4">Mis Citas</h2>
+<h1 class="h3 mb-4">Mis citas</h1>
+
+@if (Model.Any())
+{
+    var u0 = Model[0];
+    var ug = new AppointmentGuidanceInfo(u0.Id, u0.ScheduledDate, u0.StartTime, u0.DoctorName, u0.ConsultationRoom);
+    <partial name="_PatientAppointmentGuidance" model="ug" />
+}
 
 @if (!Model.Any())
 {

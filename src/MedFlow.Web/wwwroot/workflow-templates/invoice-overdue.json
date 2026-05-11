@@ -1,0 +1,7 @@
+{
+  "ejemplo": "Plantilla sugerida para evento InvoiceOverdue → webhook n8n",
+  "tenantId": "{TenantId}",
+  "eventType": "InvoiceOverdue",
+  "invoiceId": "{AggregateId}",
+  "mensaje": "Factura vencida — recordatorio de pago"
+}

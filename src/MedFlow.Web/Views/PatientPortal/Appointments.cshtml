@@ -29,6 +29,14 @@
 <div class="tab-content">
     <!-- Próximas -->
     <div class="tab-pane fade show active" id="upcoming">
+        @if (Model.Upcoming.Any())
+        {
+            var u0 = Model.Upcoming[0];
+            var ug = new AppointmentGuidanceInfo(u0.Id, u0.ScheduledDate, u0.StartTime, u0.DoctorName, u0.ConsultationRoom);
+            ViewData["GuidanceDetailUrl"] = Url.Action("AppointmentDetails", "PatientPortal", new { id = u0.Id });
+            <partial name="_PatientAppointmentGuidance" model="ug" />
+            ViewData.Remove("GuidanceDetailUrl");
+        }
         @if (!Model.Upcoming.Any())
         {
             <div class="card shadow-sm">

@@ -1,0 +1,119 @@
+@model MedFlow.Application.Reporting.ExecutiveDashboardVm
+@using System.Collections.Generic
+@using MedFlow.Application.Reporting
+@{
+    var showFinancial = ViewBag.ShowFinancialDashboard as bool? ?? false;
+    var tips = new List<(string Icon, string TextClass, string Text)>();
+
+    var apt = Model.AppointmentKpis;
+    var td = apt.TotalToday;
+    var completedPctToday = td == 0 ? 0 : Math.Round(100m * apt.CompletedToday / td, 1);
+
+    var cancelOrdered = Model.CancellationsByDay.OrderBy(x => x.Date).ToList();
+    var todayD = DateTime.Today;
+    var earliestCancel = cancelOrdered.Count > 0 ? cancelOrdered[0].Date : (DateTime?)null;
+    int SumCancelRange(DateTime from, DateTime to) =>
+        cancelOrdered.Where(x => x.Date >= from && x.Date <= to).Sum(x => x.Count);
+    var cancelLast7 = SumCancelRange(todayD.AddDays(-6), todayD);
+    var cancelPrev7 = SumCancelRange(todayD.AddDays(-13), todayD.AddDays(-7));
+    var hasTwoWeekWindow = earliestCancel.HasValue && earliestCancel.Value <= todayD.AddDays(-13);
+
+    void AddTip(string icon, string cls, string text)
+    {
+        tips.Add((icon, cls, text));
+    }
+
+    // 1) Tendencia semanal cancelaciones (datos reales del gráfico)
+    if (hasTwoWeekWindow && (cancelLast7 > 0 || cancelPrev7 > 0))
+    {
+        if (cancelPrev7 > 0 && cancelLast7 > cancelPrev7)
+        {
+            var wow = Math.Round(100m * (cancelLast7 - cancelPrev7) / cancelPrev7, 0);
+            AddTip("fa fa-warning", "text-warning",
+                $"Las cancelaciones en agenda subieron ~{wow} % esta semana vs la anterior ({cancelLast7} frente a {cancelPrev7}). Refuerza confirmación y revisa huecos.");
+        }
+        else if (cancelPrev7 == 0 && cancelLast7 >= 3)
+        {
+            AddTip("fa fa-warning", "text-warning",
+                $"Esta semana hay {cancelLast7} cancelaciones registradas en el período; la semana anterior no había flujo comparable en ventana. Vigila confirmaciones.");
+        }
+    }
+
+    // 2) Recuperación estimada (ticket medio cobrado / cita completada en el período del gráfico)
+    if (showFinancial && Model.PatientKpis.InactiveCount > 0 &&
+        Model.FinanceKpis.AvgCollectedPerCompletedAppointmentPeriod is { } avg &&
+        avg > 0)
+    {
+        var recoveryEstimate = Math.Round(Model.PatientKpis.InactiveCount * avg, 0);
+        AddTip("fa fa-bolt", "text-success",
+            $"Potencial de recuperación (orden de magnitud): ~{recoveryEstimate:N0} si reactivas parte de tus {Model.PatientKpis.InactiveCount} pacientes inactivos, usando el ticket medio reciente del período (~{avg:N2} por cita completada con cobro registrado). Ejecuta desde Recuperación.");
+    }
+    else if (Model.PatientKpis.InactiveCount > 0)
+        AddTip("fa fa-bed", "text-info",
+            $"Tienes {Model.PatientKpis.InactiveCount} pacientes sin actividad reciente: foco prioritario para campañas de reactivación.");
+
+    if (showFinancial && Model.FinanceKpis.TotalOutstanding > 0)
+        AddTip("fa fa-money", "text-warning",
+            $"Cartera pendiente: {Model.FinanceKpis.TotalOutstanding:N2}. Prioriza cobros y automatiza recordatorios de pago.");
+
+    if (Model.CancellationRatePeriod >= 12)
+        AddTip("fa fa-ban", "text-warning",
+            $"La tasa de cancelación del período es del {Model.CancellationRatePeriod} %. Considera recordatorios automáticos y lista de espera.");
+
+    if (completedPctToday > 0 && completedPctToday < 42 && td >= 6)
+        AddTip("fa fa-clock-o", "text-info",
+            $"Ocupación operativa baja hoy: solo ~{completedPctToday} % de las citas del día ya se completaron ({apt.CompletedToday}/{td}). Revisa confirmaciones y huecos.");
+
+    var docs = Model.TopDoctorsByAppointments.ToList();
+    if (docs.Count >= 2)
+    {
+        var hi = docs[0];
+        var lo = docs[^1];
+        if (hi.Count >= lo.Count + 4 && lo.Count > 0)
+            AddTip("fa fa-user-md", "text-primary",
+                $"La demanda entre médicos no está pareja: hasta {hi.Count - lo.Count} citas de diferencia entre el mayor volumen ({hi.Name}) y el último del ranking mostrado ({lo.Name}). Redistribuye o abre agenda.");
+    }
+
+    if (apt.NoShowToday > 0)
+        AddTip("fa fa-user-times", "text-danger",
+            $"Hay {apt.NoShowToday} no-show hoy. Activa recordatorios y lista de espera para recuperar esos huecos.");
+
+    if (tips.Count == 0)
+        AddTip("fa fa-check-circle", "text-success",
+            "Indicadores estables en este período. Sigue monitoreando Mission Control y el centro de IA.");
+}
+<div class="mf-xp-card-glass mb-3 p-3 mf-xp-growth-ai-strip">
+    <div class="d-flex flex-wrap align-items-start justify-content-between">
+        <div class="mb-2 mb-md-0 pr-md-3">
+            <div class="mf-xp-ai-kicker text-uppercase small font-weight-bold text-muted mb-1">IA operativa — lectura accionable</div>
+            <span class="font-weight-bold mf-xp-ai-title">Recomendaciones con los datos de tu clínica ahora</span>
+        </div>
+        <div class="d-flex flex-wrap justify-content-end mf-xp-ai-actions" style="gap:6px;">
+            @if (showFinancial)
+            {
+                <a asp-controller="RevenueRecovery" asp-action="Index" class="btn btn-sm btn-success">
+                    <i class="fa fa-bolt"></i> Recuperación
+                </a>
+            }
+            <a asp-area="AI" asp-controller="Copilot" asp-action="Index" class="btn btn-sm btn-outline-secondary mf-xp-ai-copilot">
+                <i class="fa fa-comments"></i> Copilot
+            </a>
+            <a asp-area="AI" asp-controller="AIDashboard" asp-action="Index" class="btn btn-sm btn-outline-dark">
+                <i class="fa fa-lightbulb-o"></i> Centro IA
+            </a>
+            <a asp-area="AI" asp-controller="Insights" asp-action="Index" class="btn btn-sm btn-primary">
+                <i class="fa fa-list"></i> Insights
+            </a>
+        </div>
+    </div>
+    <ul class="list-unstyled mb-0 mt-3 mf-xp-ai-tip-list">
+        @foreach (var t in tips.Take(5))
+        {
+            <li class="media mb-2 pb-2 border-bottom mf-xp-ai-tip">
+                <span class="mr-2 mt-1 @t.TextClass mf-xp-ai-tip-icon"><i class="fa @t.Icon"></i></span>
+                <div class="media-body small mf-xp-ai-tip-text">@t.Text</div>
+            </li>
+        }
+    </ul>
+</div>
+

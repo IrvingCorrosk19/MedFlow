@@ -1,22 +1,38 @@
 @model MedFlow.Web.Models.Ui.StatCardModel
+@{
+    string AccentColor(string cc) => cc switch
+    {
+        "bg-info" => "#17a2b8",
+        "bg-secondary" => "#6c757d",
+        "bg-primary" => "#007bff",
+        "bg-danger" => "#dc3545",
+        "bg-success" => "#28a745",
+        "bg-warning" => "#ffc107",
+        "bg-teal" => "#20c997",
+        "bg-navy" => "#001f3f",
+        "bg-olive" => "#3d9970",
+        _ => "var(--mf-primary)"
+    };
+    var accent = AccentColor(Model.ColorClass ?? "");
+}
 <div class="col-lg-3 col-md-6 mb-3">
-    <div class="small-box @Model.ColorClass shadow-sm">
-        <div class="inner">
-            <h3>@Model.Value</h3>
-            <p>@Model.Label</p>
+    <div class="mf-xp-kpi mf-xp-stat-tile h-100 d-flex flex-column" style="border-left: 4px solid @accent;">
+        <div class="d-flex justify-content-between align-items-start mb-1">
+            <span class="mf-xp-kpi-label" style="line-height:1.25;">@Model.Label</span>
+            <span class="rounded-circle d-inline-flex align-items-center justify-content-center mf-xp-stat-icon-wrap @Model.ColorClass" style="width:36px;height:36px;opacity:.92;">
+                <i class="@Model.IconClass text-white" style="font-size:0.95rem;"></i>
+            </span>
         </div>
-        <div class="icon">
-            <i class="@Model.IconClass"></i>
-        </div>
+        <div class="mf-xp-kpi-value flex-grow-1 d-flex align-items-center">@Model.Value</div>
         @if (!string.IsNullOrEmpty(Model.FooterUrl) && !string.IsNullOrEmpty(Model.FooterText))
         {
-            <a href="@Model.FooterUrl" class="small-box-footer">
-                @Model.FooterText <i class="fa fa-arrow-circle-right"></i>
+            <a href="@Model.FooterUrl" class="small font-weight-bold mt-2 pt-2 border-top d-block text-primary mf-xp-stat-footer-link" style="border-color:var(--mf-border)!important;">
+                @Model.FooterText <i class="fa fa-arrow-right ml-1" style="font-size:0.75rem;"></i>
             </a>
         }
         else
         {
-            <div class="small-box-footer border-0" style="cursor: default;">&nbsp;</div>
+            <div class="mt-auto pt-2 small text-muted">&nbsp;</div>
         }
     </div>
 </div>

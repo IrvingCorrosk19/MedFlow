@@ -1,6 +1,8 @@
+using System.Security.Claims;
 using MedFlow.Application.Interfaces;
 using MedFlow.Application.Security;
 using MedFlow.Domain.Entities;
+using MedFlow.Domain.Enums;
 using MedFlow.Web.Authorization;
 using MedFlow.Web.ViewModels;
 using Microsoft.AspNetCore.Authorization;
@@ -12,18 +14,33 @@ namespace MedFlow.Web.Controllers;
 [Authorize]
 public class PatientsController : Controller
 {
+    /// <summary>Valores de filas por página ofrecidos en el listado (velocidad para la clínica, menos carga en el navegador).</summary>
+    private static readonly int[] AllowedPatientIndexPageSizes = [10, 25, 50, 100];
+
     private readonly IPatientService _patientService;
     private readonly IPatientPortalEnableService _portalEnable;
     private readonly ITenantContext _tenant;
+    private readonly IAppointmentService _appointments;
+    private readonly IMedicalRecordService _medicalRecords;
+    private readonly IBillingInvoiceService _billingInvoices;
+    private readonly IPermissionChecker _permissionChecker;
 
     public PatientsController(
         IPatientService patientService,
         IPatientPortalEnableService portalEnable,
-        ITenantContext tenant)
+        ITenantContext tenant,
+        IAppointmentService appointments,
+        IMedicalRecordService medicalRecords,
+        IBillingInvoiceService billingInvoices,
+        IPermissionChecker permissionChecker)
     {
         _patientService = patientService;
         _portalEnable = portalEnable;
         _tenant = tenant;
+        _appointments = appointments;
+        _medicalRecords = medicalRecords;
+        _billingInvoices = billingInvoices;
+        _permissionChecker = permissionChecker;
     }
 
     [RequirePermission(PermissionCodes.PatientsView)]
@@ -31,7 +48,9 @@ public class PatientsController : Controller
         string? search, bool? estadoActivo,
         string? documento, string? telefono,
         int? edadDesde, int? edadHasta,
-        CancellationToken cancellationToken)
+        int page = 1,
+        int pageSize = 25,
+        CancellationToken cancellationToken = default)
     {
         ViewData["Title"] = "Pacientes";
         ViewData["PageSubtitle"] = _tenant.TenantName != null && !string.IsNullOrWhiteSpace(_tenant.TenantCode)
@@ -39,11 +58,29 @@ public class PatientsController : Controller
             : "Directorio de pacientes de la clínica";
         ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item active\">Pacientes</li>";
 
-        var patients = await _patientService.GetAllAsync(
+        pageSize = AllowedPatientIndexPageSizes.Contains(pageSize) ? pageSize : 25;
+
+        var result = await _patientService.GetPagedAsync(
             search, estadoActivo,
+            page, pageSize,
             documento: documento, telefono: telefono,
             edadDesde: edadDesde, edadHasta: edadHasta,
             cancellationToken: cancellationToken);
+
+        if (result.TotalPages > 0 && page > result.TotalPages)
+        {
+            return RedirectToAction(nameof(Index), new
+            {
+                search,
+                estadoActivo,
+                documento,
+                telefono,
+                edadDesde,
+                edadHasta,
+                page = result.TotalPages,
+                pageSize,
+            });
+        }
 
         ViewBag.Search = search;
         ViewBag.EstadoActivo = estadoActivo;
@@ -51,7 +88,9 @@ public class PatientsController : Controller
         ViewBag.Telefono = telefono;
         ViewBag.EdadDesde = edadDesde;
         ViewBag.EdadHasta = edadHasta;
-        return View(patients);
+        ViewBag.PageSize = pageSize;
+        ViewBag.PageSizeOptions = AllowedPatientIndexPageSizes;
+        return View(result);
     }
 
     [HttpGet]
@@ -277,7 +316,53 @@ public class PatientsController : Controller
         ViewData["PageSubtitle"] = "Expediente del paciente";
         ViewData["Breadcrumb"] = $"<li class=\"breadcrumb-item\"><a href=\"{Url.Action(nameof(Index))}\">Pacientes</a></li><li class=\"breadcrumb-item active\">Detalle</li>";
 
+        var canApt = await HasPermissionAsync(PermissionCodes.AppointmentsView, cancellationToken);
+        var canClinical = await HasPermissionAsync(PermissionCodes.MedicalRecordsView, cancellationToken);
+        var canBill = await HasPermissionAsync(PermissionCodes.BillingView, cancellationToken);
+
+        ViewBag.ShowUpcomingAppointments = canApt;
+        ViewBag.ShowLastVisit = canClinical;
+        ViewBag.ShowOutstandingBalance = canBill;
+
+        if (canApt)
+        {
+            var now = DateTime.UtcNow;
+            var raw = await _appointments.GetAllAsync(from: now, patientId: id, cancellationToken: cancellationToken);
+            ViewBag.UpcomingAppointments = raw
+                .Where(a => a.Status is AppointmentStatus.Scheduled or AppointmentStatus.Confirmed
+                    or AppointmentStatus.InProgress or AppointmentStatus.Rescheduled)
+                .OrderBy(a => a.ScheduledDate)
+                .ThenBy(a => a.StartTime)
+                .Take(10)
+                .ToList();
+        }
+        else
+            ViewBag.UpcomingAppointments = Array.Empty<Appointment>();
+
+        if (canClinical)
+        {
+            var hist = await _medicalRecords.GetHistoryByPatientAsync(id, cancellationToken);
+            ViewBag.LastMedicalVisit = hist.OrderByDescending(r => r.VisitDate).FirstOrDefault();
+        }
+        else
+            ViewBag.LastMedicalVisit = null;
+
+        if (canBill)
+        {
+            var inv = await _billingInvoices.SearchAsync(id, null, null, null, cancellationToken);
+            ViewBag.OutstandingBalance = inv.Where(i => !i.IsDeleted).Sum(i => i.BalanceDue);
+        }
+        else
+            ViewBag.OutstandingBalance = null;
+
         return View(patient);
+    }
+
+    private async Task<bool> HasPermissionAsync(string permissionCode, CancellationToken cancellationToken)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId)) return false;
+        return await _permissionChecker.UserHasPermissionAsync(userId, permissionCode, cancellationToken);
     }
 
     [RequirePermission(PermissionCodes.PatientsCreate)]

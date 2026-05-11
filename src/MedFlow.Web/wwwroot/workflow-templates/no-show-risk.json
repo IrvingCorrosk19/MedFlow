@@ -1,0 +1,7 @@
+{
+  "ejemplo": "Plantilla sugerida para evento NoShowRiskDetected",
+  "tenantId": "{TenantId}",
+  "eventType": "NoShowRiskDetected",
+  "appointmentId": "{AggregateId}",
+  "mensaje": "Riesgo de inasistencia — confirmación por canal preferido"
+}

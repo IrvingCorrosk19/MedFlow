@@ -1,0 +1,86 @@
+@model MedFlow.Application.PatientPortal.AppointmentGuidanceInfo?
+@using MedFlow.Application.Options
+@{
+    var opt = ViewData["Options"] as PatientPortalOptions;
+    if (opt?.ShowAppointmentGuidance == false)
+    {
+        return;
+    }
+
+    var detailUrl = ViewData["GuidanceDetailUrl"] as string;
+    var suppressDetailLink = ViewData["GuidanceSuppressDetailLink"] as bool? == true;
+    var es = System.Globalization.CultureInfo.GetCultureInfo("es-ES");
+
+    double? hoursUntil = null;
+    if (Model != null)
+    {
+        var startLocal = Model.ScheduledDate.Date.Add(Model.StartTime);
+        hoursUntil = (startLocal - DateTime.Now).TotalHours;
+    }
+}
+<section class="portal-guidance portal-card card mb-4" aria-labelledby="portal-guidance-heading">
+    <div class="card-body">
+        <h2 id="portal-guidance-heading" class="h5 mb-3">
+            <i class="fa fa-check-square-o text-primary mr-2" aria-hidden="true"></i>Antes de su cita
+        </h2>
+
+        @if (Model != null)
+        {
+            @if (hoursUntil.HasValue && hoursUntil.Value >= 0 && hoursUntil.Value <= 48)
+            {
+                <div class="alert alert-warning border-0 mb-3" role="status">
+                    <strong><i class="fa fa-clock-o mr-1" aria-hidden="true"></i>Cita en menos de 48 horas.</strong>
+                    Confirme hora y lugar; si no puede asistir, cancele con anticipación para que otro paciente pueda usar el turno.
+                </div>
+            }
+            <p class="small text-muted mb-3">
+                <span class="d-block">
+                    <strong>@Model.ScheduledDate.ToString("dddd d 'de' MMMM", es)</strong> a las <strong>@Model.StartTime.ToString(@"hh\:mm")</strong>
+                    @if (!string.IsNullOrWhiteSpace(Model.DoctorName))
+                    {
+                        <span> · @Model.DoctorName</span>
+                    }
+                </span>
+                @if (!string.IsNullOrWhiteSpace(Model.ConsultationRoom))
+                {
+                    <span class="d-block mt-1">Consultorio: <strong>@Model.ConsultationRoom</strong></span>
+                }
+            </p>
+        }
+        else
+        {
+            <p class="small text-muted mb-3">Cuando tenga una cita programada, aquí verá recordatorios y una lista breve para prepararse.</p>
+        }
+
+        <ul class="mb-3 pl-3 small">
+            <li class="mb-2">Llegue <strong>10–15 minutos antes</strong> de la hora acordada (o siga la indicación de su clínica).</li>
+            <li class="mb-2">Traiga <strong>documento de identidad</strong> y, si aplica, orden médica o autorización de la aseguradora.</li>
+            <li class="mb-2">Anote o lleve sus <strong>medicamentos actuales</strong> (nombre y dosis).</li>
+            <li class="mb-2"><strong>Ayunas, estudios previos o suspender medicamentos:</strong> confírmelo siempre con la clínica o su médico; depende del tipo de consulta.</li>
+            <li class="mb-0">Si tiene <strong>síntomas respiratorios</strong> o fiebre, use mascarilla y avise al llegar.</li>
+        </ul>
+
+        @if (Model != null && !suppressDetailLink)
+        {
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                @if (!string.IsNullOrEmpty(detailUrl))
+                {
+                    <a href="@detailUrl" class="btn btn-sm btn-outline-primary">Ver detalle de esta cita</a>
+                }
+                else
+                {
+                    <a asp-area="PatientPortal" asp-controller="Appointments" asp-action="Details" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-primary">Ver detalle de esta cita</a>
+                }
+                <span class="small text-muted mb-0">¿Dudas? Contacte directamente a su clínica.</span>
+            </div>
+        }
+        else if (Model != null && suppressDetailLink)
+        {
+            <p class="small text-muted mb-0">¿Dudas? Contacte directamente a su clínica.</p>
+        }
+
+        <p class="small text-muted mb-0 mt-3 pt-2 border-top">
+            Esta información es orientativa. Las indicaciones médicas específicas para usted tienen prioridad.
+        </p>
+    </div>
+</section>

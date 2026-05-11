@@ -31,6 +31,12 @@ public class PatientPortalController : Controller
     private async Task<Guid?> GetPatientIdAsync(CancellationToken ct)
         => await _portal.GetPatientIdByUserIdAsync(CurrentUserId ?? "", ct);
 
+    private async Task LoadPatientPortalOptionsAsync(CancellationToken ct)
+    {
+        var tid = _tenant.TenantId ?? Guid.Empty;
+        ViewData["Options"] = await _portal.GetOptionsAsync(tid, ct);
+    }
+
     // ── Dashboard ──────────────────────────────────────────────────────────────
 
     [HttpGet("")]
@@ -43,6 +49,7 @@ public class PatientPortalController : Controller
         var vm = await _portal.GetDashboardAsync(patientId.Value, ct);
         if (vm == null) return View("NoAccess");
 
+        await LoadPatientPortalOptionsAsync(ct);
         ViewData["Title"] = $"Bienvenido, {vm.Profile.FullName.Split(' ').First()}";
         ViewData["Layout"] = "~/Views/Shared/_PatientLayout.cshtml";
         return View(vm);
@@ -59,6 +66,7 @@ public class PatientPortalController : Controller
         var upcoming = await _portal.GetUpcomingAppointmentsAsync(patientId.Value, ct);
         var history  = await _portal.GetAppointmentHistoryAsync(patientId.Value, 50, ct);
 
+        await LoadPatientPortalOptionsAsync(ct);
         ViewData["Title"] = "Mis Citas";
         ViewData["Layout"] = "~/Views/Shared/_PatientLayout.cshtml";
         return View((Upcoming: upcoming, History: history));
@@ -73,6 +81,7 @@ public class PatientPortalController : Controller
         var appt = await _portal.GetAppointmentAsync(patientId.Value, id, ct);
         if (appt == null) return NotFound();
 
+        await LoadPatientPortalOptionsAsync(ct);
         ViewData["Title"] = "Detalle de Cita";
         ViewData["Layout"] = "~/Views/Shared/_PatientLayout.cshtml";
         return View(appt);

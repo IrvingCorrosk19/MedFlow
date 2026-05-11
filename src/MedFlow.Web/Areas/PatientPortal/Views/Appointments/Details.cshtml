@@ -26,8 +26,16 @@
     <a asp-action="Upcoming" class="btn btn-outline-secondary btn-sm mr-3">
         <i class="fa fa-arrow-left mr-1"></i>Mis Citas
     </a>
-    <h2 class="mb-0">Detalle de Cita</h2>
+    <h1 class="h3 mb-0">Detalle de cita</h1>
 </div>
+
+@if (Model.Status != AppointmentStatus.Cancelled && Model.Status != AppointmentStatus.Completed)
+{
+    var gg = new AppointmentGuidanceInfo(Model.Id, Model.ScheduledDate, Model.StartTime, Model.DoctorName, Model.ConsultationRoom);
+    ViewData["GuidanceSuppressDetailLink"] = true;
+    <partial name="_PatientAppointmentGuidance" model="gg" />
+    ViewData.Remove("GuidanceSuppressDetailLink");
+}
 
 <div class="portal-card card">
     <div class="card-body">

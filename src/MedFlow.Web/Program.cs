@@ -149,6 +149,7 @@ else
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
+app.UseMiddleware<MedFlow.Web.Middleware.PatientPortalCanonicalMiddleware>();
 app.UseMiddleware<MedFlow.Infrastructure.Middleware.RequestLoggingMiddleware>();
 app.UseSession();
 app.UseAuthentication();

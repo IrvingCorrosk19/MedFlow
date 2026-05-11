@@ -21,6 +21,10 @@ public interface IPatientService
         bool? isActive = null,
         int page = 1,
         int pageSize = 25,
+        string? documento = null,
+        string? telefono = null,
+        int? edadDesde = null,
+        int? edadHasta = null,
         CancellationToken cancellationToken = default);
     Task<(Patient? Patient, string? Error)> CreateAsync(Patient patient, CancellationToken cancellationToken = default);
     Task<Patient> UpdateAsync(Patient patient, CancellationToken cancellationToken = default);

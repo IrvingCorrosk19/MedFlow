@@ -2,6 +2,7 @@
 @using System.Linq
 @using System.Text.Json
 @using MedFlow.Application.Reporting
+@using MedFlow.Domain.Enums
 @using MedFlow.Web.Models.Ui
 @{
     var showFinancial = ViewBag.ShowFinancialDashboard as bool? ?? false;
@@ -62,12 +63,36 @@
 }
 else
 {
+    var aptD = DateTime.Today;
+    var aptTodayAll = Url.Action("Index", "Appointments", new { from = aptD, to = aptD });
+    var aptTodayScheduled = Url.Action("Index", "Appointments", new { from = aptD, to = aptD, status = (int)AppointmentStatus.Scheduled });
+    var aptTodayConfirmed = Url.Action("Index", "Appointments", new { from = aptD, to = aptD, status = (int)AppointmentStatus.Confirmed });
+    var aptTodayCancelled = Url.Action("Index", "Appointments", new { from = aptD, to = aptD, status = (int)AppointmentStatus.Cancelled });
+    var aptTodayCompleted = Url.Action("Index", "Appointments", new { from = aptD, to = aptD, status = (int)AppointmentStatus.Completed });
+    var aptTodayNoShow = Url.Action("Index", "Appointments", new { from = aptD, to = aptD, status = (int)AppointmentStatus.NoShow });
+    var patientsInactive = Url.Action("Index", "Patients", new { estadoActivo = false });
+    var invoicesPendingPartial = Url.Action("Index", "BillingInvoices", new { status = InvoiceStatus.Pending });
+<input type="hidden" id="mfDashboardDays" value="@ViewBag.Days" />
+<div class="mf-mission-control mf-premium-dashboard-shell">
+<partial name="Components/_MissionControlHeader" model="Model" />
+<partial name="Components/_MissionControlCompareStrip" model="Model" />
+<partial name="Components/_GrowthAiInsights" model="Model" />
 
-<div class="row mb-3 medflow-dashboard-toolbar">
+<div class="row mb-3 medflow-dashboard-toolbar mf-xp-sticky-toolbar">
     <div class="col-12 d-flex flex-wrap justify-content-between align-items-center">
         <div class="mb-2 mb-md-0">
             <span class="badge badge-light border text-muted mr-1 mb-1">Cancelación (período): <strong>@Model.CancellationRatePeriod %</strong></span>
             <span class="badge badge-light border text-muted mb-1">Completitud: <strong>@Model.CompletionRatePeriod %</strong></span>
+        </div>
+        <div class="d-flex flex-wrap align-items-center mr-2 mb-2 mb-md-0" style="gap:12px;">
+            <label class="small text-muted mb-0 d-flex align-items-center" title="Recarga la página cada 3 min mientras esta pestaña está visible">
+                <input type="checkbox" id="mfMcRefreshToggle" class="mr-1" />
+                Auto 3 min
+            </label>
+            <label class="small text-muted mb-0 d-flex align-items-center" title="Actualiza solo los KPI del hero sin recargar gráficos">
+                <input type="checkbox" id="mfMcFetchToggle" class="mr-1" />
+                KPIs API
+            </label>
         </div>
         <div class="btn-group btn-group-sm">
             <a asp-action="ExportCsv" asp-route-days="@ViewBag.Days" class="btn btn-outline-success" title="Exportar CSV"><i class="fa fa-file-excel-o"></i> CSV</a>
@@ -75,23 +100,24 @@ else
             <button type="button" class="btn btn-outline-primary" onclick="window.print();"><i class="fa fa-print"></i> Imprimir</button>
         </div>
     </div>
+    <div class="col-12"><p class="small text-muted mb-0"><i class="fa fa-info-circle"></i> Los <strong>gráficos</strong> solo se actualizan al <strong>recargar la página</strong> o con <strong>Auto 3 min</strong>. El modo <strong>KPIs API</strong> actualiza el hero superior sin tocar los charts.</p></div>
 </div>
 
 <div class="row">
-    <partial name="Components/_StatCard" model='new StatCardModel { IconClass = "fa fa-calendar", ColorClass = "bg-info", Value = Model.AppointmentKpis.TotalToday.ToString(), Label = "Citas hoy", FooterUrl = Url.Action("Index", "Appointments"), FooterText = "Ver agenda" }' />
-    <partial name="Components/_StatCard" model='new StatCardModel { IconClass = "fa fa-clock-o", ColorClass = "bg-secondary", Value = Model.AppointmentKpis.PendingToday.ToString(), Label = "Pendientes (agendadas)", FooterUrl = Url.Action("Index", "Appointments"), FooterText = "Ver citas" }' />
-    <partial name="Components/_StatCard" model='new StatCardModel { IconClass = "fa fa-check-circle", ColorClass = "bg-primary", Value = Model.AppointmentKpis.ConfirmedToday.ToString(), Label = "Confirmadas hoy", FooterUrl = Url.Action("Index", "Appointments"), FooterText = "Ver citas" }' />
-    <partial name="Components/_StatCard" model='new StatCardModel { IconClass = "fa fa-ban", ColorClass = "bg-danger", Value = Model.AppointmentKpis.CancelledToday.ToString(), Label = "Canceladas hoy", FooterUrl = Url.Action("Index", "Appointments"), FooterText = "Ver citas" }' />
+    <partial name="Components/_StatCard" model='new StatCardModel { IconClass = "fa fa-calendar", ColorClass = "bg-info", Value = Model.AppointmentKpis.TotalToday.ToString(), Label = "Citas hoy", FooterUrl = aptTodayAll, FooterText = "Ver agenda (hoy)" }' />
+    <partial name="Components/_StatCard" model='new StatCardModel { IconClass = "fa fa-clock-o", ColorClass = "bg-secondary", Value = Model.AppointmentKpis.PendingToday.ToString(), Label = "Pendientes (agendadas)", FooterUrl = aptTodayScheduled, FooterText = "Filtrar agendadas" }' />
+    <partial name="Components/_StatCard" model='new StatCardModel { IconClass = "fa fa-check-circle", ColorClass = "bg-primary", Value = Model.AppointmentKpis.ConfirmedToday.ToString(), Label = "Confirmadas hoy", FooterUrl = aptTodayConfirmed, FooterText = "Filtrar confirmadas" }' />
+    <partial name="Components/_StatCard" model='new StatCardModel { IconClass = "fa fa-ban", ColorClass = "bg-danger", Value = Model.AppointmentKpis.CancelledToday.ToString(), Label = "Canceladas hoy", FooterUrl = aptTodayCancelled, FooterText = "Filtrar canceladas" }' />
 </div>
 <div class="row">
-    <partial name="Components/_StatCard" model='new StatCardModel { IconClass = "fa fa-check", ColorClass = "bg-success", Value = Model.AppointmentKpis.CompletedToday.ToString(), Label = "Completadas hoy", FooterUrl = Url.Action("Index", "Appointments"), FooterText = "Ver citas" }' />
-    <partial name="Components/_StatCard" model='new StatCardModel { IconClass = "fa fa-user-times", ColorClass = "bg-warning", Value = Model.AppointmentKpis.NoShowToday.ToString(), Label = "No show hoy", FooterUrl = Url.Action("Index", "Appointments"), FooterText = "Ver citas" }' />
+    <partial name="Components/_StatCard" model='new StatCardModel { IconClass = "fa fa-check", ColorClass = "bg-success", Value = Model.AppointmentKpis.CompletedToday.ToString(), Label = "Completadas hoy", FooterUrl = aptTodayCompleted, FooterText = "Filtrar completadas" }' />
+    <partial name="Components/_StatCard" model='new StatCardModel { IconClass = "fa fa-user-times", ColorClass = "bg-warning", Value = Model.AppointmentKpis.NoShowToday.ToString(), Label = "No show hoy", FooterUrl = aptTodayNoShow, FooterText = "Filtrar no-show" }' />
     <partial name="Components/_StatCard" model='new StatCardModel { IconClass = "fa fa-users", ColorClass = "bg-primary", Value = Model.PatientKpis.TotalRegistered.ToString(), Label = "Pacientes registrados", FooterUrl = Url.Action("Index", "Patients"), FooterText = "Ver pacientes" }' />
     <partial name="Components/_StatCard" model='new StatCardModel { IconClass = "fa fa-user-plus", ColorClass = "bg-teal", Value = Model.PatientKpis.NewThisMonth.ToString(), Label = "Nuevos este mes", FooterUrl = Url.Action("Index", "Patients"), FooterText = "Ver pacientes" }' />
 </div>
 <div class="row">
     <partial name="Components/_StatCard" model='new StatCardModel { IconClass = "fa fa-stethoscope", ColorClass = "bg-olive", Value = Model.PatientKpis.DistinctAttendedToday.ToString(), Label = "Atendidos hoy (únicos)", FooterUrl = Url.Action("Index", "Patients"), FooterText = "Ver pacientes" }' />
-    <partial name="Components/_StatCard" model='new StatCardModel { IconClass = "fa fa-user-times", ColorClass = "bg-navy", Value = Model.PatientKpis.InactiveCount.ToString(), Label = "Pacientes inactivos", FooterUrl = Url.Action("Index", "Patients"), FooterText = "Ver pacientes" }' />
+    <partial name="Components/_StatCard" model='new StatCardModel { IconClass = "fa fa-user-times", ColorClass = "bg-navy", Value = Model.PatientKpis.InactiveCount.ToString(), Label = "Pacientes inactivos", FooterUrl = patientsInactive, FooterText = "Ver inactivos" }' />
     <partial name="Components/_StatCard" model='new StatCardModel { IconClass = "fa fa-user-md", ColorClass = "bg-success", Value = Model.DoctorKpis.ActiveCount.ToString(), Label = "Doctores activos", FooterUrl = Url.Action("Doctors", "Reports"), FooterText = "Reporte doctores" }' />
     <partial name="Components/_StatCard" model='new StatCardModel { IconClass = "fa fa-trophy", ColorClass = "bg-warning", Value = Model.DoctorKpis.TopDoctorAppointmentCount.ToString(), Label = "Top doctor (14 d): " + (Model.DoctorKpis.TopDoctorByAppointmentsName ?? "—") }' />
 </div>
@@ -99,13 +125,17 @@ else
 {
 <div class="row">
     <partial name="Components/_StatCard" model='new StatCardModel { IconClass = "fa fa-line-chart", ColorClass = "bg-info", Value = Model.DoctorKpis.TopSpecialityAppointmentCount.ToString(), Label = "Demanda especialidad: " + (Model.DoctorKpis.TopSpecialityName ?? "—") }' />
+    @if (Model.FinanceKpis.AvgCollectedPerCompletedAppointmentPeriod is { } avgTicket)
+    {
+    <partial name="Components/_StatCard" model='new StatCardModel { IconClass = "fa fa-calculator", ColorClass = "bg-secondary", Value = avgTicket.ToString("N2"), Label = "Ticket medio cobrado (" + ViewBag.Days + " d)", FooterUrl = Url.Action("Index", "BillingInvoices"), FooterText = "Ver facturas" }' />
+    }
     <partial name="Components/_StatCard" model='new StatCardModel { IconClass = "fa fa-file-text-o", ColorClass = "bg-navy", Value = Model.FinanceKpis.BillingToday.ToString("N2"), Label = "Facturación hoy", FooterUrl = Url.Action("Index", "BillingInvoices"), FooterText = "Ver facturas" }' />
     <partial name="Components/_StatCard" model='new StatCardModel { IconClass = "fa fa-calendar", ColorClass = "bg-olive", Value = Model.FinanceKpis.BillingMonth.ToString("N2"), Label = "Facturación mes", FooterUrl = Url.Action("Index", "BillingInvoices"), FooterText = "Ver facturas" }' />
     <partial name="Components/_StatCard" model='new StatCardModel { IconClass = "fa fa-money", ColorClass = "bg-success", Value = Model.FinanceKpis.PaymentsToday.ToString("N2"), Label = "Pagos hoy", FooterUrl = Url.Action("Index", "CashMovements"), FooterText = "Ver caja" }' />
 </div>
 <div class="row">
-    <partial name="Components/_StatCard" model='new StatCardModel { IconClass = "fa fa-balance-scale", ColorClass = "bg-warning", Value = Model.FinanceKpis.TotalOutstanding.ToString("N2"), Label = "Saldo pendiente total" }' />
-    <partial name="Components/_StatCard" model='new StatCardModel { IconClass = "fa fa-hourglass-half", ColorClass = "bg-danger", Value = Model.FinanceKpis.InvoicesPendingOrPartial.ToString(), Label = "Facturas pendientes / parcial", FooterUrl = Url.Action("Index", "BillingInvoices"), FooterText = "Ver facturas" }' />
+    <partial name="Components/_StatCard" model='new StatCardModel { IconClass = "fa fa-balance-scale", ColorClass = "bg-warning", Value = Model.FinanceKpis.TotalOutstanding.ToString("N2"), Label = "Saldo pendiente total", FooterUrl = Url.Action("Index", "BillingInvoices"), FooterText = "Ir a facturas" }' />
+    <partial name="Components/_StatCard" model='new StatCardModel { IconClass = "fa fa-hourglass-half", ColorClass = "bg-danger", Value = Model.FinanceKpis.InvoicesPendingOrPartial.ToString(), Label = "Facturas pendientes / parcial", FooterUrl = invoicesPendingPartial, FooterText = "Filtrar pendientes" }' />
     <partial name="Components/_StatCard" model='new StatCardModel { IconClass = "fa fa-check-square", ColorClass = "bg-teal", Value = Model.FinanceKpis.InvoicesPaid.ToString(), Label = "Facturas pagadas", FooterUrl = Url.Action("Index", "BillingInvoices"), FooterText = "Ver facturas" }' />
 </div>
 }
@@ -118,13 +148,13 @@ else
 
 <div class="row">
     <div class="col-lg-6">
-        <div class="card card-outline card-primary shadow-sm">
+        <div class="card card-outline mf-xp-card card-primary shadow-sm">
             <div class="card-header"><h3 class="card-title">Citas por día</h3></div>
             <div class="card-body" style="height:280px"><canvas id="chartAptDay"></canvas></div>
         </div>
     </div>
     <div class="col-lg-6">
-        <div class="card card-outline card-secondary shadow-sm">
+        <div class="card card-outline mf-xp-card card-secondary shadow-sm">
             <div class="card-header"><h3 class="card-title">Citas por estado (período)</h3></div>
             <div class="card-body" style="height:280px"><canvas id="chartAptStatus"></canvas></div>
         </div>
@@ -132,26 +162,26 @@ else
     @if (showFinancial)
     {
     <div class="col-lg-6">
-        <div class="card card-outline card-success shadow-sm">
+        <div class="card card-outline mf-xp-card card-success shadow-sm">
             <div class="card-header"><h3 class="card-title">Ingresos por día (pagos)</h3></div>
             <div class="card-body" style="height:280px"><canvas id="chartRevenue"></canvas></div>
         </div>
     </div>
     }
     <div class="col-lg-6">
-        <div class="card card-outline card-primary shadow-sm">
+        <div class="card card-outline mf-xp-card card-primary shadow-sm">
             <div class="card-header"><h3 class="card-title">Pacientes nuevos por mes (12 meses)</h3></div>
             <div class="card-body" style="height:280px"><canvas id="chartNewPatients"></canvas></div>
         </div>
     </div>
     <div class="col-lg-6">
-        <div class="card card-outline card-warning shadow-sm">
+        <div class="card card-outline mf-xp-card card-warning shadow-sm">
             <div class="card-header"><h3 class="card-title">Top especialidades</h3></div>
             <div class="card-body" style="height:280px"><canvas id="chartTopSpec"></canvas></div>
         </div>
     </div>
     <div class="col-lg-6">
-        <div class="card card-outline card-info shadow-sm">
+        <div class="card card-outline mf-xp-card card-info shadow-sm">
             <div class="card-header"><h3 class="card-title">Top doctores por citas</h3></div>
             <div class="card-body" style="height:280px"><canvas id="chartTopDoc"></canvas></div>
         </div>
@@ -159,14 +189,14 @@ else
     @if (showFinancial)
     {
     <div class="col-lg-6">
-        <div class="card card-outline card-dark shadow-sm">
+        <div class="card card-outline mf-xp-card card-dark shadow-sm">
             <div class="card-header"><h3 class="card-title">Pagos por método</h3></div>
             <div class="card-body" style="height:280px"><canvas id="chartPayMethod"></canvas></div>
         </div>
     </div>
     }
     <div class="col-lg-6">
-        <div class="card card-outline card-danger shadow-sm">
+        <div class="card card-outline mf-xp-card card-danger shadow-sm">
             <div class="card-header"><h3 class="card-title">Cancelaciones por día</h3></div>
             <div class="card-body" style="height:280px"><canvas id="chartCancelTrend"></canvas></div>
         </div>
@@ -175,7 +205,7 @@ else
 
 <div class="row">
     <div class="col-xl-4">
-        <div class="card card-outline card-warning shadow-sm">
+        <div class="card card-outline mf-xp-card card-warning shadow-sm">
             <div class="card-header"><h3 class="card-title"><i class="fa fa-exclamation-triangle"></i> Alertas ejecutivas</h3></div>
             <ul class="list-group list-group-flush">
                 @foreach (var a in executiveAlerts)
@@ -191,7 +221,7 @@ else
         </div>
     </div>
     <div class="col-xl-4">
-        <div class="card card-outline card-secondary shadow-sm">
+        <div class="card card-outline mf-xp-card card-secondary shadow-sm">
             <div class="card-header"><h3 class="card-title"><i class="fa fa-bolt"></i> Actividad reciente</h3></div>
             <ul class="list-unstyled mb-0 p-3 pt-0" style="max-height:360px;overflow-y:auto">
                 @foreach (var act in recentActivity)
@@ -217,7 +247,7 @@ else
         </div>
     </div>
     <div class="col-xl-4">
-        <div class="card card-outline card-primary shadow-sm">
+        <div class="card card-outline mf-xp-card card-primary shadow-sm">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h3 class="card-title mb-0"><i class="fa fa-calendar"></i> Próximas citas</h3>
                 <a asp-controller="Appointments" asp-action="Index" class="btn btn-sm btn-default">Agenda</a>
@@ -245,12 +275,15 @@ else
     </div>
 </div>
 
+</div>
 }
 
 @section Scripts {
     @if (Model != null)
     {
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>window.MedFlowDashboardKpiUrl = "@Url.Action("KpiSnapshot", "Dashboard")";</script>
+    <script src="~/js/mf-mission-control-refresh.js" asp-append-version="true"></script>
     <script src="~/js/dashboard/executive-dashboard.js" asp-append-version="true"></script>
     <script>
         $(function () {

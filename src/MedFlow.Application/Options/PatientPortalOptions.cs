@@ -10,4 +10,7 @@ public class PatientPortalOptions
     public bool ShowPrescriptions { get; set; } = false;
     public bool ShowBilling { get; set; } = true;
     public bool ShowNotifications { get; set; } = true;
+
+    /// <summary>Mostrar recordatorios y preparación antes de la cita (beneficia al paciente y reduce ausencias).</summary>
+    public bool ShowAppointmentGuidance { get; set; } = true;
 }

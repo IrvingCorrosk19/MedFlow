@@ -1,7 +1,13 @@
-@model IReadOnlyList<MedFlow.Domain.Entities.Patient>
+@model MedFlow.Application.Common.PagedResult<MedFlow.Domain.Entities.Patient>
 @using System.Linq
+@{
+    var pageSizeOptions = ViewBag.PageSizeOptions as int[] ?? new[] { 10, 25, 50, 100 };
+    const int pageWindow = 2;
+    var pgStart = Model.TotalPages > 0 ? Math.Max(1, Model.Page - pageWindow) : 1;
+    var pgEnd = Model.TotalPages > 0 ? Math.Min(Model.TotalPages, Model.Page + pageWindow) : 1;
+}
 
-<div class="card card-outline card-primary shadow-sm">
+<div class="card card-outline card-primary shadow-sm mf-xp-card">
     <div class="card-header d-flex flex-wrap align-items-center justify-content-between">
         <h3 class="card-title mb-0"><i class="fa fa-users mr-2"></i>Listado de pacientes</h3>
         <div class="d-flex flex-wrap gap-1 mt-2 mt-sm-0">
@@ -21,6 +27,7 @@
     </div>
     <div class="card-body border-bottom bg-light">
         <form method="get" class="form-row align-items-end">
+            <input type="hidden" name="page" value="1" />
             <div class="form-group col-md-4 col-lg-3 mb-2">
                 <label class="small text-muted mb-0">Nombre / correo / notas</label>
                 <input type="search" name="search" value="@ViewBag.Search" class="form-control form-control-sm" placeholder="Nombre, correo, observaciones…" />
@@ -49,24 +56,44 @@
                     <option value="false" selected="@(ViewBag.EstadoActivo == false)">Inactivos</option>
                 </select>
             </div>
+            <div class="form-group col-6 col-md-2 col-lg-2 mb-2">
+                <label class="small text-muted mb-0">Por página</label>
+                <select name="pageSize" class="form-control form-control-sm" title="Cuántos pacientes cargar por página">
+                    @foreach (var sz in pageSizeOptions)
+                    {
+                        if (sz == Model.PageSize)
+                        {
+                            <option value="@sz" selected>@sz filas</option>
+                        }
+                        else
+                        {
+                            <option value="@sz">@sz filas</option>
+                        }
+                    }
+                </select>
+            </div>
             <div class="form-group col-auto mb-2 d-flex" style="gap:4px;align-items:flex-end">
                 <button type="submit" class="btn btn-default btn-sm"><i class="fa fa-filter"></i> Filtrar</button>
                 <a asp-action="Index" class="btn btn-outline-secondary btn-sm" title="Limpiar filtros"><i class="fa fa-times"></i></a>
             </div>
         </form>
     </div>
-    @if (!Model.Any())
+    @if (!Model.Items.Any())
     {
-        <div class="card-body text-center py-5">
-            <p class="text-muted mb-1">No hay pacientes en este listado.</p>
-            <p class="small text-muted mb-3">Pruebe otros filtros o registre el primer paciente de la clínica.</p>
-            <a asp-action="Create" class="btn btn-primary"><i class="fa fa-user-plus"></i> Nuevo paciente</a>
+        <div class="card-body p-0">
+            <partial name="Components/_MfExperienceEmptyState" model='new MedFlow.Web.Models.Ui.EmptyStateModel {
+                IconClass = "fa fa-users",
+                Title = "Nadie en este listado",
+                Description = "Pruebe otros filtros o registre el primer paciente de la clínica.",
+                ActionUrl = Url.Action("Create"),
+                ActionText = "Nuevo paciente"
+            }' />
         </div>
     }
     else
     {
         <div class="card-body p-0">
-            <div class="table-responsive">
+            <div class="table-responsive mf-xp-table-wrap">
                 <table id="tblPacientes" class="table table-hover table-striped mb-0 text-nowrap">
                     <thead class="thead-light">
                         <tr>
@@ -79,7 +106,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var p in Model)
+                        @foreach (var p in Model.Items)
                         {
                             <tr>
                                 <td class="font-weight-medium">@p.NombreCompleto</td>
@@ -153,17 +180,108 @@
                 </table>
             </div>
         </div>
+        <div class="card-footer bg-light py-2 border-top">
+            @{
+                var fromIx = Model.TotalCount == 0 ? 0 : (Model.Page - 1) * Model.PageSize + 1;
+                var toIx = Model.TotalCount == 0 ? 0 : fromIx + Model.Items.Count - 1;
+            }
+            <p class="text-center small text-muted mb-2 mb-md-0">
+                Pacientes <strong>@fromIx–@toIx</strong> de <strong>@Model.TotalCount</strong>
+                @if (Model.TotalPages > 1)
+                {
+                    <span class="d-none d-md-inline"> · </span><span class="d-md-none"><br /></span>
+                    <span>Página @Model.Page de @Model.TotalPages</span>
+                }
+            </p>
+            @if (Model.TotalPages > 1)
+            {
+                <nav aria-label="Paginación pacientes">
+                    <ul class="pagination pagination-sm justify-content-center mb-0 flex-wrap">
+                        <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                            @if (Model.HasPreviousPage)
+                            {
+                                <a class="page-link" asp-action="Index" asp-route-page="@(Model.Page - 1)" asp-route-pageSize="@Model.PageSize"
+                                   asp-route-search="@ViewBag.Search" asp-route-estadoActivo="@ViewBag.EstadoActivo"
+                                   asp-route-documento="@ViewBag.Documento" asp-route-telefono="@ViewBag.Telefono"
+                                   asp-route-edadDesde="@ViewBag.EdadDesde" asp-route-edadHasta="@ViewBag.EdadHasta">Anterior</a>
+                            }
+                            else
+                            {
+                                <span class="page-link">Anterior</span>
+                            }
+                        </li>
+                        @if (pgStart > 1)
+                        {
+                            <li class="page-item">
+                                <a class="page-link" asp-action="Index" asp-route-page="1" asp-route-pageSize="@Model.PageSize"
+                                   asp-route-search="@ViewBag.Search" asp-route-estadoActivo="@ViewBag.EstadoActivo"
+                                   asp-route-documento="@ViewBag.Documento" asp-route-telefono="@ViewBag.Telefono"
+                                   asp-route-edadDesde="@ViewBag.EdadDesde" asp-route-edadHasta="@ViewBag.EdadHasta">1</a>
+                            </li>
+                            @if (pgStart > 2)
+                            {
+                                <li class="page-item disabled"><span class="page-link">…</span></li>
+                            }
+                        }
+                        @for (var pi = pgStart; pi <= pgEnd; pi++)
+                        {
+                            <li class="page-item @(pi == Model.Page ? "active" : "")">
+                                @if (pi == Model.Page)
+                                {
+                                    <span class="page-link">@pi</span>
+                                }
+                                else
+                                {
+                                    <a class="page-link" asp-action="Index" asp-route-page="@pi" asp-route-pageSize="@Model.PageSize"
+                                       asp-route-search="@ViewBag.Search" asp-route-estadoActivo="@ViewBag.EstadoActivo"
+                                       asp-route-documento="@ViewBag.Documento" asp-route-telefono="@ViewBag.Telefono"
+                                       asp-route-edadDesde="@ViewBag.EdadDesde" asp-route-edadHasta="@ViewBag.EdadHasta">@pi</a>
+                                }
+                            </li>
+                        }
+                        @if (pgEnd < Model.TotalPages)
+                        {
+                            @if (pgEnd < Model.TotalPages - 1)
+                            {
+                                <li class="page-item disabled"><span class="page-link">…</span></li>
+                            }
+                            <li class="page-item">
+                                <a class="page-link" asp-action="Index" asp-route-page="@Model.TotalPages" asp-route-pageSize="@Model.PageSize"
+                                   asp-route-search="@ViewBag.Search" asp-route-estadoActivo="@ViewBag.EstadoActivo"
+                                   asp-route-documento="@ViewBag.Documento" asp-route-telefono="@ViewBag.Telefono"
+                                   asp-route-edadDesde="@ViewBag.EdadDesde" asp-route-edadHasta="@ViewBag.EdadHasta">@Model.TotalPages</a>
+                            </li>
+                        }
+                        <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                            @if (Model.HasNextPage)
+                            {
+                                <a class="page-link" asp-action="Index" asp-route-page="@(Model.Page + 1)" asp-route-pageSize="@Model.PageSize"
+                                   asp-route-search="@ViewBag.Search" asp-route-estadoActivo="@ViewBag.EstadoActivo"
+                                   asp-route-documento="@ViewBag.Documento" asp-route-telefono="@ViewBag.Telefono"
+                                   asp-route-edadDesde="@ViewBag.EdadDesde" asp-route-edadHasta="@ViewBag.EdadHasta">Siguiente</a>
+                            }
+                            else
+                            {
+                                <span class="page-link">Siguiente</span>
+                            }
+                        </li>
+                    </ul>
+                </nav>
+            }
+        </div>
     }
 </div>
 
 @section Scripts {
-    @if (Model.Any())
+    @if (Model.Items.Any())
     {
     <script>
         $(function () {
             $('#tblPacientes').DataTable({
                 responsive: true,
-                pageLength: 25,
+                paging: false,
+                searching: false,
+                info: false,
                 order: [],
                 language: { url: '/lib/datatables/es-ES.json' },
                 columnDefs: [

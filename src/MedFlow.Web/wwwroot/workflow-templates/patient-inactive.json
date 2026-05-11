@@ -1,0 +1,7 @@
+{
+  "ejemplo": "Plantilla sugerida para evento PatientInactive",
+  "tenantId": "{TenantId}",
+  "eventType": "PatientInactive",
+  "patientId": "{AggregateId}",
+  "mensaje": "Paciente sin visita reciente — campaña de reactivación"
+}

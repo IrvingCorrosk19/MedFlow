@@ -191,13 +191,13 @@ Los huecos conocidos por módulo (calendario visual de citas, exportaciones masi
 
 ---
 
-## 8. Ejecución automática (HTTP) — actualizado 2026-05-10
+## 8. Ejecución automática (HTTP) — actualizado 2026-05-11
 
 Script: `scripts/ejecutar-pruebas-flujos-prioritarios.ps1`. Valida rutas con sesión real (cookies + antiforgery en POST). **Requisitos:** app en ejecución (`dotnet run --urls http://localhost:5115`), PostgreSQL con migraciones aplicadas.
 
 | Resultado | Detalle |
 |-----------|---------|
-| **28 / 28 OK** | Cobertura actual del script (salida distinta de 0 si algún caso es NOK) |
+| **37 / 37 OK** | Incluye mandato v2 (TP-V1…V10), salida ≠ 0 si algún caso es NOK |
 
 **IDs ejecutados por HTTP**
 
@@ -209,11 +209,14 @@ Script: `scripts/ejecutar-pruebas-flujos-prioritarios.ps1`. Valida rutas con ses
 | D | TP-D01 |
 | E | TP-E01-GET |
 | F | TP-F01, TP-F03 |
-| G | TP-G01, TP-G02, TP-G03-admin, TP-G03-reception |
+| G | TP-G01 (sin KPIs financieros en cuerpo; no confundir con sidebar «Facturación y caja»), TP-G02, TP-G03-admin, TP-G03-reception |
 | H | TP-H01, **TP-H02** |
 | I | TP-I01, **TP-I02** |
 | J | TP-J01, TP-J02 |
 | K | TP-K01, TP-K02 |
+| **V2 (producto)** | **TP-V1** Experience, **TP-V2** KpiSnapshot, **TP-V3** Growth Engine, **TP-V4** Revenue recovery, **TP-V5** CRM segmentos, **TP-V6** `/portal/dashboard`, **TP-V8** Clinic console, **TP-V9** Security posture, **TP-V10** manifest PWA |
+
+**Notas:** TP-G01 usa negación de etiquetas de tarjetas financieras (`Facturación hoy`, etc.), no la palabra suelta «Facturación» en menú. TP-V10 decodifica `Content` si viene como `byte[]` (`.webmanifest`).
 
 **Correcciones históricas** (referencia): login paciente en `/Account/Login`; migración columnas `Prescriptions`; variable PowerShell `$PID` reservada → uso de `$patientId` en el script.
 

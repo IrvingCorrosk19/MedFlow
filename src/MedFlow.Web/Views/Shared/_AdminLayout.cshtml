@@ -10,6 +10,8 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="manifest" href="~/manifest.webmanifest" asp-append-version="true" />
+    <meta name="theme-color" content="#2563eb" />
     <meta name="application-name" content="@brandName" />
     <title>@(ViewData["Title"] ?? brandName)</title>
     <link rel="stylesheet" href="~/lib/font-awesome/css/font-awesome.min.css" />
@@ -51,7 +53,7 @@
         }
     </style>
 </head>
-<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed medflow-skin">
+<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed medflow-skin mf-premium-shell-body">
     <div class="wrapper">
         <partial name="_AdminNavbar" />
         <partial name="_AdminSidebar" />
@@ -106,6 +108,8 @@
         <partial name="_AdminFooter" />
     </div>
 
+    <partial name="_CommandPalette" />
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap4/js/bootstrap.bundle.min.js"></script>
     <script src="~/lib/adminlte/js/adminlte.min.js"></script>
@@ -115,7 +119,13 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <script src="~/js/medflow.ui.js" asp-append-version="true"></script>
+    <script src="~/js/mf-shell-experience.js" asp-append-version="true"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('@Url.Content("~/service-worker.js")').catch(function () { });
+        }
+    </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

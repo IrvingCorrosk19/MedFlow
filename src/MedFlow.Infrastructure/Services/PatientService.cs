@@ -128,6 +128,10 @@ public class PatientService : IPatientService
         bool? isActive = null,
         int page = 1,
         int pageSize = 25,
+        string? documento = null,
+        string? telefono = null,
+        int? edadDesde = null,
+        int? edadHasta = null,
         CancellationToken cancellationToken = default)
     {
         page = Math.Max(1, page);
@@ -149,6 +153,35 @@ public class PatientService : IPatientService
                 (p.Telefono != null && p.Telefono.Contains(search)) ||
                 (p.Observaciones != null && p.Observaciones.ToLower().Contains(s)) ||
                 (p.Alergias != null && p.Alergias.ToLower().Contains(s)));
+        }
+
+        if (!string.IsNullOrWhiteSpace(documento))
+        {
+            var d = documento.Trim().ToLower();
+            query = query.Where(p => p.NumeroDocumento != null && p.NumeroDocumento.ToLower().Contains(d));
+        }
+
+        if (!string.IsNullOrWhiteSpace(telefono))
+        {
+            var t = telefono.Trim();
+            query = query.Where(p => p.Telefono != null && p.Telefono.Contains(t));
+        }
+
+        if (edadDesde.HasValue || edadHasta.HasValue)
+        {
+            var today = DateOnly.FromDateTime(DateTime.Today);
+            if (edadHasta.HasValue)
+            {
+                var maxBirth = today.AddYears(-edadHasta.Value);
+                query = query.Where(p => p.FechaNacimiento.HasValue &&
+                    DateOnly.FromDateTime(p.FechaNacimiento.Value) <= maxBirth);
+            }
+            if (edadDesde.HasValue)
+            {
+                var minBirth = today.AddYears(-edadDesde.Value);
+                query = query.Where(p => p.FechaNacimiento.HasValue &&
+                    DateOnly.FromDateTime(p.FechaNacimiento.Value) >= minBirth);
+            }
         }
 
         var ordered = query

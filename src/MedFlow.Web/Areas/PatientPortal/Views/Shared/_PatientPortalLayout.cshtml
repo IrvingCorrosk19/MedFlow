@@ -21,7 +21,8 @@
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body class="patient-portal">
-    <nav class="navbar navbar-expand-lg navbar-light portal-navbar">
+    <a class="skip-link" href="#portal-main-content">Saltar al contenido principal</a>
+    <nav class="navbar navbar-expand-lg navbar-light portal-navbar" aria-label="Navegación principal">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" asp-area="PatientPortal" asp-controller="Home" asp-action="Index">
                 @if (!string.IsNullOrEmpty(logo))
@@ -59,7 +60,7 @@
                         <li class="nav-item">
                             <form asp-area="PatientPortal" asp-controller="Auth" asp-action="Logout" method="post" class="d-inline">
                                 @Html.AntiForgeryToken()
-                                <button type="submit" class="btn btn-link nav-link border-0 p-0"><i class="fa fa-sign-out"></i> Cerrar sesión</button>
+                                <button type="submit" class="btn btn-link nav-link border-0 p-0" aria-label="Cerrar sesión del portal"><i class="fa fa-sign-out" aria-hidden="true"></i> Cerrar sesión</button>
                             </form>
                         </li>
                     </ul>
@@ -67,7 +68,7 @@
             </div>
         </div>
     </nav>
-    <main class="portal-main">
+    <main id="portal-main-content" class="portal-main" tabindex="-1">
         <div class="container py-4">
             <partial name="_SystemMessages" />
             @RenderBody()

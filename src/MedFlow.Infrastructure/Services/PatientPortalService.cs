@@ -38,7 +38,8 @@ public sealed class PatientPortalService : IPatientPortalService
             ShowMedicalSummary = GetBool("patient_portal.show_medical_summary", false),
             ShowPrescriptions = GetBool("patient_portal.show_prescriptions", false),
             ShowBilling = GetBool("patient_portal.show_billing", true),
-            ShowNotifications = GetBool("patient_portal.show_notifications", true)
+            ShowNotifications = GetBool("patient_portal.show_notifications", true),
+            ShowAppointmentGuidance = GetBool("patient_portal.show_appointment_guidance", true)
         };
     }
 

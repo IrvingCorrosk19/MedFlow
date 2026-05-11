@@ -1,0 +1,90 @@
+@* Copiloto operativo embebido (área AI) — usa el mismo endpoint POST que Copilot/Index *@
+<div class="mf-xp-card mb-4">
+    <div class="card-body">
+        <h3 class="h6 font-weight-bold mb-2"><i class="fa fa-comments mr-2"></i>Copiloto Growth</h3>
+        <p class="text-muted small">Ejemplos: seguimiento de pacientes, riesgo no-show, gestión de cobros.</p>
+        <form id="growthCopilotForm" class="mb-2">
+            @Html.AntiForgeryToken()
+            <div class="input-group input-group-sm">
+                <input type="text" id="growthCopilotQuery" class="form-control" placeholder="Pregunta operativa…" maxlength="500" />
+                <div class="input-group-append">
+                    <button type="submit" class="btn btn-primary" id="growthCopilotSubmit">
+                        <span id="growthCopilotSpinner" class="spinner-border spinner-border-sm mr-1" style="display:none;" role="status"></span>
+                        Consultar
+                    </button>
+                </div>
+            </div>
+        </form>
+        <div id="growthCopilotResult" class="border rounded p-2 bg-light small" style="display:none;">
+            <div id="growthCopilotSummary" class="mb-2"></div>
+            <div id="growthCopilotItems"></div>
+            <div id="growthCopilotSuggestions" class="mt-2"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function () {
+        var form = document.getElementById('growthCopilotForm');
+        if (!form) return;
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            var q = document.getElementById('growthCopilotQuery').value.trim();
+            if (!q || q.length > 500) return;
+            var btn = document.getElementById('growthCopilotSubmit');
+            var sp = document.getElementById('growthCopilotSpinner');
+            btn.disabled = true;
+            sp.style.display = '';
+            var token = form.querySelector('input[name="__RequestVerificationToken"]');
+            var body = 'query=' + encodeURIComponent(q) + '&__RequestVerificationToken=' + encodeURIComponent(token ? token.value : '');
+            fetch('@Url.Action("Query", "Copilot", new { area = "AI" })', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+                body: body,
+                credentials: 'same-origin'
+            }).then(function (r) { return r.json(); }).then(function (data) {
+                var box = document.getElementById('growthCopilotResult');
+                var sum = document.getElementById('growthCopilotSummary');
+                if (data.error) {
+                    sum.textContent = data.error;
+                    document.getElementById('growthCopilotItems').innerHTML = '';
+                    document.getElementById('growthCopilotSuggestions').innerHTML = '';
+                } else {
+                    sum.textContent = data.summary || '';
+                    var itemsEl = document.getElementById('growthCopilotItems');
+                    itemsEl.innerHTML = '';
+                    if (data.items && data.items.length) {
+                        var ul = document.createElement('ul');
+                        ul.className = 'list-group list-group-flush';
+                        data.items.forEach(function (i) {
+                            var li = document.createElement('li');
+                            li.className = 'list-group-item py-2';
+                            li.innerHTML = '<strong>' + (i.title || '') + '</strong><br/><small>' + (i.description || '') + '</small>' +
+                                (i.actionUrl ? ' <a class="btn btn-xs btn-primary float-right" href="' + i.actionUrl + '">Ir</a>' : '');
+                            ul.appendChild(li);
+                        });
+                        itemsEl.appendChild(ul);
+                    }
+                    var sug = document.getElementById('growthCopilotSuggestions');
+                    sug.innerHTML = '';
+                    if (data.suggestions && data.suggestions.length) {
+                        data.suggestions.forEach(function (s) {
+                            var b = document.createElement('button');
+                            b.type = 'button';
+                            b.className = 'btn btn-xs btn-outline-secondary mr-1 mb-1';
+                            b.textContent = s;
+                            b.onclick = function () { document.getElementById('growthCopilotQuery').value = s; };
+                            sug.appendChild(b);
+                        });
+                    }
+                }
+                box.style.display = 'block';
+            }).catch(function () {
+                document.getElementById('growthCopilotSummary').textContent = 'Error de red.';
+                document.getElementById('growthCopilotResult').style.display = 'block';
+            }).finally(function () {
+                btn.disabled = false;
+                sp.style.display = 'none';
+            });
+        });
+    })();
+</script>

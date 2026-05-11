@@ -13,7 +13,7 @@
     int? statusFilter = ViewBag.Status as int?;
 }
 
-<div class="card card-outline card-primary shadow-sm">
+<div class="card card-outline card-primary shadow-sm mf-xp-card">
     <div class="card-header d-flex flex-wrap align-items-center justify-content-between">
         <h3 class="card-title mb-0"><i class="fa fa-calendar mr-2"></i>Listado de citas</h3>
         <div class="d-flex flex-wrap mt-2 mt-sm-0" style="gap:6px">
@@ -70,8 +70,22 @@
             </div>
         </form>
     </div>
+    @if (appointments.Count == 0)
+    {
+        <div class="card-body p-0">
+            <partial name="Components/_MfExperienceEmptyState" model='new MedFlow.Web.Models.Ui.EmptyStateModel {
+                IconClass = "fa fa-calendar-o",
+                Title = "Sin citas en este rango",
+                Description = "Amplía las fechas o crea una nueva cita.",
+                ActionUrl = Url.Action("Create"),
+                ActionText = "Nueva cita"
+            }' />
+        </div>
+    }
+    else
+    {
     <div class="card-body p-0">
-        <div class="table-responsive">
+        <div class="table-responsive mf-xp-table-wrap">
             <table id="tblAppointments" class="table table-hover table-striped mb-0 text-nowrap">
                 <thead class="thead-light">
                     <tr>
@@ -127,9 +141,12 @@
             </table>
         </div>
     </div>
+    }
 </div>
 
 @section Scripts {
+    @if (appointments.Count > 0)
+    {
     <script>
         $(function () {
             $('#tblAppointments').DataTable({
@@ -141,4 +158,5 @@
             });
         });
     </script>
+    }
 }

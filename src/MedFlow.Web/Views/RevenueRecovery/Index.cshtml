@@ -1,0 +1,151 @@
+@model MedFlow.Application.Reporting.ExecutiveDashboardVm
+@using System.Collections.Generic
+@using System.Linq
+@using MedFlow.Application.Reporting
+@{
+    var showFinancial = ViewBag.ShowFinancialDashboard as bool? ?? false;
+    var today = DateTime.Today;
+    var dim = DateTime.DaysInMonth(today.Year, today.Month);
+    var dom = today.Day;
+    decimal projectedMonth = 0;
+    if (showFinancial && dom > 0)
+        projectedMonth = Model.FinanceKpis.BillingMonth / dom * dim;
+}
+<div class="mf-mission-control">
+    <div class="mf-xp-card mf-xp-card-glass mb-4 p-4">
+        <h2 class="h5 font-weight-bold mb-2" style="font-family:var(--mf-xp-font-display);">Motor de recuperación de ingresos</h2>
+        <p class="text-muted small mb-0">
+            Prioriza cobros pendientes, reactiva pacientes inactivos y conecta automatizaciones (WhatsApp / email / SMS cuando estén configuradas).
+        </p>
+        @if (ViewBag.EstimatedRecoverableHint is decimal est && est > 0)
+        {
+            <p class="small text-info mb-0 mt-2"><i class="fa fa-lightbulb-o"></i> <strong>Indicador orientativo:</strong> con gestión de cartera, un rango típico de oportunidad a corto plazo podría rondar <strong>@est.ToString("N2")</strong> (heurística ~12% del saldo pendiente; no es un compromiso contable).</p>
+        }
+    </div>
+
+    @if (!showFinancial)
+    {
+        <div class="alert alert-info"><i class="fa fa-info-circle"></i> Activa permisos de facturación para ver montos y acciones de cobro.</div>
+    }
+
+    @{
+        var wfCounts = ViewBag.RecoveryWorkflowCounts as IReadOnlyDictionary<string, int>;
+        var wfTotal = ViewBag.RecoveryWorkflowTotalSucceeded as int? ?? 0;
+    }
+    @if (wfCounts != null)
+    {
+        <div class="mf-xp-card p-3 mb-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
+                <h3 class="h6 font-weight-bold mb-0"><i class="fa fa-random text-primary"></i> Atribución workflows (30 d, exitosos)</h3>
+                <a asp-controller="RevenueRecovery" asp-action="ExportWorkflowMetricsCsv" class="btn btn-sm btn-outline-success"><i class="fa fa-file-excel-o"></i> Exportar CSV</a>
+            </div>
+            <p class="small text-muted mb-2">Cada fila cuenta envíos <strong>completados</strong> a tu webhook (n8n) por tipo de evento. Configura workflows en Automatizaciones.</p>
+            <div class="d-flex flex-wrap align-items-baseline mb-2">
+                <span class="h4 mb-0 mr-2">@wfTotal</span>
+                <span class="text-muted small">Total en este tenant (últimos 30 días)</span>
+            </div>
+            @if (wfCounts.Count > 0)
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm table-borderless mb-0">
+                        <tbody>
+                            @foreach (var kv in wfCounts.OrderByDescending(x => x.Value))
+                            {
+                                <tr>
+                                    <td class="pl-0"><code>@kv.Key</code></td>
+                                    <td class="text-right font-weight-bold">@kv.Value</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <p class="small text-muted mb-0"><i class="fa fa-info-circle"></i> Sin ejecuciones exitosas registradas en este período.</p>
+            }
+            @if (ViewBag.CanSeeWorkflowHistory as bool? == true)
+            {
+                <a asp-controller="WorkflowExecutions" asp-action="Index" class="btn btn-sm btn-outline-secondary mt-2">Ver historial de ejecuciones</a>
+            }
+        </div>
+    }
+
+    <div class="row mb-4">
+        @if (showFinancial)
+        {
+            <div class="col-md-4 mb-3">
+                <div class="mf-xp-kpi h-100">
+                    <div class="mf-xp-kpi-label">Saldo pendiente</div>
+                    <div class="mf-xp-kpi-value text-warning">@Model.FinanceKpis.TotalOutstanding.ToString("N2")</div>
+                    <a class="small d-inline-block mt-2" asp-controller="BillingInvoices" asp-action="Index">Ir a facturas</a>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="mf-xp-kpi h-100">
+                    <div class="mf-xp-kpi-label">Facturas pendientes / parcial</div>
+                    <div class="mf-xp-kpi-value">@Model.FinanceKpis.InvoicesPendingOrPartial</div>
+                    <span class="small text-muted">Seguimiento de cartera</span>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="mf-xp-kpi h-100">
+                    <div class="mf-xp-kpi-label">Proyección fin de mes (estim.)</div>
+                    <div class="mf-xp-kpi-value text-info">@projectedMonth.ToString("N2")</div>
+                    <span class="small text-muted">Basada en facturación MTD</span>
+                </div>
+            </div>
+        }
+        <div class="col-md-4 mb-3">
+            <div class="mf-xp-kpi h-100">
+                <div class="mf-xp-kpi-label">Pacientes inactivos</div>
+                <div class="mf-xp-kpi-value">@Model.PatientKpis.InactiveCount</div>
+                <a class="small d-inline-block mt-2" asp-controller="Patients" asp-action="Index" asp-route-estadoActivo="false">Ver listado</a>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="mf-xp-kpi h-100">
+                <div class="mf-xp-kpi-label">Cancelación (30 d)</div>
+                <div class="mf-xp-kpi-value text-danger">@Model.CancellationRatePeriod %</div>
+                <a class="small d-inline-block mt-2" asp-controller="Appointments" asp-action="Index">Revisar agenda</a>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="mf-xp-kpi h-100">
+                <div class="mf-xp-kpi-label">No-show (hoy)</div>
+                <div class="mf-xp-kpi-value">@Model.AppointmentKpis.NoShowToday</div>
+                <span class="small text-muted">Recordatorios y lista de espera</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-4 mb-3">
+            <div class="mf-xp-card p-4 h-100">
+                <h3 class="h6 font-weight-bold mb-3"><i class="fa fa-money text-success"></i> Cobrar primero</h3>
+                <p class="small text-muted">Facturas abiertas y pagos parciales: cierra el ciclo antes de más demanda operativa.</p>
+                @if (showFinancial)
+                {
+                    <a asp-controller="BillingInvoices" asp-action="Index" class="btn btn-success btn-block">Abrir facturas</a>
+                    <a asp-controller="CashMovements" asp-action="Index" class="btn btn-outline-secondary btn-block mt-2">Ver caja</a>
+                }
+            </div>
+        </div>
+        <div class="col-lg-4 mb-3">
+            <div class="mf-xp-card p-4 h-100">
+                <h3 class="h6 font-weight-bold mb-3"><i class="fa fa-users text-primary"></i> Reactivar pacientes</h3>
+                <p class="small text-muted">Pacientes sin visita reciente: campañas de control y seguimiento (cuando actives canales).</p>
+                <a asp-controller="Patients" asp-action="Index" asp-route-estadoActivo="false" class="btn btn-primary btn-block">Pacientes inactivos</a>
+                <a asp-controller="GrowthCrm" asp-action="Index" class="btn btn-outline-primary btn-block mt-2">CRM Crecimiento</a>
+            </div>
+        </div>
+        <div class="col-lg-4 mb-3">
+            <div class="mf-xp-card p-4 h-100">
+                <h3 class="h6 font-weight-bold mb-3"><i class="fa fa-magic text-warning"></i> Automatizar</h3>
+                <p class="small text-muted">Workflows, recordatorios y triggers (plan según tenant).</p>
+                <a asp-controller="Automations" asp-action="Index" class="btn btn-warning btn-block text-dark">Automatizaciones</a>
+                <a asp-controller="Dashboard" asp-action="Index" class="btn btn-outline-secondary btn-block mt-2">Mission Control</a>
+            </div>
+        </div>
+    </div>
+</div>

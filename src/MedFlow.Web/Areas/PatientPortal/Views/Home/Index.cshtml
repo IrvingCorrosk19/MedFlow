@@ -1,9 +1,11 @@
 @model MedFlow.Application.PatientPortal.PatientPortalDashboardDto
+@using System.Globalization
 @{
     ViewData["Title"] = "Inicio";
     var options = ViewData["Options"] as MedFlow.Application.Options.PatientPortalOptions;
+    var es = CultureInfo.GetCultureInfo("es-ES");
 }
-<h2 class="mb-1">Hola, @Model.Profile.FullName</h2>
+<h1 class="h3 mb-1">Hola, @Model.Profile.FullName</h1>
 @if (Model.NextAppointment != null)
 {
     <p class="text-muted small mb-4">Próxima cita: @Model.NextAppointment.ScheduledDate.ToString("dd/MM/yyyy") a las @Model.NextAppointment.StartTime.ToString(@"hh\:mm") con @Model.NextAppointment.DoctorName</p>
@@ -13,15 +15,25 @@ else
     <p class="text-muted small mb-4">No tiene citas programadas próximamente.</p>
 }
 
+@{
+    AppointmentGuidanceInfo? ag = Model.NextAppointment == null ? null : new AppointmentGuidanceInfo(
+        Model.NextAppointment.Id,
+        Model.NextAppointment.ScheduledDate,
+        Model.NextAppointment.StartTime,
+        Model.NextAppointment.DoctorName,
+        Model.NextAppointment.ConsultationRoom);
+}
+<partial name="_PatientAppointmentGuidance" model="ag" />
+
 <div class="row mb-4">
     <div class="col-md-4 mb-3">
         <div class="dashboard-card">
             <div class="d-flex justify-content-between align-items-start">
                 <div>
-                    <div class="card-label">Proxima cita</div>
+                    <div class="card-label">Próxima cita</div>
                     @if (Model.NextAppointment != null)
                     {
-                        <div class="card-value" style="font-size:1.1rem;">@Model.NextAppointment.ScheduledDate.ToString("ddd d MMM")</div>
+                        <div class="card-value" style="font-size:1.1rem;">@Model.NextAppointment.ScheduledDate.ToString("ddd d MMM", es)</div>
                         <div class="small text-muted">@Model.NextAppointment.StartTime.ToString(@"hh\:mm") - @Model.NextAppointment.DoctorName</div>
                         <a asp-area="PatientPortal" asp-action="Upcoming" asp-controller="Appointments" class="btn btn-sm btn-outline-primary mt-2">Ver detalles</a>
                     }
@@ -71,7 +83,7 @@ else
 <div class="row">
     <div class="col-lg-6 mb-4">
         <div class="portal-card card">
-            <div class="card-header">Ultimas notificaciones</div>
+            <div class="card-header">Últimas notificaciones</div>
             <div class="card-body">
                 @if (Model.RecentNotifications.Any())
                 {
@@ -98,7 +110,7 @@ else
     </div>
     <div class="col-lg-6 mb-4">
         <div class="portal-card card">
-            <div class="card-header">Accesos rapidos</div>
+            <div class="card-header">Accesos rápidos</div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-6 mb-2">

@@ -1,0 +1,60 @@
+@model MedFlow.Application.Reporting.ExecutiveDashboardVm
+@using MedFlow.Application.Reporting
+@{
+    var showFinancial = ViewBag.ShowFinancialDashboard as bool? ?? false;
+    var days = ViewBag.Days as int? ?? 14;
+    var today = DateTime.Today;
+    var dim = DateTime.DaysInMonth(today.Year, today.Month);
+    var dom = today.Day;
+    decimal projectedMonth = 0;
+    if (showFinancial && dom > 0)
+        projectedMonth = Model.FinanceKpis.BillingMonth / dom * dim;
+}
+<div class="mf-xp-mission-hero mf-xp-card-glass mb-3">
+    <div class="row align-items-center">
+        <div class="col-lg-8 mb-3 mb-lg-0">
+            <div class="text-uppercase small font-weight-bold mf-xp-mission-kicker">Clinic Mission Control</div>
+            <h2 class="mb-2" style="font-family:var(--mf-xp-font-display);font-weight:700;letter-spacing:-.03em;font-size:clamp(1.25rem, 2.5vw, 1.65rem);">
+                Tu operación y tus números en un solo lugar
+            </h2>
+            <p class="mb-0 text-muted small">
+                Período de gráficos: <strong>@days días</strong> · Completitud <strong><span data-mf-kpi="completionRatePeriod">@Model.CompletionRatePeriod</span> %</strong>
+                · Cancelación <strong><span data-mf-kpi="cancellationRatePeriod">@Model.CancellationRatePeriod</span> %</strong>
+            </p>
+        </div>
+        <div class="col-lg-4">
+            <div class="d-flex flex-wrap justify-content-lg-end gap-2">
+                <a asp-controller="GrowthCrm" asp-action="Index" class="btn btn-sm btn-outline-primary mf-xp-mission-btn">
+                    <i class="fa fa-users mr-1"></i> CRM Crecimiento
+                </a>
+                @if (showFinancial)
+                {
+                    <a asp-controller="RevenueRecovery" asp-action="Index" class="btn btn-sm btn-success mf-xp-mission-btn">
+                        <i class="fa fa-bolt mr-1"></i> Recuperar ingresos
+                    </a>
+                }
+                <a asp-area="AI" asp-controller="AIDashboard" asp-action="Index" class="btn btn-sm btn-dark mf-xp-mission-btn">
+                    <i class="fa fa-lightbulb-o mr-1"></i> IA Growth
+                </a>
+            </div>
+        </div>
+    </div>
+    @if (showFinancial)
+    {
+        <hr class="border-secondary my-3" />
+        <div class="row text-center text-lg-left">
+            <div class="col-md-4 mb-2 mb-md-0">
+                <div class="small text-muted text-uppercase font-weight-bold">Facturación mes (MTD)</div>
+                <div class="h4 mb-0 font-weight-bold" data-mf-kpi="billingMonthDisplay">@Model.FinanceKpis.BillingMonth.ToString("N2")</div>
+            </div>
+            <div class="col-md-4 mb-2 mb-md-0">
+                <div class="small text-muted text-uppercase font-weight-bold">Proyección fin de mes <span class="font-weight-normal">(estim.)</span></div>
+                <div class="h4 mb-0 font-weight-bold text-info" data-mf-kpi="projectedMonthDisplay">@projectedMonth.ToString("N2")</div>
+            </div>
+            <div class="col-md-4">
+                <div class="small text-muted text-uppercase font-weight-bold">Saldo pendiente cartera</div>
+                <div class="h4 mb-0 font-weight-bold text-warning" data-mf-kpi="totalOutstandingDisplay">@Model.FinanceKpis.TotalOutstanding.ToString("N2")</div>
+            </div>
+        </div>
+    }
+</div>

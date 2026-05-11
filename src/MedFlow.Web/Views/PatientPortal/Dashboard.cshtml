@@ -5,6 +5,16 @@
     Layout = "~/Views/Shared/_PatientLayout.cshtml";
 }
 
+@{
+    AppointmentGuidanceInfo? gd = Model.NextAppointment == null ? null : new AppointmentGuidanceInfo(
+        Model.NextAppointment.Id,
+        Model.NextAppointment.ScheduledDate,
+        Model.NextAppointment.StartTime,
+        Model.NextAppointment.DoctorName,
+        Model.NextAppointment.ConsultationRoom);
+    ViewData["GuidanceDetailUrl"] = gd == null ? null : Url.Action("AppointmentDetails", "PatientPortal", new { id = gd.Id });
+}
+
 <!-- KPI Cards -->
 <div class="row">
     <div class="col-lg-3 col-6">
@@ -48,6 +58,9 @@
         </div>
     </div>
 </div>
+
+<partial name="_PatientAppointmentGuidance" model="gd" />
+@{ ViewData.Remove("GuidanceDetailUrl"); }
 
 <div class="row">
     <!-- Próxima cita -->

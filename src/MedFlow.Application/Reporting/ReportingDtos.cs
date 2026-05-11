@@ -29,7 +29,9 @@ public record FinanceKpiVm(
     decimal PaymentsToday,
     decimal TotalOutstanding,
     int InvoicesPendingOrPartial,
-    int InvoicesPaid);
+    int InvoicesPaid,
+    /// <summary>Cobros del período del gráfico / citas completadas en ese período (aprox. ticket medio; útil para estimar recuperación).</summary>
+    decimal? AvgCollectedPerCompletedAppointmentPeriod);
 
 public record NamedCountVm(string Name, int Count);
 

@@ -1,0 +1,78 @@
+@model MedFlow.Application.Reporting.ExecutiveDashboardVm
+@using MedFlow.Application.Reporting
+@{
+    var showFinancial = ViewBag.ShowFinancialDashboard as bool? ?? false;
+    var months = Model.NewPatientsByMonth.ToList();
+    MonthCountVm? curMonth = months.Count > 0 ? months[^1] : null;
+    MonthCountVm? prevMonth = months.Count >= 2 ? months[^2] : null;
+    decimal? momPatientGrowth = null;
+    if (curMonth != null && prevMonth != null)
+    {
+        var denom = Math.Max(prevMonth.Count, 1);
+        momPatientGrowth = Math.Round(100m * (curMonth.Count - prevMonth.Count) / denom, 1);
+    }
+    var apt = Model.AppointmentKpis;
+    var td = apt.TotalToday;
+    var completedPctToday = td == 0 ? 0 : Math.Round(100m * apt.CompletedToday / td, 1);
+    var noShowPctToday = td == 0 ? 0 : Math.Round(100m * apt.NoShowToday / td, 1);
+    var cancelPctToday = td == 0 ? 0 : Math.Round(100m * apt.CancelledToday / td, 1);
+}
+<div class="row mb-3 mf-xp-mc-compare">
+    <div class="col-md-3 mb-2 mb-md-0">
+        <div class="mf-xp-kpi h-100">
+            <div class="mf-xp-kpi-label">Crecimiento pacientes (mes vs anterior)</div>
+            <div class="mf-xp-kpi-value @(momPatientGrowth >= 0 ? "text-success" : "text-danger")">
+                @if (momPatientGrowth.HasValue)
+                {
+                    @((momPatientGrowth.Value >= 0 ? "+" : "") + momPatientGrowth.Value.ToString("0.#") + " %")
+                }
+                else
+                {
+                    <span class="text-muted">—</span>
+                }
+            </div>
+            <div class="small text-muted mt-1">Altas registradas: <strong>@Model.PatientKpis.NewThisMonth</strong> este mes</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-2 mb-md-0">
+        <div class="mf-xp-kpi h-100">
+            <div class="mf-xp-kpi-label">Ocupación del día (completadas / citas hoy)</div>
+            <div class="mf-xp-kpi-value text-primary">@completedPctToday %</div>
+            <div class="small text-muted mt-1">@apt.CompletedToday completadas · @apt.TotalToday citas hoy</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-2 mb-md-0">
+        <div class="mf-xp-kpi h-100">
+            <div class="mf-xp-kpi-label">Riesgo no-show (hoy)</div>
+            <div class="mf-xp-kpi-value @(noShowPctToday >= 15 ? "text-danger" : "text-warning")">@noShowPctToday %</div>
+            <div class="small text-muted mt-1">@apt.NoShowToday no-show · <a asp-controller="Appointments" asp-action="Index">Ver agenda</a></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="mf-xp-kpi h-100">
+            <div class="mf-xp-kpi-label">Cancelaciones hoy</div>
+            <div class="mf-xp-kpi-value text-secondary">@cancelPctToday %</div>
+            <div class="small text-muted mt-1">Período: cancelación <strong>@Model.CancellationRatePeriod %</strong> · completitud <strong>@Model.CompletionRatePeriod %</strong></div>
+        </div>
+    </div>
+</div>
+@if (showFinancial)
+{
+    var today = DateTime.Today;
+    var dim = DateTime.DaysInMonth(today.Year, today.Month);
+    var dom = today.Day;
+    decimal projectedMonth = dom > 0 ? Model.FinanceKpis.BillingMonth / dom * dim : 0;
+    <div class="mf-xp-card p-3 mb-3 border-left-primary" style="border-left: 4px solid var(--mf-primary);">
+        <div class="d-flex flex-wrap justify-content-between align-items-center">
+            <div>
+                <div class="text-uppercase small text-muted font-weight-bold mb-1">Forecast &amp; comparativa rápida</div>
+                <span class="small">Proyección fin de mes (lineal MTD): <strong class="text-info">@projectedMonth.ToString("N2")</strong></span>
+                <span class="small text-muted mx-2">·</span>
+                <span class="small">Facturación mes: <strong>@Model.FinanceKpis.BillingMonth.ToString("N2")</strong></span>
+                <span class="small text-muted mx-2">·</span>
+                <span class="small">Cobrado hoy: <strong class="text-success">@Model.FinanceKpis.PaymentsToday.ToString("N2")</strong></span>
+            </div>
+            <a asp-controller="RevenueRecovery" asp-action="Index" class="btn btn-sm btn-success mf-xp-mission-btn"><i class="fa fa-bolt mr-1"></i> Motor recuperación</a>
+        </div>
+    </div>
+}

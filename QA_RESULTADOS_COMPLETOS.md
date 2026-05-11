@@ -108,13 +108,15 @@ En esta sesión **no se crearon usuarios nuevos** en base de datos; se utilizaro
 
 | Archivo / área | Cambio | Motivo |
 |----------------|--------|--------|
-| `scripts/ejecutar-pruebas-flujos-prioritarios.ps1`, `PRUEBAS_FLUJOS_PRIORITARIOS_CLINICAS.md` | Suite HTTP reproducible (22 casos) | Regresión funcional automatizable |
+| `scripts/ejecutar-pruebas-flujos-prioritarios.ps1`, `PRUEBAS_FLUJOS_PRIORITARIOS_CLINICAS.md` | Suite HTTP reproducible (**37** casos; incl. mandato v2 TP-V*) | Regresión funcional automatizable |
 | `Migrations/20260510171231_SyncPrescriptionColumnsWithDomain.cs` | Columnas alineadas en `Prescriptions` | Evitar 500 en listado de recetas |
 | `AccountController.cs` | `Login` GET async: paciente solo → área PatientPortal | Evitar AccessDenied en login staff con sesión paciente |
 | `src/MedFlow.Web/wwwroot/lib/datatables/es-ES.json` | Añadido (descarga oficial plug-ins 1.13.7) | Servir traducción DataTables mismo origen |
 | Múltiples `*.cshtml` bajo `MedFlow.Web` (vistas + áreas) | `language: { url: '//cdn.datatables.net/.../es-ES.json' }` → `'/lib/datatables/es-ES.json'` | Eliminar error CORS y mantener UI en español |
 | `DashboardController.cs`, `Views/Dashboard/Index.cshtml` | Permiso `billing.view` para KPIs/gráficos financieros, alertas de facturación y actividad con pagos; CSV operativo sin finanzas si no hay permiso | Alinear UI con política de facturación |
 | Proceso `MedFlow.Web` bloqueando `dotnet build` | Cierre del proceso cuando bloquea copia de `MedFlow.Web.exe` | Permitir compilación limpia |
+| Script HTTP TP-G01 | Coincidencia amplia `Facturaci` incluía texto del menú lateral | Criterio por KPIs (`Facturación hoy\|mes`, `Saldo pendiente total`) |
+| Script HTTP TP-V10 | `Invoke-WebRequest` devolvía `manifest.webmanifest` como `byte[]` | Decodificar UTF-8 antes de `-match` |
 
 ---
 
@@ -130,11 +132,12 @@ En esta sesión **no se crearon usuarios nuevos** en base de datos; se utilizaro
 
 ## ¿Qué falta?
 
-- Ampliar el script HTTP a **POST** (crear paciente/cita, pagos) o E2E Playwright; los casos solo-GET del plan prioritario quedaron **OK** el 2026-05-10 (ver `PRUEBAS_FLUJOS_PRIORITARIOS_CLINICAS.md` §8).
-- Matriz de casos por **módulo** (citas: crear/editar/cancelar; recetas; expediente completo; informes; contabilidad).
-- Pruebas **responsive** y navegadores.
-- Validación de **integraciones** externas (correo, pagos, IA).
+- Casos **P1** aún mayormente **manuales o multi-paso**: TP-B03, TP-C02–C04, TP-D02–D03, TP-E02, TP-F02 (pago), PDF/export — ver §8 de `PRUEBAS_FLUJOS_PRIORITARIOS_CLINICAS.md`.
+- Matriz de casos por **módulo** ampliada (informes pesados, contabilidad con datos reales).
+- Pruebas **responsive** y navegadores adicionales.
+- Validación de **integraciones** externas (correo, pagos, IA en producción).
 - ~~Ocultar KPIs financieros en `/` según rol~~ — implementado con `billing.view`.
+- ~~Verificación HTTP mandato v2 (10 fases producto)~~ — cubierta por TP-V1…V10 en script (2026-05-11).
 
 ## Riesgos pendientes
 
@@ -157,12 +160,29 @@ dotnet run --no-build -c Release --urls "http://localhost:5115"
 
 ---
 
-## Ejecución funcional HTTP ampliada (2026-05-10)
+## Ejecución funcional HTTP ampliada (2026-05-10 — continuación 2026-05-11)
 
 | Artefacto | Resultado |
 |-----------|-----------|
-| `scripts/ejecutar-pruebas-flujos-prioritarios.ps1` | **28 / 28 OK** (incluye TP-B02-POST, TP-B04, TP-I02, TP-A03, TP-A06, TP-H02 entre otros) |
+| `scripts/ejecutar-pruebas-flujos-prioritarios.ps1` | **37 / 37 OK** (bloques A–K + **mandato v2** TP-V1…V10; incluye TP-B02-POST, TP-G01 corregido vs sidebar, manifest PWA con body binario) |
 | `dotnet test MedFlow.UnitTests` Release | **197 / 197** OK |
-| `PriorityClinicalFlowFunctionalTests` + `generate-priority-tests-report.ps1` | **4 / 4** OK → informe en `/qa/priority-functional-tests-report.html` |
+| `PriorityClinicalFlowFunctionalTests` | **4 / 4** OK → informe opcional `scripts\generate-priority-tests-report.ps1` → `wwwroot/qa/priority-functional-tests-report.html` |
 
-*Informe actualizado tras sesión E2E 2026-05-10. Ampliar con matrices de casos por módulo según roadmap de QA.*
+### Mandato v2 (diez fases producto) — verificación HTTP
+
+Alineado a `MEDFLOW_SEGUIMIENTO_PENDIENTE.md` §3. Sesión **qa.admin** para rutas staff; paciente seed para portal canónico.
+
+| # | Fase | Caso | Ruta / criterio |
+|---|------|------|-----------------|
+| 1 | Experience | TP-V1 | `/Patients` contiene `mf-xp-card` |
+| 2 | Mission Control | TP-V2 | `GET /Dashboard/KpiSnapshot?days=14` JSON con `completionRatePeriod` |
+| 3 | AI Growth | TP-V3 | `/AI/GrowthEngine` → 200 |
+| 4 | Revenue | TP-V4 | `/RevenueRecovery` → 200 |
+| 5 | CRM | TP-V5 | `/GrowthCrm/Segments` → 200 |
+| 6 | Portal canónico | TP-V6 | Paciente: `/portal/dashboard` → 200 |
+| 7 | Automatización | TP-K02 | `/Automations` (misma verificación que bloque K) |
+| 8 | SaaS tenant | TP-V8 | `/ClinicConsole` → 200 |
+| 9 | Seguridad | TP-V9 | `/SecurityPosture` → 200 |
+| 10 | PWA | TP-V10 | `/manifest.webmanifest` → 200 y cuerpo JSON con `MedFlow` |
+
+*Matrices manuales largas (citas end-to-end, pagos, PDF) siguen en `PRUEBAS_FLUJOS_PRIORITARIOS_CLINICAS.md` §4 como backlog.*

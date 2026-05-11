@@ -56,6 +56,16 @@
     </div>
 </div>
 
+<div class="mf-xp-card mb-4 p-4">
+    <h3 class="h6 font-weight-bold mb-2"><i class="fa fa-files-o mr-2"></i>Plantillas JSON (recovery / n8n)</h3>
+    <p class="small text-muted mb-2">Descarga ejemplos de <code>PayloadTemplateJson</code> para disparadores típicos. Ajusta URL del webhook y headers antes de producción.</p>
+    <div class="d-flex flex-wrap" style="gap:8px;">
+        <a class="btn btn-sm btn-outline-secondary" href="~/workflow-templates/invoice-overdue.json" download>InvoiceOverdue</a>
+        <a class="btn btn-sm btn-outline-secondary" href="~/workflow-templates/patient-inactive.json" download>PatientInactive</a>
+        <a class="btn btn-sm btn-outline-secondary" href="~/workflow-templates/no-show-risk.json" download>NoShowRisk</a>
+    </div>
+</div>
+
 <div class="row mb-3">
     <div class="col">
         @if (ViewBag.CanManage == true)

@@ -54,6 +54,8 @@ public class DashboardController : Controller
             sb.AppendLine($"Finanzas,Cobrado hoy,{model.FinanceKpis.PaymentsToday}");
             sb.AppendLine($"Finanzas,Facturado mes,{model.FinanceKpis.BillingMonth}");
             sb.AppendLine($"Finanzas,Saldo pendiente,{model.FinanceKpis.TotalOutstanding}");
+            if (model.FinanceKpis.AvgCollectedPerCompletedAppointmentPeriod is { } ac)
+                sb.AppendLine($"Finanzas,Promedio cobrado por cita completada (período gráfico),{ac}");
         }
 
         sb.AppendLine();
@@ -78,9 +80,9 @@ public class DashboardController : Controller
 
     public async Task<IActionResult> Index(int days = 14, CancellationToken cancellationToken = default)
     {
-        ViewData["Title"] = "Dashboard ejecutivo";
-        ViewData["PageSubtitle"] = "KPIs, tendencias y operación clínica";
-        ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item active\">Dashboard</li>";
+        ViewData["Title"] = "Mission Control";
+        ViewData["PageSubtitle"] = "KPIs, riesgo operativo y acciones de crecimiento";
+        ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item active\">Mission Control</li>";
 
         var clampedDays = Math.Clamp(days, 1, 365);
         ViewBag.Days = clampedDays;
@@ -98,5 +100,33 @@ public class DashboardController : Controller
                 HttpContext.RequestServices.GetRequiredService<ILogger<DashboardController>>(), ex, "Error cargando dashboard");
             return View(null as MedFlow.Application.Reporting.ExecutiveDashboardVm);
         }
+    }
+
+    /// <summary>JSON ligero para refresco de KPIs en Mission Control (sin recargar toda la página).</summary>
+    [HttpGet]
+    public async Task<IActionResult> KpiSnapshot(int days = 14, CancellationToken cancellationToken = default)
+    {
+        var clampedDays = Math.Clamp(days, 1, 365);
+        var showFinancial = await UserCanViewFinancialAsync(cancellationToken);
+        var model = await _analytics.GetExecutiveDashboardAsync(new ExecutiveDashboardFilter(clampedDays), cancellationToken);
+
+        var today = DateTime.Today;
+        var dim = DateTime.DaysInMonth(today.Year, today.Month);
+        var dom = today.Day;
+        decimal projectedMonth = 0;
+        if (showFinancial && dom > 0)
+            projectedMonth = model.FinanceKpis.BillingMonth / dom * dim;
+
+        return Json(new
+        {
+            days = clampedDays,
+            completionRatePeriod = model.CompletionRatePeriod,
+            cancellationRatePeriod = model.CancellationRatePeriod,
+            inactivePatients = model.PatientKpis.InactiveCount,
+            noShowToday = model.AppointmentKpis.NoShowToday,
+            billingMonthDisplay = showFinancial ? model.FinanceKpis.BillingMonth.ToString("N2") : null,
+            projectedMonthDisplay = showFinancial ? projectedMonth.ToString("N2") : null,
+            totalOutstandingDisplay = showFinancial ? model.FinanceKpis.TotalOutstanding.ToString("N2") : null
+        });
     }
 }

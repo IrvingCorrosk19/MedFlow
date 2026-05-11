@@ -46,6 +46,8 @@
     var openSeguridad    = IsCtrl("AdminUsers") || IsCtrl("AdminRoles") || IsCtrl("Permissions") || IsCtrl("SecurityAudit");
     var openInteligencia = canSeeReportes && (IsCtrl("Reports") || IsCtrl("Analytics"));
     var isAIArea         = ViewContext.RouteData.Values["area"]?.ToString() == "AI";
+    var openGrowth       = IsCtrl("RevenueRecovery") || IsCtrl("GrowthCrm");
+    var canSeeGrowthMenu = isAdminLike || canSeeFinanzas || canSeeReportes || (isReception && canSeePacientes);
 }
 <aside class="main-sidebar sidebar-dark-primary elevation-4 medflow-sidebar">
     <a asp-controller="Dashboard" asp-action="Index" class="brand-link">
@@ -67,9 +69,40 @@
                 <li class="nav-item">
                     <a asp-controller="Dashboard" asp-action="Index" class="nav-link @Active("Dashboard")">
                         <i class="nav-icon fa fa-dashboard"></i>
-                        <p>Dashboard</p>
+                        <p>Mission Control</p>
                     </a>
                 </li>
+
+                @if (canSeeGrowthMenu)
+                {
+                    <li class="nav-header text-uppercase small text-muted">Crecimiento</li>
+                    <li class="nav-item has-treeview @(openGrowth ? "menu-open" : "")">
+                        <a href="#" class="nav-link @(openGrowth ? "active" : "")">
+                            <i class="nav-icon fa fa-rocket"></i>
+                            <p>Crecimiento <i class="right fa fa-angle-left"></i></p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            @if (canSeeFinanzas || isAdminLike)
+                            {
+                                <li class="nav-item">
+                                    <a asp-controller="RevenueRecovery" asp-action="Index" class="nav-link @Active("RevenueRecovery")">
+                                        <i class="fa fa-bolt nav-icon"></i>
+                                        <p>Recuperación ingresos</p>
+                                    </a>
+                                </li>
+                            }
+                            @if (canSeePacientes)
+                            {
+                                <li class="nav-item">
+                                    <a asp-controller="GrowthCrm" asp-action="Index" class="nav-link @Active("GrowthCrm")">
+                                        <i class="fa fa-heart nav-icon"></i>
+                                        <p>CRM Crecimiento</p>
+                                    </a>
+                                </li>
+                            }
+                        </ul>
+                    </li>
+                }
 
                 @* Plataforma SaaS — solo SuperAdmin *@
                 @if (isSuperAdmin)
@@ -417,15 +450,33 @@
                         </li>
                     }
                     <li class="nav-item">
-                        <a asp-area="AI" asp-controller="AIDashboard" asp-action="Index" class="nav-link @(isAIArea ? "active" : "")">
+                        <a asp-area="AI" asp-controller="AIDashboard" asp-action="Index" class="nav-link @((ViewContext.RouteData.Values["area"]?.ToString() == "AI" && string.Equals(ViewContext.RouteData.Values["controller"]?.ToString(), "AIDashboard", StringComparison.OrdinalIgnoreCase)) ? "active" : "")">
                             <i class="nav-icon fa fa-brain"></i>
                             <p>IA Operativa</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a asp-area="AI" asp-controller="GrowthEngine" asp-action="Index" class="nav-link @((ViewContext.RouteData.Values["area"]?.ToString() == "AI" && string.Equals(ViewContext.RouteData.Values["controller"]?.ToString(), "GrowthEngine", StringComparison.OrdinalIgnoreCase)) ? "active" : "")">
+                            <i class="nav-icon fa fa-rocket"></i>
+                            <p>Motor IA Growth</p>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a asp-controller="TenantBilling" asp-action="Index" class="nav-link @Active("TenantBilling")">
                             <i class="nav-icon fa fa-credit-card"></i>
                             <p>Mi suscripción</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a asp-controller="ClinicConsole" asp-action="Index" class="nav-link @Active("ClinicConsole")">
+                            <i class="nav-icon fa fa-server"></i>
+                            <p>Consola clínica</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a asp-controller="SecurityPosture" asp-action="Index" class="nav-link @Active("SecurityPosture")">
+                            <i class="nav-icon fa fa-shield"></i>
+                            <p>Postura seguridad</p>
                         </a>
                     </li>
                     <li class="nav-item">

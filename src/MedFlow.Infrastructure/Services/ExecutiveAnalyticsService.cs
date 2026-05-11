@@ -95,14 +95,6 @@ public class ExecutiveAnalyticsService : IExecutiveAnalyticsService
             i.Status == InvoiceStatus.Pending || i.Status == InvoiceStatus.PartiallyPaid, cancellationToken);
         var paidInv = await invBase.CountAsync(i => i.Status == InvoiceStatus.Paid, cancellationToken);
 
-        var financeKpis = new FinanceKpiVm(
-            BillingToday: billingToday,
-            BillingMonth: billingMonth,
-            PaymentsToday: paymentsToday,
-            TotalOutstanding: outstanding,
-            InvoicesPendingOrPartial: pendInv,
-            InvoicesPaid: paidInv);
-
         var aptsByDayRaw = await aptBase
             .Where(a => a.ScheduledDate >= chartFrom && a.ScheduledDate < todayEnd)
             .GroupBy(a => a.ScheduledDate.Date)
@@ -140,6 +132,20 @@ public class ExecutiveAnalyticsService : IExecutiveAnalyticsService
             .Select(i => chartFrom.AddDays(i))
             .Select(d => new DateDecimalVm(d, revenueByDayMap.GetValueOrDefault(d, 0m)))
             .ToList();
+
+        var revenuePeriodTotal = revenueByDay.Sum(x => x.Amount);
+        decimal? avgCollectedPerCompleted = completedPeriod > 0
+            ? Math.Round(revenuePeriodTotal / completedPeriod, 2)
+            : null;
+
+        var financeKpis = new FinanceKpiVm(
+            BillingToday: billingToday,
+            BillingMonth: billingMonth,
+            PaymentsToday: paymentsToday,
+            TotalOutstanding: outstanding,
+            InvoicesPendingOrPartial: pendInv,
+            InvoicesPaid: paidInv,
+            AvgCollectedPerCompletedAppointmentPeriod: avgCollectedPerCompleted);
 
         var twelveMonthsAgo = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc).AddMonths(-11);
         var patientsByMonthRaw = await _db.Patients.AsNoTracking()

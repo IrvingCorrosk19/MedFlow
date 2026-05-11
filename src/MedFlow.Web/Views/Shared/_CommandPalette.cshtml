@@ -1,0 +1,99 @@
+@* Paleta de comandos global — Ctrl/Cmd+K *@
+<div id="mfCmdPalette" class="mf-xp-cmd-backdrop" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="mfCmdPaletteTitle">
+    <div class="mf-xp-cmd-panel">
+        <label id="mfCmdPaletteTitle" class="sr-only">Paleta de comandos</label>
+        <input type="search"
+               class="form-control mf-xp-cmd-input"
+               placeholder="Ir a… (escribe para filtrar)"
+               autocomplete="off"
+               aria-label="Buscar destino" />
+        <div class="mf-xp-cmd-list">
+            <button type="button" class="mf-xp-cmd-item mf-xp-cmd-active" data-mf-search="dashboard inicio kpi mission control"
+                    data-href="@Url.Action("Index", "Dashboard")">
+                <strong>Mission Control</strong>
+                <small>Dashboard ejecutivo</small>
+            </button>
+            <button type="button" class="mf-xp-cmd-item" data-mf-search="recuperacion ingresos cobranza cartera"
+                    data-href="@Url.Action("Index", "RevenueRecovery")">
+                <strong>Recuperación de ingresos</strong>
+                <small>Cobros y reactivación</small>
+            </button>
+            <button type="button" class="mf-xp-cmd-item" data-mf-search="crm crecimiento segmentos pacientes"
+                    data-href="@Url.Action("Index", "GrowthCrm")">
+                <strong>CRM Crecimiento</strong>
+                <small>Segmentos y retención</small>
+            </button>
+            <button type="button" class="mf-xp-cmd-item" data-mf-search="pacientes directorio"
+                    data-href="@Url.Action("Index", "Patients")">
+                <strong>Pacientes</strong>
+                <small>Directorio y fichas</small>
+            </button>
+            <button type="button" class="mf-xp-cmd-item" data-mf-search="citas agenda"
+                    data-href="@Url.Action("Index", "Appointments")">
+                <strong>Citas</strong>
+                <small>Agenda y estados</small>
+            </button>
+            <button type="button" class="mf-xp-cmd-item" data-mf-search="facturas cobro billing"
+                    data-href="@Url.Action("Index", "BillingInvoices")">
+                <strong>Facturas</strong>
+                <small>Facturación clínica</small>
+            </button>
+            <button type="button" class="mf-xp-cmd-item" data-mf-search="expediente historia médica"
+                    data-href="@Url.Action("Search", "MedicalRecords")">
+                <strong>Historia clínica</strong>
+                <small>Búsqueda de expedientes</small>
+            </button>
+            <button type="button" class="mf-xp-cmd-item" data-mf-search="analítica analytics"
+                    data-href="@Url.Action("Index", "Analytics")">
+                <strong>Analítica</strong>
+                <small>Métricas y tendencias</small>
+            </button>
+            <button type="button" class="mf-xp-cmd-item" data-mf-search="automatización workflows"
+                    data-href="@Url.Action("Index", "Automations")">
+                <strong>Automatizaciones</strong>
+                <small>Workflows y triggers</small>
+            </button>
+            <button type="button" class="mf-xp-cmd-item" data-mf-search="ia copilot insights ai"
+                    data-href="@Url.Action("Index", "AIDashboard", new { area = "AI" })">
+                <strong>IA — Centro de inteligencia</strong>
+                <small>Insights y copilot</small>
+            </button>
+            <button type="button" class="mf-xp-cmd-item" data-mf-search="growth engine motor ia crecimiento"
+                    data-href="@Url.Action("Index", "GrowthEngine", new { area = "AI" })">
+                <strong>Motor IA Growth</strong>
+                <small>Playbook + KPIs + procesar IA</small>
+            </button>
+            <button type="button" class="mf-xp-cmd-item" data-mf-search="consola uso limites plan saas"
+                    data-href="@Url.Action("Index", "ClinicConsole")">
+                <strong>Consola clínica</strong>
+                <small>Uso vs límites del plan</small>
+            </button>
+            <button type="button" class="mf-xp-cmd-item" data-mf-search="seguridad owasp checklist"
+                    data-href="@Url.Action("Index", "SecurityPosture")">
+                <strong>Postura de seguridad</strong>
+                <small>Checklist administrador</small>
+            </button>
+            <button type="button" class="mf-xp-cmd-item" data-mf-search="reportes informes citas pacientes finanzas"
+                    data-href="@Url.Action("Appointments", "Reports")">
+                <strong>Reportes — Citas</strong>
+                <small>Informes operativos (índice por tipo)</small>
+            </button>
+            <button type="button" class="mf-xp-cmd-item" data-mf-search="configuración settings impuestos tenant"
+                    data-href="@Url.Action("Index", "Settings")">
+                <strong>Configuración</strong>
+                <small>Ajustes de la clínica</small>
+            </button>
+            <button type="button" class="mf-xp-cmd-item" data-mf-search="onboarding bienvenida setup"
+                    data-href="@Url.Action("Index", "Onboarding")">
+                <strong>Onboarding</strong>
+                <small>Asistente de configuración inicial</small>
+            </button>
+        </div>
+        <div class="mf-xp-cmd-hint">
+            <kbd class="small border rounded px-1">Esc</kbd> cerrar · <kbd class="small border rounded px-1">↑</kbd><kbd class="small border rounded px-1">↓</kbd> navegar · <kbd class="small border rounded px-1">Enter</kbd> ir
+        </div>
+    </div>
+</div>
+<style>
+    .sr-only { position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0; }
+</style>

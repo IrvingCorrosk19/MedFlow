@@ -186,3 +186,38 @@
         margin-top: 0.5rem;
     }
 }
+
+/* —— Accesibilidad: foco visible (teclado) y salto al contenido —— */
+.patient-portal a:focus-visible,
+.patient-portal button:focus-visible,
+.patient-portal .btn:focus-visible,
+.patient-portal input:focus-visible,
+.patient-portal select:focus-visible,
+.patient-portal textarea:focus-visible,
+.patient-portal .nav-link:focus-visible {
+    outline: 3px solid var(--mf-primary, #2563eb);
+    outline-offset: 2px;
+}
+
+.skip-link {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    z-index: 10000;
+    padding: 0.5rem 1rem;
+    background: var(--mf-primary, #1d4ed8);
+    color: #fff !important;
+    font-weight: 600;
+    border-radius: var(--mf-radius-sm, 6px);
+    text-decoration: none !important;
+}
+.skip-link:focus {
+    left: 1rem;
+    top: 0.5rem;
+    outline: 3px solid #fff;
+    outline-offset: 2px;
+}
+
+.portal-guidance ul li::marker {
+    color: var(--mf-primary);
+}

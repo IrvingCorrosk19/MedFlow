@@ -1,4 +1,5 @@
 @model MedFlow.Domain.Entities.Patient
+@using MedFlow.Domain.Entities
 @{
     ViewData["Title"] = Model.NombreCompleto;
     ViewData["PageSubtitle"] = "Expediente del paciente";
@@ -23,9 +24,16 @@
     <div class="col-md-4 text-md-right mt-2 mt-md-0">
         @if (string.IsNullOrEmpty(Model.UserId))
         {
+            @if (string.IsNullOrEmpty(Model.Correo))
+            {
+                <div class="alert alert-light border small text-left text-md-right mb-2 py-2 px-3 d-inline-block w-100">
+                    <i class="fa fa-envelope-o text-muted mr-1"></i>
+                    Indique un correo en <a asp-action="Edit" asp-route-id="@Model.Id">Editar ficha</a> para poder habilitar el portal.
+                </div>
+            }
             <form asp-action="EnablePortal" asp-route-id="@Model.Id" method="post" class="d-inline">
                 @Html.AntiForgeryToken()
-                <button type="submit" class="btn btn-success" @(string.IsNullOrEmpty(Model.Correo) ? "disabled" : "") title="@(string.IsNullOrEmpty(Model.Correo) ? "El paciente debe tener correo electrónico" : "")"><i class="fa fa-unlock"></i> Habilitar portal</button>
+                <button type="submit" class="btn btn-success" @(string.IsNullOrEmpty(Model.Correo) ? "disabled" : null) title="@(string.IsNullOrEmpty(Model.Correo) ? "El paciente debe tener correo electrónico" : "")"><i class="fa fa-unlock"></i> Habilitar portal</button>
             </form>
         }
         else
@@ -40,6 +48,93 @@
         <a asp-action="Index" class="btn btn-default">Listado</a>
     </div>
 </div>
+
+@{
+    var upcomingList = ViewBag.UpcomingAppointments as IReadOnlyList<Appointment> ?? Array.Empty<Appointment>();
+    var lastVisit = ViewBag.LastMedicalVisit as MedicalRecord;
+    var showApt = ViewBag.ShowUpcomingAppointments as bool? == true;
+    var showVisit = ViewBag.ShowLastVisit as bool? == true;
+    var showBal = ViewBag.ShowOutstandingBalance as bool? == true;
+    var outstanding = showBal ? Convert.ToDecimal(ViewBag.OutstandingBalance ?? 0m) : 0m;
+}
+@if (showApt || showVisit || showBal)
+{
+    <div class="row mb-3">
+        @if (showApt)
+        {
+            <div class="col-lg-4 mb-3 mb-lg-0">
+                <div class="card card-outline card-success shadow-sm h-100">
+                    <div class="card-header py-2"><h3 class="card-title mb-0 small"><i class="fa fa-calendar-check-o mr-1"></i>Próximas citas</h3></div>
+                    <div class="card-body py-2">
+                        @if (upcomingList.Count == 0)
+                        {
+                            <p class="text-muted small mb-0">Sin citas futuras programadas.</p>
+                        }
+                        else
+                        {
+                            <ul class="list-unstyled mb-0 small">
+                                @for (var i = 0; i < upcomingList.Count; i++)
+                                {
+                                    var a = upcomingList[i];
+                                    var lineDate = a.ScheduledDate.Date.Add(a.StartTime);
+                                    <li class="mb-2 pb-2 @(i < upcomingList.Count - 1 ? "border-bottom" : "")">
+                                        <a asp-controller="Appointments" asp-action="Details" asp-route-id="@a.Id" class="font-weight-medium d-block">@lineDate.ToString("dd/MM/yyyy HH:mm")</a>
+                                        <span class="text-muted">@a.Status</span>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        <a asp-controller="Appointments" asp-action="Index" asp-route-patientId="@Model.Id" class="btn btn-link btn-sm px-0 mt-1">Ver citas del paciente</a>
+                    </div>
+                </div>
+            </div>
+        }
+        @if (showVisit)
+        {
+            <div class="col-lg-4 mb-3 mb-lg-0">
+                <div class="card card-outline card-info shadow-sm h-100">
+                    <div class="card-header py-2"><h3 class="card-title mb-0 small"><i class="fa fa-stethoscope mr-1"></i>Última consulta</h3></div>
+                    <div class="card-body py-2">
+                        @if (lastVisit == null)
+                        {
+                            <p class="text-muted small mb-0">Aún no hay consultas registradas.</p>
+                        }
+                        else
+                        {
+                            <p class="mb-1 small"><strong>@lastVisit.VisitDate.ToString("dd/MM/yyyy")</strong></p>
+                            @if (!string.IsNullOrWhiteSpace(lastVisit.ChiefComplaint))
+                            {
+                                <p class="small mb-1 text-muted">@lastVisit.ChiefComplaint</p>
+                            }
+                            <a asp-controller="MedicalRecords" asp-action="Details" asp-route-id="@lastVisit.Id" class="btn btn-link btn-sm px-0">Abrir evolución</a>
+                        }
+                        <a asp-controller="MedicalRecords" asp-action="Patient" asp-route-patientId="@Model.Id" class="btn btn-link btn-sm px-0 d-block">Historia clínica completa</a>
+                    </div>
+                </div>
+            </div>
+        }
+        @if (showBal)
+        {
+            <div class="col-lg-4">
+                <div class="card card-outline @(outstanding > 0 ? "card-warning" : "card-secondary") shadow-sm h-100">
+                    <div class="card-header py-2"><h3 class="card-title mb-0 small"><i class="fa fa-money mr-1"></i>Facturación</h3></div>
+                    <div class="card-body py-2">
+                        @if (outstanding > 0)
+                        {
+                            <p class="mb-1 lead text-warning">@outstanding.ToString("N2")</p>
+                            <p class="text-muted small mb-2">Saldo pendiente (suma de facturas abiertas).</p>
+                        }
+                        else
+                        {
+                            <p class="mb-1 text-muted small">Sin saldo pendiente en facturas abiertas.</p>
+                        }
+                        <a asp-controller="BillingInvoices" asp-action="Index" asp-route-patientId="@Model.Id" class="btn btn-link btn-sm px-0">Ver facturas</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
 
 <div class="row">
     <div class="col-lg-6">

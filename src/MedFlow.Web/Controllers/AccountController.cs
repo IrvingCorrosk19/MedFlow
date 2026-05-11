@@ -31,7 +31,7 @@ public sealed class AccountController : Controller
                 var roles = await _userManager.GetRolesAsync(user);
                 var staffRoles = roles.Where(static r => !string.Equals(r, "Patient", StringComparison.OrdinalIgnoreCase)).ToList();
                 if (roles.Count > 0 && staffRoles.Count == 0)
-                    return RedirectToAction("Index", "Home", new { area = "PatientPortal" });
+                    return Redirect("/portal/dashboard");
             }
 
             if (Url.IsLocalUrl(returnUrl))

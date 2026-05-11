@@ -88,6 +88,14 @@ public sealed record PatientAppointmentListItemDto(
     string? Reason,
     string? ConsultationRoom);
 
+/// <summary>Datos mínimos para la tarjeta de preparación / recordatorios en el portal del paciente.</summary>
+public sealed record AppointmentGuidanceInfo(
+    Guid Id,
+    DateTime ScheduledDate,
+    TimeSpan StartTime,
+    string DoctorName,
+    string? ConsultationRoom);
+
 public sealed record PatientInvoiceListItemDto(
     Guid Id,
     string InvoiceNumber,

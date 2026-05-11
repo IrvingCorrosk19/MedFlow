@@ -1,0 +1,67 @@
+@model MedFlow.Application.Saas.TenantUsageDto
+@{
+    string BarClass(double pct) => pct >= 95 ? "bg-danger" : pct >= 80 ? "bg-warning" : "bg-success";
+}
+<div class="mf-mission-control">
+    <div class="mf-xp-card mf-xp-card-glass mb-4 p-4">
+        <h2 class="h5 font-weight-bold mb-2" style="font-family:var(--mf-xp-font-display);">Uso vs plan</h2>
+        <p class="text-muted small mb-0">Basado en tu suscripción activa. Para facturación Stripe del SaaS, usa <a asp-controller="TenantBilling" asp-action="Index">Mi suscripción</a>.</p>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6 mb-3">
+            <div class="mf-xp-card p-4">
+                <h3 class="h6 font-weight-bold mb-3">Recursos</h3>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between small mb-1">
+                        <span>Usuarios staff</span>
+                        <span>@Model.Users / @(Model.MaxUsers <= 0 ? "∞" : Model.MaxUsers.ToString()) (@Model.UsersUsagePercent %)</span>
+                    </div>
+                    <div class="progress" style="height:8px;">
+                        <div class="progress-bar @BarClass(Model.UsersUsagePercent)" role="progressbar" style="width:@(Math.Min(100, Model.UsersUsagePercent))%"></div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between small mb-1">
+                        <span>Doctores</span>
+                        <span>@Model.Doctors / @(Model.MaxDoctors <= 0 ? "∞" : Model.MaxDoctors.ToString()) (@Model.DoctorsUsagePercent %)</span>
+                    </div>
+                    <div class="progress" style="height:8px;">
+                        <div class="progress-bar @BarClass(Model.DoctorsUsagePercent)" role="progressbar" style="width:@(Math.Min(100, Model.DoctorsUsagePercent))%"></div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between small mb-1">
+                        <span>Pacientes</span>
+                        <span>@Model.Patients / @(Model.MaxPatients <= 0 ? "∞" : Model.MaxPatients.ToString()) (@Model.PatientsUsagePercent %)</span>
+                    </div>
+                    <div class="progress" style="height:8px;">
+                        <div class="progress-bar @BarClass(Model.PatientsUsagePercent)" role="progressbar" style="width:@(Math.Min(100, Model.PatientsUsagePercent))%"></div>
+                    </div>
+                </div>
+                <div class="mb-0">
+                    <div class="d-flex justify-content-between small mb-1">
+                        <span>Citas este mes</span>
+                        <span>@Model.AppointmentsThisMonth / @(Model.MaxAppointmentsPerMonth <= 0 ? "∞" : Model.MaxAppointmentsPerMonth.ToString()) (@Model.AppointmentsUsagePercent %)</span>
+                    </div>
+                    <div class="progress" style="height:8px;">
+                        <div class="progress-bar @BarClass(Model.AppointmentsUsagePercent)" role="progressbar" style="width:@(Math.Min(100, Model.AppointmentsUsagePercent))%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6 mb-3">
+            <div class="mf-xp-card p-4">
+                <h3 class="h6 font-weight-bold mb-3">Módulos incluidos</h3>
+                <ul class="list-unstyled small mb-0">
+                    <li class="mb-1"><i class="fa @(Model.IncludesBillingModule ? "fa-check text-success" : "fa-times text-muted")"></i> Facturación clínica</li>
+                    <li class="mb-1"><i class="fa @(Model.IncludesAutomationModule ? "fa-check text-success" : "fa-times text-muted")"></i> Automatización / workflows</li>
+                    <li class="mb-1"><i class="fa @(Model.IncludesReportsModule ? "fa-check text-success" : "fa-times text-muted")"></i> Reportes</li>
+                    <li class="mb-1"><i class="fa @(Model.IncludesPatientPortal ? "fa-check text-success" : "fa-times text-muted")"></i> Portal paciente</li>
+                    <li class="mb-1"><i class="fa @(Model.IncludesAdvancedAnalytics ? "fa-check text-success" : "fa-times text-muted")"></i> Analítica avanzada</li>
+                    <li><i class="fa @(Model.IncludesMultiBranch ? "fa-check text-success" : "fa-times text-muted")"></i> Multi-sede</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>

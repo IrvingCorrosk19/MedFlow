@@ -1,0 +1,153 @@
+@model MedFlow.Application.PatientPortal.PatientAppointmentListItemDto
+@using MedFlow.Domain.Enums
+@using MedFlow.Application.PatientPortal
+@using MedFlow.Application.Options
+@{
+    Layout = "~/Views/Shared/_PatientLayout.cshtml";
+    var options = ViewData["Options"] as PatientPortalOptions;
+
+    string badgeClass = Model.Status switch
+    {
+        AppointmentStatus.Confirmed => "badge-success",
+        AppointmentStatus.Cancelled => "badge-danger",
+        AppointmentStatus.Completed => "badge-primary",
+        _ => "badge-secondary"
+    };
+
+    string statusLabel = Model.Status switch
+    {
+        AppointmentStatus.Scheduled => "Programada",
+        AppointmentStatus.Confirmed => "Confirmada",
+        AppointmentStatus.Cancelled => "Cancelada",
+        AppointmentStatus.Completed => "Completada",
+        _ => Model.Status.ToString()
+    };
+}
+
+<div class="d-flex align-items-center mb-4">
+    <a asp-controller="PatientPortal" asp-action="Appointments" class="btn btn-outline-secondary btn-sm mr-3">
+        <i class="fa fa-arrow-left mr-1"></i>Mis citas
+    </a>
+    <h1 class="h3 mb-0">Detalle de cita</h1>
+</div>
+
+@if (Model.Status != AppointmentStatus.Cancelled && Model.Status != AppointmentStatus.Completed)
+{
+    var g = new AppointmentGuidanceInfo(Model.Id, Model.ScheduledDate, Model.StartTime, Model.DoctorName, Model.ConsultationRoom);
+    ViewData["GuidanceSuppressDetailLink"] = true;
+    <partial name="_PatientAppointmentGuidance" model="g" />
+    ViewData.Remove("GuidanceSuppressDetailLink");
+}
+
+<div class="card card-outline card-info shadow-sm">
+    <div class="card-body">
+
+        <div class="d-flex justify-content-between align-items-start mb-4">
+            <div>
+                <span class="badge @badgeClass" style="font-size:0.95rem;padding:0.4em 0.8em;">@statusLabel</span>
+            </div>
+            <small class="text-muted">
+                <i class="fa fa-calendar mr-1" aria-hidden="true"></i>
+                @Model.ScheduledDate.ToString("dddd, d 'de' MMMM yyyy", new System.Globalization.CultureInfo("es-ES"))
+            </small>
+        </div>
+
+        <dl class="row mb-0">
+            <dt class="col-sm-4">Fecha</dt>
+            <dd class="col-sm-8">@Model.ScheduledDate.ToString("dd/MM/yyyy")</dd>
+
+            <dt class="col-sm-4">Hora inicio</dt>
+            <dd class="col-sm-8">@Model.StartTime.ToString(@"hh\:mm")</dd>
+
+            <dt class="col-sm-4">Doctor</dt>
+            <dd class="col-sm-8">@Model.DoctorName</dd>
+
+            @if (!string.IsNullOrWhiteSpace(Model.Speciality))
+            {
+                <dt class="col-sm-4">Especialidad</dt>
+                <dd class="col-sm-8">@Model.Speciality</dd>
+            }
+
+            <dt class="col-sm-4">Estado</dt>
+            <dd class="col-sm-8"><span class="badge @badgeClass">@statusLabel</span></dd>
+
+            @if (!string.IsNullOrWhiteSpace(Model.Reason))
+            {
+                <dt class="col-sm-4">Motivo</dt>
+                <dd class="col-sm-8">@Model.Reason</dd>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(Model.ConsultationRoom))
+            {
+                <dt class="col-sm-4">Consultorio</dt>
+                <dd class="col-sm-8">@Model.ConsultationRoom</dd>
+            }
+        </dl>
+
+        @if (Model.Status != AppointmentStatus.Cancelled && Model.Status != AppointmentStatus.Completed)
+        {
+            <hr />
+            <div class="d-flex flex-wrap gap-2">
+                @if (options?.AllowAppointmentConfirmation == true && Model.Status == AppointmentStatus.Scheduled)
+                {
+                    <form asp-controller="PatientPortal" asp-action="ConfirmAppointment" asp-route-id="@Model.Id" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-success">
+                            <i class="fa fa-check mr-1" aria-hidden="true"></i>Confirmar asistencia
+                        </button>
+                    </form>
+                }
+                @if (options?.AllowAppointmentCancellation == true)
+                {
+                    <button type="button" class="btn btn-outline-danger"
+                            data-toggle="modal" data-target="#modalCancelarPortal"
+                            data-doctor="@Model.DoctorName"
+                            data-fecha="@Model.ScheduledDate.ToString("dd/MM/yyyy")">
+                        <i class="fa fa-times mr-1" aria-hidden="true"></i>Cancelar cita
+                    </button>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@if (options?.AllowAppointmentCancellation == true && Model.Status != AppointmentStatus.Cancelled && Model.Status != AppointmentStatus.Completed)
+{
+    <div class="modal fade" id="modalCancelarPortal" tabindex="-1" role="dialog" aria-labelledby="modalCancelarPortalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalCancelarPortalLabel">Cancelar cita</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <form asp-controller="PatientPortal" asp-action="CancelAppointment" asp-route-id="@Model.Id" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="modal-body">
+                        <p id="cancelPortalDetalle" class="text-muted small mb-3"></p>
+                        <div class="form-group">
+                            <label for="motivoCancelPortal">Motivo <span class="text-muted small">(opcional)</span></label>
+                            <textarea class="form-control" id="motivoCancelPortal" name="reason" rows="3" maxlength="500"
+                                      placeholder="Explique brevemente el motivo de la cancelación…"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Volver</button>
+                        <button type="submit" class="btn btn-danger"><i class="fa fa-times mr-1"></i>Confirmar cancelación</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+<script>
+    $('#modalCancelarPortal').on('show.bs.modal', function (event) {
+        var btn = $(event.relatedTarget);
+        var doctor = btn.data('doctor');
+        var fecha = btn.data('fecha');
+        $('#cancelPortalDetalle').text('Cita con ' + doctor + ' el ' + fecha + '.');
+        $('#motivoCancelPortal').val('');
+    });
+</script>
+}

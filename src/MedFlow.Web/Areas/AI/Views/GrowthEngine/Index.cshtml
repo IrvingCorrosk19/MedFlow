@@ -1,0 +1,91 @@
+@using MedFlow.Application.Reporting
+@{
+    var dash = ViewBag.Dashboard as ExecutiveDashboardVm;
+    var canManage = ViewBag.CanManageAi as bool? ?? false;
+    var showFinancial = ViewBag.ShowFinancialDashboard as bool? ?? false;
+}
+<div class="mf-mission-control">
+    <div class="mf-xp-card mf-xp-card-glass mb-4 p-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-start">
+            <div>
+                <div class="text-uppercase small font-weight-bold mf-xp-mission-kicker">AI Growth Platform</div>
+                <h2 class="h5 font-weight-bold mb-2" style="font-family:var(--mf-xp-font-display);">Motor de crecimiento</h2>
+                <p class="text-muted small mb-0">
+                    Combina KPIs operativos con el procesamiento de insights. Los workflows de recuperación se disparan por eventos (facturas vencidas, inactivos, riesgo de no-show, etc.) hacia n8n o tu endpoint.
+                </p>
+            </div>
+            @if (canManage)
+            {
+                <form asp-action="ProcessNow" method="post" class="mt-2 mt-md-0">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-play"></i> Procesar IA ahora</button>
+                </form>
+            }
+        </div>
+    </div>
+
+    <partial name="Components/_GrowthCopilotEmbed" />
+
+    @if (dash != null)
+    {
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="mf-xp-kpi h-100">
+                    <div class="mf-xp-kpi-label">Cancelación (14 d)</div>
+                    <div class="mf-xp-kpi-value text-warning">@dash.CancellationRatePeriod %</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="mf-xp-kpi h-100">
+                    <div class="mf-xp-kpi-label">No-show hoy</div>
+                    <div class="mf-xp-kpi-value text-danger">@dash.AppointmentKpis.NoShowToday</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="mf-xp-kpi h-100">
+                    <div class="mf-xp-kpi-label">Pacientes inactivos</div>
+                    <div class="mf-xp-kpi-value">@dash.PatientKpis.InactiveCount</div>
+                </div>
+            </div>
+            @if (showFinancial)
+            {
+                <div class="col-md-3 mb-3">
+                    <div class="mf-xp-kpi h-100">
+                        <div class="mf-xp-kpi-label">Saldo pendiente</div>
+                        <div class="mf-xp-kpi-value text-info">@dash.FinanceKpis.TotalOutstanding.ToString("N2")</div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning">@(ViewData["DashboardError"] as string ?? "Sin datos de KPIs.")</div>
+    }
+
+    <div class="row">
+        <div class="col-lg-6 mb-3">
+            <div class="mf-xp-card p-4 h-100">
+                <h3 class="h6 font-weight-bold mb-3"><i class="fa fa-link"></i> Acciones Growth</h3>
+                <ul class="list-unstyled mb-0 small">
+                    <li class="mb-2"><a asp-controller="Dashboard" asp-action="Index" asp-area="">Mission Control</a> — vista ejecutiva unificada</li>
+                    <li class="mb-2"><a asp-controller="RevenueRecovery" asp-action="Index" asp-area="">Recuperación de ingresos</a> — workflows + métricas</li>
+                    <li class="mb-2"><a asp-controller="GrowthCrm" asp-action="Segments" asp-area="">CRM — segmentos con conteos</a></li>
+                    <li class="mb-2"><a asp-controller="Automations" asp-action="Index" asp-area="">Automatizaciones</a> — webhooks y n8n</li>
+                    <li><a asp-controller="AIDashboard" asp-action="Index">Dashboard IA clásico</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="col-lg-6 mb-3">
+            <div class="mf-xp-card p-4 h-100">
+                <h3 class="h6 font-weight-bold mb-3"><i class="fa fa-bolt"></i> Eventos recomendados para recovery</h3>
+                <p class="small text-muted">
+                    Configura workflows con estos disparadores: <code>InvoiceOverdue</code>, <code>PatientInactive</code>,
+                    <code>NoShowRiskDetected</code>, <code>PatientReengagementSuggested</code>, <code>InvoicePending</code>.
+                    MedFlow encolará ejecuciones cuando el dominio emita el evento correspondiente.
+                </p>
+                <a asp-controller="Automations" asp-action="Create" asp-area="" class="btn btn-outline-primary btn-sm">Nuevo workflow</a>
+            </div>
+        </div>
+    </div>
+</div>

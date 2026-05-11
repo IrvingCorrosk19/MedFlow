@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Security.Claims;
 using MedFlow.Application.Options;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
@@ -136,6 +137,11 @@ public sealed class RateLimitingMiddleware
             return $"onboarding:{ip}";
         if (path.Contains("/Account/Login", StringComparison.OrdinalIgnoreCase))
             return $"mvc:login:{ip}";
+        if (path.Contains("/Copilot/Query", StringComparison.OrdinalIgnoreCase))
+        {
+            var uid = context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            return string.IsNullOrEmpty(uid) ? $"copilot:{ip}" : $"copilot:{uid}";
+        }
         return null;
     }
 
@@ -156,6 +162,8 @@ public sealed class RateLimitingMiddleware
             return (_options.OnboardingPerMinute, 60);
         if (path.Contains("/Account/Login", StringComparison.OrdinalIgnoreCase))
             return (_options.LoginPerMinute, 60);
+        if (path.Contains("/Copilot/Query", StringComparison.OrdinalIgnoreCase))
+            return (24, 60);
         return (100, 60);
     }
 }

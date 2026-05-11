@@ -1,11 +1,12 @@
 @model IReadOnlyList<MedFlow.Domain.Entities.BillingInvoice>
+@using System.Linq
 @using MedFlow.Domain.Enums
 @{
     ViewData["PageTitle"] = "Facturas";
     var patients = ViewBag.Patients as Microsoft.AspNetCore.Mvc.Rendering.SelectList;
 }
 
-<div class="card card-outline card-primary shadow-sm mb-3">
+<div class="card card-outline card-primary shadow-sm mb-3 mf-xp-card">
     <div class="card-body">
         <form method="get" class="form-row align-items-end">
             <div class="form-group col-md-3">
@@ -40,11 +41,25 @@
     </div>
 </div>
 
-<div class="card card-outline card-secondary shadow-sm">
+<div class="card card-outline card-secondary shadow-sm mf-xp-card">
     <div class="card-header border-0">
         <h3 class="card-title font-weight-bold"><i class="fa fa-file-text-o mr-2"></i>Listado</h3>
     </div>
-    <div class="card-body table-responsive p-0">
+    @if (!Model.Any())
+    {
+        <div class="card-body p-0">
+            <partial name="Components/_MfExperienceEmptyState" model='new MedFlow.Web.Models.Ui.EmptyStateModel {
+                IconClass = "fa fa-file-text-o",
+                Title = "Sin facturas con estos filtros",
+                Description = "Cambia el rango o crea una nueva factura.",
+                ActionUrl = Url.Action("Create"),
+                ActionText = "Nueva factura"
+            }' />
+        </div>
+    }
+    else
+    {
+    <div class="card-body table-responsive p-0 mf-xp-table-wrap">
         <table id="tblInvoices" class="table table-hover table-striped mb-0 medflow-table">
             <thead class="thead-light">
                 <tr>
@@ -85,17 +100,23 @@
             </tbody>
         </table>
     </div>
+    }
 </div>
 
 @section Scripts {
     <script>
         $(function () {
             $('.select2').select2({ theme: 'bootstrap4', width: '100%' });
+            @if (Model.Any())
+            {
+            <text>
             $('#tblInvoices').DataTable({
                 order: [[1, 'desc']],
                 pageLength: 25,
                 language: { url: '/lib/datatables/es-ES.json' }
             });
+            </text>
+            }
         });
     </script>
 }

@@ -91,6 +91,36 @@ public sealed class WorkflowExecutionService : IWorkflowExecutionService
             topErrors);
     }
 
+    public async Task<IReadOnlyDictionary<string, int>> CountSucceededByEventTypesSinceAsync(
+        IReadOnlyList<string> eventTypes,
+        DateTime fromUtc,
+        CancellationToken cancellationToken = default)
+    {
+        if (eventTypes.Count == 0)
+            return new Dictionary<string, int>();
+
+        var query = _context.WorkflowExecutions
+            .AsNoTracking()
+            .Where(e =>
+                e.Status == WorkflowExecutionStatus.Succeeded
+                && e.CreatedAt >= fromUtc
+                && eventTypes.Contains(e.EventType));
+
+        if (_tenant.TenantId.HasValue)
+            query = query.Where(e => e.TenantId == _tenant.TenantId.Value);
+
+        var rows = await query
+            .GroupBy(e => e.EventType)
+            .Select(g => new { Key = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken);
+
+        var dict = eventTypes.Distinct().ToDictionary(x => x, _ => 0);
+        foreach (var r in rows)
+            dict[r.Key] = r.Count;
+
+        return dict;
+    }
+
     public async Task RetryAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var exec = await _context.WorkflowExecutions

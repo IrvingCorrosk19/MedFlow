@@ -1,0 +1,17 @@
+{
+  "name": "MedFlow",
+  "short_name": "MedFlow",
+  "description": "Plataforma de operación y crecimiento clínico",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/lib/adminlte/img/AdminLTELogo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

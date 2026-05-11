@@ -1,24 +1,27 @@
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title"><i class="fa fa-comments mr-2"></i>Consultas al copiloto</h3>
+<div class="mf-xp-card mf-xp-card-glass mb-4">
+    <div class="p-3 border-bottom" style="border-color:var(--mf-border)!important;">
+        <h3 class="mb-1" style="font-family:var(--mf-xp-font-display);font-weight:700;font-size:1.15rem;">
+            <i class="fa fa-comments mr-2 text-primary"></i>Copiloto operativo
+        </h3>
+        <p class="text-muted small mb-0">Respuestas basadas en datos del tenant. Límite de uso aplicado con rate limiting en producción.</p>
     </div>
-    <div class="card-body">
-        <p class="text-muted">Ejemplos: "¿Qué pacientes requieren seguimiento?", "¿Qué citas tienen alto riesgo?", "¿Qué facturas requieren gestión?"</p>
+    <div class="p-4">
+        <p class="text-muted small">Ejemplos: “¿Qué pacientes requieren seguimiento?”, “¿Qué citas tienen alto riesgo?”, “¿Qué facturas requieren gestión?”</p>
         <form id="copilotForm" class="mb-3">
             @Html.AntiForgeryToken()
-            <div class="input-group">
-                <input type="text" id="copilotQuery" class="form-control" placeholder="Escriba su consulta..." />
+            <div class="input-group input-group-lg shadow-sm" style="border-radius:12px;overflow:hidden;">
+                <input type="text" id="copilotQuery" class="form-control border-0" maxlength="500" placeholder="Pregunta operativa…" autocomplete="off" />
                 <div class="input-group-append">
-                    <button type="submit" class="btn btn-primary" id="copilotSubmitBtn">
+                    <button type="submit" class="btn btn-primary px-4" id="copilotSubmitBtn">
                         <span id="copilotSpinner" class="spinner-border spinner-border-sm mr-1" role="status" aria-hidden="true" style="display:none;"></span>
                         Consultar
                     </button>
                 </div>
             </div>
         </form>
-        <div id="copilotResult" class="border rounded p-3 bg-light" style="display:none;">
-            <h6>Respuesta</h6>
-            <p id="resultSummary"></p>
+        <div id="copilotResult" class="mf-xp-card p-3 mt-2" style="display:none;">
+            <h6 class="font-weight-bold mb-2" style="font-family:var(--mf-xp-font-display);">Respuesta</h6>
+            <p id="resultSummary" class="mb-2 small"></p>
             <div id="resultItems"></div>
             <div id="resultSuggestions" class="mt-2"></div>
         </div>

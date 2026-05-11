@@ -1,0 +1,28 @@
+# Build + unit tests — gates de calidad (roadmap priorizado)
+name: CI
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore
+        run: dotnet restore MedFlow.sln
+
+      - name: Build Release
+        run: dotnet build MedFlow.sln -c Release --no-restore
+
+      - name: Unit tests
+        run: dotnet test tests/MedFlow.UnitTests/MedFlow.UnitTests.csproj -c Release --no-build --verbosity normal

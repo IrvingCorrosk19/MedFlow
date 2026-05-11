@@ -143,8 +143,9 @@ $a4 = Test-GetCode -Session $sr -Path '/AdminUsers'
 $results.Add([pscustomobject]@{ Id = 'TP-A04'; Result = $(if ($a4.Code -in @(302, 403)) { 'OK' } else { 'NOK' }); Notas = "HTTP $($a4.Code)" })
 
 $dr = Test-GetCode -Session $sr -Path '/'
-$g01 = ($dr.Content -notmatch 'Facturaci')
-$results.Add([pscustomobject]@{ Id = 'TP-G01'; Result = $(if ($g01) { 'OK' } else { 'NOK' }); Notas = 'Sin Facturaci* en HTML' })
+# Sin permiso billing: no deben aparecer tarjetas KPI financieras (el sidebar puede decir "Facturación y caja")
+$g01 = ($dr.Content -notmatch 'Facturación hoy|Facturación mes|Saldo pendiente total')
+$results.Add([pscustomobject]@{ Id = 'TP-G01'; Result = $(if ($g01) { 'OK' } else { 'NOK' }); Notas = 'Sin KPIs financieros en cuerpo principal' })
 
 $results.Add([pscustomobject]@{ Id = 'TP-C01'; Result = $(if ((Test-GetCode -Session $sr -Path '/Appointments').Code -eq 200) { 'OK' } else { 'NOK' }); Notas = '' })
 
@@ -191,6 +192,38 @@ $k1 = Test-GetCode -Session $sk -Path '/ChartOfAccounts'
 $k2 = Test-GetCode -Session $sk -Path '/Automations'
 $results.Add([pscustomobject]@{ Id = 'TP-K01'; Result = $(if ($k1.Code -in @(200, 403)) { 'OK' } else { 'NOK' }); Notas = "HTTP $($k1.Code)" })
 $results.Add([pscustomobject]@{ Id = 'TP-K02'; Result = $(if ($k2.Code -in @(200, 403)) { 'OK' } else { 'NOK' }); Notas = "HTTP $($k2.Code)" })
+
+# Mandato v2 (10 fases) — rutas representativas con qa.admin (permisos completos tenant)
+$vXp = Test-GetCode -Session $sk -Path '/Patients'
+$results.Add([pscustomobject]@{ Id = 'TP-V1-Experience'; Result = $(if ($vXp.Code -eq 200 -and $vXp.Content -match 'mf-xp-card') { 'OK' } else { 'NOK' }); Notas = "HTTP $($vXp.Code)" })
+
+$vKpi = Test-GetCode -Session $sk -Path '/Dashboard/KpiSnapshot?days=14'
+$results.Add([pscustomobject]@{ Id = 'TP-V2-MissionControl-Kpi'; Result = $(if ($vKpi.Code -eq 200 -and $vKpi.Content -match 'completionRatePeriod') { 'OK' } else { 'NOK' }); Notas = "HTTP $($vKpi.Code)" })
+
+$vGrowth = Test-GetCode -Session $sk -Path '/AI/GrowthEngine'
+$results.Add([pscustomobject]@{ Id = 'TP-V3-AI-GrowthEngine'; Result = $(if ($vGrowth.Code -eq 200) { 'OK' } else { 'NOK' }); Notas = "HTTP $($vGrowth.Code)" })
+
+$vRev = Test-GetCode -Session $sk -Path '/RevenueRecovery'
+$results.Add([pscustomobject]@{ Id = 'TP-V4-RevenueRecovery'; Result = $(if ($vRev.Code -eq 200) { 'OK' } else { 'NOK' }); Notas = "HTTP $($vRev.Code)" })
+
+$vCrm = Test-GetCode -Session $sk -Path '/GrowthCrm/Segments'
+$results.Add([pscustomobject]@{ Id = 'TP-V5-CRM-Segments'; Result = $(if ($vCrm.Code -eq 200) { 'OK' } else { 'NOK' }); Notas = "HTTP $($vCrm.Code)" })
+
+$sV6 = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+[void](Login-Patient -Email 'qa.patient@medflow.local' -Session $sV6)
+$vPortal = Test-GetCode -Session $sV6 -Path '/portal/dashboard'
+$results.Add([pscustomobject]@{ Id = 'TP-V6-PortalCanonical'; Result = $(if ($vPortal.Code -eq 200) { 'OK' } else { 'NOK' }); Notas = "/portal/dashboard HTTP $($vPortal.Code)" })
+
+$vClinic = Test-GetCode -Session $sk -Path '/ClinicConsole'
+$results.Add([pscustomobject]@{ Id = 'TP-V8-ClinicConsole'; Result = $(if ($vClinic.Code -eq 200) { 'OK' } else { 'NOK' }); Notas = "HTTP $($vClinic.Code)" })
+
+$vSec = Test-GetCode -Session $sk -Path '/SecurityPosture'
+$results.Add([pscustomobject]@{ Id = 'TP-V9-SecurityPosture'; Result = $(if ($vSec.Code -eq 200) { 'OK' } else { 'NOK' }); Notas = "HTTP $($vSec.Code)" })
+
+$vm = Invoke-WebSafe -Uri "$BaseUrl/manifest.webmanifest" -Session (New-Object Microsoft.PowerShell.Commands.WebRequestSession)
+$manifestTxt = $vm.Content
+if ($manifestTxt -is [byte[]]) { $manifestTxt = [System.Text.Encoding]::UTF8.GetString($manifestTxt) }
+$results.Add([pscustomobject]@{ Id = 'TP-V10-PWA-Manifest'; Result = $(if ($vm.Code -eq 200 -and $manifestTxt -match 'MedFlow') { 'OK' } else { 'NOK' }); Notas = "HTTP $($vm.Code)" })
 
 # TP-A03 — Logout POST staff
 $sLo = New-Object Microsoft.PowerShell.Commands.WebRequestSession

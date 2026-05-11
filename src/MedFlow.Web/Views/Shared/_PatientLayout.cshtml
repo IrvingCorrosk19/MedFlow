@@ -23,6 +23,13 @@
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed">
+<a class="skip-link" href="#patient-main-content">Saltar al contenido principal</a>
+<div class="alert alert-info alert-dismissible fade show mx-3 mt-3 mb-0 border-0 shadow-sm" role="alert" style="border-radius:12px;">
+    <button type="button" class="close" data-dismiss="alert" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
+    <strong><i class="fa fa-magic mr-1"></i> Nueva experiencia portal.</strong>
+    También puedes usar la vista canónica unificada en
+    <a href="/portal/dashboard" class="alert-link font-weight-bold">/portal/dashboard</a> (recomendado en móvil).
+</div>
 <div class="wrapper">
 
     <!-- Navbar -->
@@ -96,7 +103,7 @@
     </aside>
 
     <!-- Content -->
-    <div class="content-wrapper">
+    <div id="patient-main-content" class="content-wrapper" tabindex="-1">
         <div class="content-header">
             <div class="container-fluid">
                 <div class="row mb-2">
@@ -118,16 +125,16 @@
             <div class="container-fluid">
                 @if (TempData["Success"] != null)
                 {
-                    <div class="alert alert-success alert-dismissible fade show">
-                        <i class="fa fa-check-circle mr-2"></i>@TempData["Success"]
-                        <button type="button" class="close" data-dismiss="alert">&times;</button>
+                    <div class="alert alert-success alert-dismissible fade show" role="status" aria-live="polite">
+                        <i class="fa fa-check-circle mr-2" aria-hidden="true"></i>@TempData["Success"]
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Cerrar mensaje">&times;</button>
                     </div>
                 }
                 @if (TempData["Error"] != null)
                 {
-                    <div class="alert alert-danger alert-dismissible fade show">
-                        <i class="fa fa-exclamation-circle mr-2"></i>@TempData["Error"]
-                        <button type="button" class="close" data-dismiss="alert">&times;</button>
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert" aria-live="assertive">
+                        <i class="fa fa-exclamation-circle mr-2" aria-hidden="true"></i>@TempData["Error"]
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Cerrar mensaje">&times;</button>
                     </div>
                 }
                 @RenderBody()

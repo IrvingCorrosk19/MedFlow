@@ -1,0 +1,56 @@
+<div class="mf-mission-control">
+    <div class="mf-xp-card mf-xp-card-glass mb-4 p-4 d-flex flex-wrap justify-content-between align-items-start">
+        <div>
+            <h2 class="h5 font-weight-bold mb-2" style="font-family:var(--mf-xp-font-display);">CRM orientado a crecimiento</h2>
+            <p class="text-muted small mb-0">
+                Segmentos prácticos para retención y recurrencia. Usa conteos en vivo y automatizaciones para campañas.
+            </p>
+        </div>
+        <a asp-action="Segments" class="btn btn-sm btn-primary mt-2 mt-md-0">Segmentos con conteos</a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="mf-xp-card p-4 h-100 d-flex flex-column">
+                <div class="mf-xp-kpi-label mb-2">Inactivos</div>
+                <p class="small text-muted flex-grow-1">Sin actividad reciente — foco en reactivación y control periódico.</p>
+                <a asp-controller="Patients" asp-action="Index" asp-route-estadoActivo="false" class="btn btn-outline-primary mt-auto">Abrir segmento</a>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="mf-xp-card p-4 h-100 d-flex flex-column">
+                <div class="mf-xp-kpi-label mb-2">Activos</div>
+                <p class="small text-muted flex-grow-1">Directorio completo para upsell y seguimiento personalizado.</p>
+                <a asp-controller="Patients" asp-action="Index" asp-route-estadoActivo="true" class="btn btn-outline-primary mt-auto">Abrir segmento</a>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="mf-xp-card p-4 h-100 d-flex flex-column">
+                <div class="mf-xp-kpi-label mb-2">Directorio completo</div>
+                <p class="small text-muted flex-grow-1">Búsqueda y filtros para priorizar seguimiento manual.</p>
+                <a asp-controller="Patients" asp-action="Index" class="btn btn-outline-secondary mt-auto">Abrir pacientes</a>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="mf-xp-card p-4 h-100 d-flex flex-column">
+                <div class="mf-xp-kpi-label mb-2">Agenda y fugas</div>
+                <p class="small text-muted flex-grow-1">Cancelaciones y huecos: cerrar la agenda antes de captar más demanda.</p>
+                <a asp-controller="Appointments" asp-action="Index" class="btn btn-outline-secondary mt-auto">Ver citas</a>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="mf-xp-card p-4 h-100 d-flex flex-column">
+                <div class="mf-xp-kpi-label mb-2">Inteligencia artificial</div>
+                <p class="small text-muted flex-grow-1">Insights y alertas ya disponibles en el módulo IA.</p>
+                <a asp-area="AI" asp-controller="AIDashboard" asp-action="Index" class="btn btn-dark mt-auto">Centro IA</a>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="mf-xp-card p-4 h-100 d-flex flex-column">
+                <div class="mf-xp-kpi-label mb-2">Mission Control</div>
+                <p class="small text-muted flex-grow-1">Vista ejecutiva unificada de KPIs y alertas.</p>
+                <a asp-controller="Dashboard" asp-action="Index" class="btn btn-outline-primary mt-auto">Ir al dashboard</a>
+            </div>
+        </div>
+    </div>
+</div>

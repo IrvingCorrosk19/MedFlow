@@ -55,6 +55,7 @@ public static class DependencyInjection
         services.AddScoped<IAdminUserService, AdminUserService>();
         services.AddScoped<IRoleAdminService, RoleAdminService>();
         services.AddScoped<IExecutiveAnalyticsService, ExecutiveAnalyticsService>();
+        services.AddScoped<IGrowthCrmAnalyticsService, GrowthCrmAnalyticsService>();
         services.AddScoped<ISubscriptionLimitService, SubscriptionLimitService>();
         services.AddScoped<IPlanFeatureService, PlanFeatureService>();
         services.AddScoped<ISaasTenantAdminService, SaasTenantAdminService>();
